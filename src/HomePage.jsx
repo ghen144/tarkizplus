@@ -8,7 +8,7 @@ import { getAuth, signOut } from 'firebase/auth';
 import Sidebar from './Sidebar'; // Import the Sidebar component
 
 const HomePage = () => {
-    const [currentTime, setCurrentTime] = useState(new Date());
+    // const [currentTime, setCurrentTime] = useState(new Date());
     const navigate = useNavigate();
 
     // Sample data
