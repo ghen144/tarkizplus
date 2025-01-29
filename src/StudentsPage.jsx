@@ -26,7 +26,7 @@ const StudentsPage = () => {
 
     // Filter students based on search term
     const filteredStudents = students.filter((student) =>
-        student.name.toLowerCase().includes(searchTerm.toLowerCase())
+        student.studentName.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     // Handle student click
@@ -65,7 +65,7 @@ const StudentsPage = () => {
                             <div className="flex items-center gap-3">
                                 <User className="h-12 w-12 text-gray-500" />
                                 <div>
-                                    <h3 className="text-lg font-medium">{student.name}</h3>
+                                    <h3 className="text-lg font-medium">{student.studentName}</h3>
                                     <p className="text-gray-500 text-sm">{student.grade}</p>
                                     <p className="text-gray-500 text-sm">{student.subjects.join(', ')}</p>
                                 </div>

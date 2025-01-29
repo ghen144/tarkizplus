@@ -20,7 +20,7 @@ const Sidebar = ({ activePage }) => {
     const menuItems = [
         {
             icon: Home,
-            label: 'Dashboard',
+            label: 'Home',
             path: '/',
             active: location.pathname === '/' // Check if the current path is '/'
         },
@@ -30,20 +30,18 @@ const Sidebar = ({ activePage }) => {
             path: '/students',
             active: location.pathname === '/students' // Check if the current path is '/students'
         },
-        {
-            icon: BookOpenText,
-            label: 'Lessons',
-            path: '/lessons',
-            active: location.pathname === '/lessons' // Check if the current path is '/lessons'
-        }
+        // Add more menu items as needed
     ];
 
     return (
         <div className="w-64 bg-white border-r h-screen fixed left-0 top-0 flex flex-col">
+            {/* Sidebar Header */}
             <div className="p-6 border-b">
                 <h2 className="text-xl font-bold">TarkizPlus</h2>
             </div>
-            <nav className="flex-1 p-4">
+
+            {/* Sidebar Navigation */}
+            <nav className="flex-1 p-4 overflow-y-auto">
                 {menuItems.map((item) => (
                     <Link
                         key={item.path}
@@ -59,6 +57,8 @@ const Sidebar = ({ activePage }) => {
                     </Link>
                 ))}
             </nav>
+
+            {/* Sign Out Button */}
             <div className="p-4 border-t">
                 <button
                     onClick={handleSignOut}
