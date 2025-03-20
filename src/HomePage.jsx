@@ -6,12 +6,14 @@ import { collection, getDocs, getDoc, doc, query, where } from 'firebase/firesto
 import { db } from './firebase';
 import DropdownMenu from './DropdownMenu';
 import { getAuth, onAuthStateChanged } from "firebase/auth";
+import SkeletonLoader from './SkeletonLoader'; // Import the skeleton loader
 
 const HomePage = () => {
     const navigate = useNavigate();
     const [lessons, setLessons] = useState([]);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [currentTeacherId, setCurrentTeacherId] = useState(null); // State to store the logged-in teacher's ID
+    const [loading, setLoading] = useState(false); // Add loading state
     const auth = getAuth(); // Initialize Firebase Auth
 
     // Debugging: Log the current teacher ID
@@ -39,12 +41,12 @@ const HomePage = () => {
 
     // Fetch lessons for the logged-in teacher
     useEffect(() => {
-        if (!currentTeacherId) {
-            console.log("No teacher ID found. Skipping lesson fetch.");
-            return; // Don't fetch lessons if teacher_id is not set
-        }
+        if (!currentTeacherId) return;
 
         const fetchLessonsForTeacher = async () => {
+            setLoading(true); // Start loading
+            console.log("Fetching lessons..."); // Debugging
+
             try {
                 // Query the teachers collection to find the teacher's custom ID
                 const teachersQuery = query(collection(db, "teachers"), where("uid", "==", currentTeacherId));
@@ -75,12 +77,16 @@ const HomePage = () => {
                         }
                     }
 
-                    setLessons(lessonsList); // Update the lessons state
+                    setLessons(lessonsList); // Update lessons
+                    console.log("Lessons fetched:", lessonsList); // Debugging
                 } else {
                     console.log("No teacher found with UID:", currentTeacherId);
                 }
             } catch (error) {
                 console.error("Error fetching lessons:", error);
+            } finally {
+                setLoading(false); // Stop loading
+                console.log("Loading complete."); // Debugging
             }
         };
 
@@ -152,24 +158,24 @@ const HomePage = () => {
                                 <Calendar className="h-5 w-5 text-blue-500" />
                                 <h2 className="text-xl font-semibold">Today's Schedule</h2>
                             </div>
+
+                            {/* Content */}
                             <div className="space-y-4">
-                                {lessons.map((lesson) => {
-                                    const formattedTime = lesson.lesson_date
-                                        ? lesson.lesson_date.toDate().toLocaleString()
-                                        : 'No Time Specified';
-
-                                    const student_id = lesson.student_id;
-
-                                    return (
-                                        <div key={lesson.id} className="p-4 bg-gray-50 rounded-lg mb-4">
+                                {loading ? ( // Show skeleton loader while loading
+                                    <SkeletonLoader rows={3} showButton={true} />
+                                ) : lessons.length > 0 ? ( // Show lessons if data is available
+                                    lessons.map((lesson) => (
+                                        <div key={lesson.id} className="p-4 bg-gray-50 rounded-lg">
                                             <div className="flex justify-between items-start">
                                                 <div>
                                                     <p className="font-medium text-gray-800">{lesson.studentName}</p>
-                                                    <p className="text-gray-600 text-sm">{formattedTime}</p>
+                                                    <p className="text-gray-600 text-sm">
+                                                        {lesson.lesson_date.toDate().toLocaleString()}
+                                                    </p>
                                                     <p className="text-gray-600 text-sm">Subject: {lesson.subject}</p>
                                                 </div>
                                                 <Link
-                                                    to={`/students/${student_id}`}
+                                                    to={`/students/${lesson.student_id}`}
                                                     className="flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm bg-white px-3 py-2 rounded-md shadow-sm"
                                                 >
                                                     <User className="h-4 w-4" />
@@ -177,8 +183,12 @@ const HomePage = () => {
                                                 </Link>
                                             </div>
                                         </div>
-                                    );
-                                })}
+                                    ))
+                                ) : ( // Show message if no lessons are scheduled
+                                    <div className="flex justify-center items-center p-4">
+                                        <p className="text-gray-600">No lessons scheduled for today.</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
 

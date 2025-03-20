@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { User, Search } from 'lucide-react';
 import { db } from './firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import SkeletonLoader from './SkeletonLoader'; // Import the skeleton loader
 
 function StudentsPage() {
     const navigate = useNavigate();
@@ -11,22 +12,38 @@ function StudentsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [currentTeacherId, setCurrentTeacherId] = useState(null); // State to store the logged-in teacher's ID
 
+    // Fetch the logged-in teacher's ID
     useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // User is signed in, set the teacher_id to the user's uid
+                console.log("User is signed in. UID:", user.uid);
+                setCurrentTeacherId(user.uid);
+            } else {
+                // User is signed out, redirect to login page
+                console.log("No user is signed in. Redirecting to login...");
+                navigate('/login');
+            }
+        });
+
+        // Cleanup subscription on unmount
+        return () => unsubscribe();
+    }, [auth, navigate]);
+
+    // Fetch students only after currentTeacherId is set
+    useEffect(() => {
+        if (!currentTeacherId) return; // Do nothing if currentTeacherId is not set
+
         const fetchStudents = async () => {
             try {
-                const user = auth.currentUser;
-                if (!user) {
-                    console.error("No authenticated user found.");
-                    return;
-                }
-
-                // Find the teacher document based on the logged-in email
-                const teachersQuery = query(collection(db, 'teachers'), where('email', '==', user.email));
+                // Find the teacher document based on the logged-in teacher's UID
+                const teachersQuery = query(collection(db, "teachers"), where("uid", "==", currentTeacherId));
                 const teacherSnapshot = await getDocs(teachersQuery);
 
                 if (teacherSnapshot.empty) {
-                    console.error("No teacher found with this email.");
+                    console.error("No teacher found with this UID.");
                     setLoading(false);
                     return;
                 }
@@ -51,7 +68,7 @@ function StudentsPage() {
         };
 
         fetchStudents();
-    }, []);
+    }, [currentTeacherId]); // Run this effect only when currentTeacherId changes
 
     // Ensure we use the correct field name from Firestore
     const filteredStudents = students.filter((student) =>
@@ -78,7 +95,8 @@ function StudentsPage() {
 
             {/* Students Grid */}
             {loading ? (
-                <p className="text-center text-gray-500">Loading students...</p>
+                // Use SkeletonLoader while loading
+                <SkeletonLoader rows={3} />
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredStudents.length > 0 ? (
