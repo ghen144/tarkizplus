@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { db } from './firebase';
-import { setDoc, doc, getDocs, collection, query, orderBy, limit, serverTimestamp, addDoc } from 'firebase/firestore';
+import { db } from './firebase'; // Update to your firebase.js path
+import {
+    collection,
+    getDocs,
+    addDoc,
+    serverTimestamp,
+    query,
+    where
+} from 'firebase/firestore';
 import { getAuth } from "firebase/auth";
 
 function AddLesson() {
@@ -9,16 +16,17 @@ function AddLesson() {
     const auth = getAuth();
     const user = auth.currentUser;
 
+    // State variables
     const [assignedStudents, setAssignedStudents] = useState([]);
-    const [selectedStudents, setSelectedStudents] = useState([]); // Store selected students
+    const [selectedStudent, setSelectedStudent] = useState('');
     const [subject, setSubject] = useState('');
     const [date, setDate] = useState('');
     const [duration, setDuration] = useState('');
     const [lessonNotes, setLessonNotes] = useState('');
     const [progressAssessment, setProgressAssessment] = useState('');
+    const [studentNum, setStudentNum] = useState('1');
     const [teacherId, setTeacherId] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false); // Control dropdown visibility
 
     // Fetch assigned students
     useEffect(() => {
@@ -28,9 +36,11 @@ function AddLesson() {
                 return;
             }
 
+            console.log("🔹 Logged in as:", user.email);
             setLoading(true);
 
             try {
+                // Get the teacher's document using their email
                 const teachersSnapshot = await getDocs(
                     query(collection(db, "teachers"), where("email", "==", user.email))
                 );
@@ -43,12 +53,18 @@ function AddLesson() {
 
                 const teacherDoc = teachersSnapshot.docs[0];
                 const teacherData = teacherDoc.data();
-                setTeacherId(teacherDoc.id);
+                setTeacherId(teacherDoc.id);  // Store teacher ID
 
+                console.log("✅ Teacher found:", teacherData);
+
+                // Get assigned students list
                 const assignedStudentIds = teacherData.assigned_students || [];
+                console.log("🎯 Assigned Students:", assignedStudentIds);
+
+                // Fetch student details from Firestore
                 const studentsSnapshot = await getDocs(collection(db, "students"));
                 const studentList = studentsSnapshot.docs
-                    .filter(doc => assignedStudentIds.includes(doc.id))
+                    .filter(doc => assignedStudentIds.includes(doc.id))  // Keep only assigned students
                     .map(doc => ({
                         id: doc.id,
                         name: doc.data().name
@@ -65,47 +81,36 @@ function AddLesson() {
         fetchAssignedStudents();
     }, [user]);
 
-    // Handle student selection
-    const handleStudentSelect = (student) => {
-        if (selectedStudents.some(s => s.id === student.id)) {
-            // If already selected, remove it
-            setSelectedStudents(selectedStudents.filter(s => s.id !== student.id));
-        } else {
-            // Add to selected students
-            setSelectedStudents([...selectedStudents, student]);
-        }
-    };
-
     // Handle Form Submission
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (selectedStudents.length === 0 || !teacherId) {
-            console.error("❌ Missing students or teacher ID.");
+        if (!selectedStudent || !teacherId) {
+            console.error("❌ Missing student or teacher ID.");
             return;
         }
 
         try {
+            // Convert date string into Date object
             const dateObj = date ? new Date(date) : null;
 
-            for (const student of selectedStudents) {
-                await addDoc(collection(db, 'lessons'), {
-                    student_id: student.id,
-                    teacher_id: teacherId,
-                    subject,
-                    lesson_date: dateObj || serverTimestamp(),
-                    duration_minutes: parseInt(duration, 10) || 0,
-                    lesson_notes: lessonNotes,
-                    progress_assessment: progressAssessment,
-                    student_num: selectedStudents.length, // Automatically set number of students
-                    created_at: serverTimestamp(),
-                });
-            }
+            // Add lesson to Firestore
+            await addDoc(collection(db, 'lessons'), {
+                student_id: selectedStudent,  // Store student's ID
+                teacher_id: teacherId,        // Store teacher's ID
+                subject,
+                lesson_date: dateObj || serverTimestamp(),
+                duration_minutes: parseInt(duration, 10) || 0,
+                lesson_notes: lessonNotes,
+                progress_assessment: progressAssessment,
+                student_num: parseInt(studentNum, 10),
+                created_at: serverTimestamp(),
+            });
 
-            console.log("✅ Lessons successfully added!");
+            console.log("✅ Lesson successfully added!");
             navigate('/lesson-log');
         } catch (error) {
-            console.error("❌ Error adding lessons:", error);
+            console.error("❌ Error adding lesson:", error);
         }
     };
 
@@ -114,57 +119,24 @@ function AddLesson() {
             <h2 className="text-2xl font-bold mb-4">Add Lesson</h2>
 
             <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow max-w-lg">
-                {/* Student Multi-Select Dropdown */}
-                <label className="block mb-2 font-semibold">Students</label>
+                {/* Student Dropdown */}
+                <label className="block mb-2 font-semibold">Student</label>
                 {loading ? (
                     <p>Loading students...</p>
                 ) : (
-                    <div className="relative mb-4">
-                        {/* Selected Students Display */}
-                        <div className="flex flex-wrap gap-2 mb-2">
-                            {selectedStudents.map(student => (
-                                <div
-                                    key={student.id}
-                                    className="bg-blue-100 text-blue-800 px-2 py-1 rounded flex items-center gap-2"
-                                >
-                                    <span>{student.name}</span>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleStudentSelect(student)}
-                                        className="text-red-500 hover:text-red-700"
-                                    >
-                                        &times;
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* Dropdown Button */}
-                        <button
-                            type="button"
-                            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                            className="w-full p-2 border rounded bg-white text-black text-left"
-                        >
-                            Select students...
-                        </button>
-
-                        {/* Dropdown Menu */}
-                        {isDropdownOpen && (
-                            <div className="absolute z-10 w-full bg-white border rounded shadow mt-1 max-h-48 overflow-y-auto">
-                                {assignedStudents.map(student => (
-                                    <div
-                                        key={student.id}
-                                        onClick={() => handleStudentSelect(student)}
-                                        className={`p-2 hover:bg-gray-100 cursor-pointer ${
-                                            selectedStudents.some(s => s.id === student.id) ? 'bg-blue-50' : ''
-                                        }`}
-                                    >
-                                        {student.name}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+                    <select
+                        className="w-full p-2 mb-4 border rounded bg-white text-black"
+                        value={selectedStudent}
+                        onChange={(e) => setSelectedStudent(e.target.value)}
+                        required
+                    >
+                        <option value="">-- Select a Student --</option>
+                        {assignedStudents.map(stu => (
+                            <option key={stu.id} value={stu.id}>
+                                {stu.name || `Student ID: ${stu.id}`}
+                            </option>
+                        ))}
+                    </select>
                 )}
 
                 {/* Subject Dropdown */}
@@ -221,6 +193,20 @@ function AddLesson() {
                     onChange={(e) => setProgressAssessment(e.target.value)}
                     placeholder="e.g. Good, Needs Improvement, etc."
                 />
+
+                {/* Student Number (1-5) */}
+                <label className="block mb-2 font-semibold">Student Number</label>
+                <select
+                    className="w-full p-2 mb-4 border rounded bg-white text-black"
+                    value={studentNum}
+                    onChange={(e) => setStudentNum(e.target.value)}
+                >
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                </select>
 
                 {/* Submit Button */}
                 <button

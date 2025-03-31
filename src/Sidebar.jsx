@@ -2,6 +2,7 @@ import React from 'react';
 import { Home, Users, BookOpenText, LogOut } from 'lucide-react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { getAuth, signOut } from 'firebase/auth';
+import Logo from './Logo';
 
 const Sidebar = () => {
     const navigate = useNavigate();
@@ -25,8 +26,8 @@ const Sidebar = () => {
 
     return (
         <div className="w-64 bg-white border-r h-screen fixed left-0 top-0">
-            <div className="p-6 border-b">
-                <h2 className="text-xl font-bold">TarkizPlus</h2>
+            <div className="p-6 border-b flex items-center">
+                <Logo />
             </div>
 
             <nav className="p-4">
