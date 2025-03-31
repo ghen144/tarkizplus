@@ -13,136 +13,102 @@ import { getAuth } from "firebase/auth";
 
 const LessonLog = () => {
     const auth = getAuth();
-
-    // States for static data
-    const [teacherDocId, setTeacherDocId] = useState(""); // Logged-in teacher's doc ID
-    const [assignedStudentIds, setAssignedStudentIds] = useState([]);
+    const [lessons, setLessons] = useState([]);
     const [teachers, setTeachers] = useState({});
     const [students, setStudents] = useState({});
+    const [assignedStudentIds, setAssignedStudentIds] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [teacherDocId, setTeacherDocId] = useState(""); // Logged-in teacher's doc ID
 
-    // States for lessons and loading
-    const [lessons, setLessons] = useState([]);
-    const [loadingLessons, setLoadingLessons] = useState(true);
-
-    // State for the number of lessons to fetch (default 10)
-    const [lessonsLimit, setLessonsLimit] = useState(10);
-
-    // --- Fetch teacher data and static teachers/students maps (runs once) ---
     useEffect(() => {
-        const fetchStaticData = async () => {
+        const fetchData = async () => {
             try {
                 const user = auth.currentUser;
                 if (!user) {
                     console.error("No authenticated user found.");
+                    setLoading(false);
                     return;
                 }
 
-                // Fetch teacher document for the logged-in teacher (by email)
-                const teacherQuery = query(
-                    collection(db, "teachers"),
-                    where("email", "==", user.email)
+                // 1. Find the teacher's document based on the logged-in user's email
+                const teachersSnapshot = await getDocs(
+                    query(collection(db, "teachers"), where("email", "==", user.email))
                 );
-                const teacherSnapshot = await getDocs(teacherQuery);
-                if (teacherSnapshot.empty) {
+                if (teachersSnapshot.empty) {
                     console.error("No teacher found with this email.");
+                    setLoading(false);
                     return;
                 }
-                const teacherDoc = teacherSnapshot.docs[0];
-                setTeacherDocId(teacherDoc.id);
+
+                const teacherDoc = teachersSnapshot.docs[0];
+                setTeacherDocId(teacherDoc.id); // e.g. "T001"
+
                 const teacherData = teacherDoc.data();
                 const assignedStudents = teacherData.assigned_students || [];
                 setAssignedStudentIds(assignedStudents);
 
-                // Fetch all teachers map
-                const teachersSnapshot = await getDocs(collection(db, "teachers"));
-                const teachersMap = {};
-                teachersSnapshot.docs.forEach((doc) => {
-                    teachersMap[doc.id] = doc.data().name;
-                });
-                setTeachers(teachersMap);
-
-                // Fetch all students map
-                const studentsSnapshot = await getDocs(collection(db, "students"));
-                const studentsMap = {};
-                studentsSnapshot.docs.forEach((doc) => {
-                    studentsMap[doc.id] = doc.data().name;
-                });
-                setStudents(studentsMap);
-            } catch (error) {
-                console.error("Error fetching static data:", error);
-            }
-        };
-
-        fetchStaticData();
-    }, [auth]);
-
-    // --- Fetch lessons based on assignedStudentIds and lessonsLimit ---
-    useEffect(() => {
-        const fetchLessons = async () => {
-            setLoadingLessons(true);
-            try {
-                if (assignedStudentIds.length === 0) {
-                    // No assigned students—nothing to fetch
-                    setLessons([]);
+                if (assignedStudents.length === 0) {
+                    console.error("No assigned students found for this teacher.");
+                    setLoading(false);
                     return;
                 }
+
+                // 2. Fetch the 10 most recent lessons for assigned students
                 const lessonsQuery = query(
                     collection(db, "lessons"),
-                    where("student_id", "in", assignedStudentIds),
+                    where("student_id", "in", assignedStudents),
                     orderBy("lesson_date", "desc"),
-                    limit(lessonsLimit)
+                    limit(10)
                 );
                 const lessonsSnapshot = await getDocs(lessonsQuery);
+
                 const lessonsList = lessonsSnapshot.docs.map((doc) => ({
                     id: doc.id,
                     ...doc.data(),
                 }));
                 setLessons(lessonsList);
+
+                // 3. Fetch all teachers to display teacher names
+                const allTeachersSnapshot = await getDocs(collection(db, "teachers"));
+                const teachersMap = {};
+                allTeachersSnapshot.docs.forEach((doc) => {
+                    teachersMap[doc.id] = doc.data().name;
+                });
+                setTeachers(teachersMap);
+
+                // 4. Fetch all students to display student names
+                const allStudentsSnapshot = await getDocs(collection(db, "students"));
+                const studentsMap = {};
+                allStudentsSnapshot.docs.forEach((doc) => {
+                    studentsMap[doc.id] = doc.data().name;
+                });
+                setStudents(studentsMap);
             } catch (error) {
                 console.error("Error fetching lessons:", error);
             } finally {
-                setLoadingLessons(false);
+                setLoading(false);
             }
         };
 
-        fetchLessons();
-    }, [assignedStudentIds, lessonsLimit]);
+        fetchData();
+    }, [auth]);
 
     return (
         <div className="p-6">
             <h2 className="text-xl font-bold mb-4">Recent Lessons</h2>
 
-            {/* Controls: Add Button and Lessons Limit Dropdown */}
-            <div className="flex flex-col sm:flex-row gap-4 mb-4 items-center justify-between">
+            {/* Add Button */}
+            <div className="flex gap-4 mb-4">
                 <Link
                     to="/lesson-log/add"
                     className="text-blue-500 hover:underline flex items-center gap-1"
                 >
                     ➕ <span>add</span>
                 </Link>
-
-                {/* Dropdown for selecting the number of lessons to display */}
-                <div className="flex items-center gap-2">
-                    <label htmlFor="lessonsLimit" className="text-sm">
-                        Show
-                    </label>
-                    <select
-                        id="lessonsLimit"
-                        value={lessonsLimit}
-                        onChange={(e) => setLessonsLimit(parseInt(e.target.value, 10))}
-                        className="border rounded p-1"
-                    >
-                        <option value={10}>10</option>
-                        <option value={20}>20</option>
-                        <option value={50}>50</option>
-                        <option value={100}>100</option>
-                    </select>
-                    <span className="text-sm">lessons</span>
-                </div>
             </div>
 
             <div className="bg-gray-100 p-4 rounded-lg shadow-md">
-                {loadingLessons ? (
+                {loading ? (
                     <p>Loading lessons...</p>
                 ) : (
                     <table className="w-full border-collapse">
@@ -152,7 +118,6 @@ const LessonLog = () => {
                             <th className="text-left p-2">Subject</th>
                             <th className="text-left p-2">Teacher</th>
                             <th className="text-left p-2">Student(s)</th>
-                            {/* Empty header for the final column */}
                             <th className="p-2"></th>
                         </tr>
                         </thead>
@@ -172,12 +137,14 @@ const LessonLog = () => {
                                         <td className="p-2">
                                             {students[lesson.student_id] || "Unknown Student"}
                                         </td>
-                                        {/* Final cell: "show more" on the left, edit icon on the right */}
                                         <td className="p-2">
                                             <div className="flex items-center justify-between w-full">
-                          <span className="text-blue-500 cursor-pointer">
-                            show more
-                          </span>
+                                                <Link
+                                                    to={`/lesson-log/${lesson.id}/details`}
+                                                    className="text-blue-500 hover:underline cursor-pointer"
+                                                >
+                                                    show more
+                                                </Link>
                                                 {canEdit && (
                                                     <Link
                                                         to={`/lesson-log/${lesson.id}/edit`}

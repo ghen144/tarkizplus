@@ -10,6 +10,7 @@ import AddLesson from './AddLesson';
 import EditLesson from './EditLesson';
 import TeacherProfile from './TeacherProfile';
 import AppSettings from './AppSettings';
+import LessonDetails from './LessonDetails';
 
 function AppLayout() {
     const location = useLocation();
@@ -35,6 +36,8 @@ function AppLayout() {
                         <Route path="/lesson-log/:lessonId/edit" element={<EditLesson />} />
                         <Route path="/profile" element={<TeacherProfile />} />
                         <Route path="/settings" element={<AppSettings />} />
+                        <Route path="/lesson-log/:lessonId/details" element={<LessonDetails />} />
+
 
                     </Routes>
                 </div>
