@@ -1,78 +1,86 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { db } from './firebase'; // Update to your firebase.js path
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { db } from "./firebase"; // Adjust your Firebase config path
 import {
     collection,
+    doc,
     getDocs,
-    addDoc,
+    setDoc,
     serverTimestamp,
     query,
-    where
-} from 'firebase/firestore';
+    where,
+} from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
-function AddLesson() {
+function AddMultipleLessons() {
     const navigate = useNavigate();
     const auth = getAuth();
     const user = auth.currentUser;
 
-    // State variables
-    const [assignedStudents, setAssignedStudents] = useState([]);
-    const [selectedStudent, setSelectedStudent] = useState('');
-    const [subject, setSubject] = useState('');
-    const [date, setDate] = useState('');
-    const [duration, setDuration] = useState('');
-    const [lessonNotes, setLessonNotes] = useState('');
-    const [progressAssessment, setProgressAssessment] = useState('');
-    const [studentNum, setStudentNum] = useState('1');
     const [teacherId, setTeacherId] = useState(null);
+    const [assignedStudents, setAssignedStudents] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // Fetch assigned students
+    // Single date/time for ALL rows
+    const [lessonDate, setLessonDate] = useState("");
+    const [lessonTime, setLessonTime] = useState("");
+
+    // Each row: { student_id, subject, duration, notes, progress }
+    // We share date/time at the top, so each row only has fields unique to that row.
+    const [lessonRows, setLessonRows] = useState([
+        {
+            student_id: "",
+            subject: "",
+            duration: "",
+            notes: "",
+            progress: ""
+        }
+    ]);
+
+    // 1. Fetch teacher doc & assigned students
     useEffect(() => {
         const fetchAssignedStudents = async () => {
             if (!user) {
                 console.error("❌ No user is logged in.");
+                setLoading(false);
                 return;
             }
-
-            console.log("🔹 Logged in as:", user.email);
             setLoading(true);
 
             try {
-                // Get the teacher's document using their email
-                const teachersSnapshot = await getDocs(
-                    query(collection(db, "teachers"), where("email", "==", user.email))
+                console.log("🔹 Attempting to fetch teacher doc for:", user.email);
+                const qTeachers = query(
+                    collection(db, "teachers"),
+                    where("email", "==", user.email)
                 );
-
-                if (teachersSnapshot.empty) {
+                const teacherSnap = await getDocs(qTeachers);
+                if (teacherSnap.empty) {
                     console.error("❌ No teacher found for this email.");
                     setLoading(false);
                     return;
                 }
 
-                const teacherDoc = teachersSnapshot.docs[0];
+                const teacherDoc = teacherSnap.docs[0];
+                setTeacherId(teacherDoc.id);
+                console.log("✅ Found teacher with ID:", teacherDoc.id);
+
                 const teacherData = teacherDoc.data();
-                setTeacherId(teacherDoc.id);  // Store teacher ID
-
-                console.log("✅ Teacher found:", teacherData);
-
-                // Get assigned students list
                 const assignedStudentIds = teacherData.assigned_students || [];
-                console.log("🎯 Assigned Students:", assignedStudentIds);
+                console.log("🔹 assigned_student_ids:", assignedStudentIds);
 
-                // Fetch student details from Firestore
-                const studentsSnapshot = await getDocs(collection(db, "students"));
-                const studentList = studentsSnapshot.docs
-                    .filter(doc => assignedStudentIds.includes(doc.id))  // Keep only assigned students
-                    .map(doc => ({
+                // Fetch the assigned students
+                const allStudentsSnap = await getDocs(collection(db, "students"));
+                const studentList = allStudentsSnap.docs
+                    .filter((doc) => assignedStudentIds.includes(doc.id))
+                    .map((doc) => ({
                         id: doc.id,
-                        name: doc.data().name
+                        name: doc.data().name || "Unnamed Student"
                     }));
 
                 setAssignedStudents(studentList);
+                console.log("✅ assignedStudents:", studentList);
             } catch (error) {
-                console.error("❌ Error fetching assigned students:", error);
+                console.error("Error fetching teacher/students:", error);
             } finally {
                 setLoading(false);
             }
@@ -81,143 +89,212 @@ function AddLesson() {
         fetchAssignedStudents();
     }, [user]);
 
-    // Handle Form Submission
+    // 2. Handlers for dynamic rows
+    const handleAddRow = () => {
+        setLessonRows((prev) => [
+            ...prev,
+            {
+                student_id: "",
+                subject: "",
+                duration: "",
+                notes: "",
+                progress: ""
+            }
+        ]);
+    };
+
+    const handleRemoveRow = (index) => {
+        setLessonRows((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    const handleRowChange = (index, field, value) => {
+        setLessonRows((prev) =>
+            prev.map((row, i) => (i === index ? { ...row, [field]: value } : row))
+        );
+    };
+
+    // 3. Submit: create separate lesson docs for each row, storing lesson_id == docRef.id
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!selectedStudent || !teacherId) {
-            console.error("❌ Missing student or teacher ID.");
+        if (!teacherId) {
+            console.error("❌ Missing teacher ID. Is the teacher doc loaded?");
             return;
         }
 
         try {
-            // Convert date string into Date object
-            const dateObj = date ? new Date(date) : null;
+            // Combine the date and time into a single Date object if provided
+            let finalDate = null;
+            if (lessonDate) {
+                if (lessonTime) {
+                    const dateTimeString = `${lessonDate}T${lessonTime}`;
+                    finalDate = new Date(dateTimeString);
+                } else {
+                    finalDate = new Date(lessonDate);
+                }
+            }
 
-            // Add lesson to Firestore
-            await addDoc(collection(db, 'lessons'), {
-                student_id: selectedStudent,  // Store student's ID
-                teacher_id: teacherId,        // Store teacher's ID
-                subject,
-                lesson_date: dateObj || serverTimestamp(),
-                duration_minutes: parseInt(duration, 10) || 0,
-                lesson_notes: lessonNotes,
-                progress_assessment: progressAssessment,
-                student_num: parseInt(studentNum, 10),
-                created_at: serverTimestamp(),
-            });
+            console.log("🔹 Submitting multi-row lessons...");
+            console.log("🔹 Teacher ID:", teacherId);
+            console.log("🔹 finalDate:", finalDate?.toString() || "serverTimestamp()");
+            console.log("🔹 lessonRows:", lessonRows);
 
-            console.log("✅ Lesson successfully added!");
-            navigate('/lesson-log');
+            for (const [rowIndex, row] of lessonRows.entries()) {
+                if (!row.student_id) {
+                    console.warn(`Row #${rowIndex + 1} skipped: no student selected.`);
+                    continue;
+                }
+
+                console.log(
+                    `🔸 Creating doc for row #${rowIndex + 1}, student=${row.student_id}, subject=${row.subject}, notes=${row.notes}`
+                );
+
+                // Create a new doc reference so we can set docRef.id as lesson_id
+                const newDocRef = doc(collection(db, "lessons"));
+
+                await setDoc(newDocRef, {
+                    lesson_id: newDocRef.id,  // Store docRef.id as lesson_id
+                    teacher_id: teacherId,
+                    student_id: row.student_id,
+                    subject: row.subject || "",
+                    lesson_date: finalDate || serverTimestamp(),
+                    duration_minutes: parseInt(row.duration, 10) || 0,
+                    lesson_notes: row.notes || "",
+                    progress_assessment: row.progress || "",
+                    student_num: lessonRows.length,
+                    created_at: serverTimestamp(),
+                });
+            }
+
+            console.log("✅ Lessons added for each row!");
+            navigate("/lesson-log");
         } catch (error) {
-            console.error("❌ Error adding lesson:", error);
+            console.error("❌ Error adding lessons:", error);
         }
     };
 
+    if (loading) {
+        return <p className="p-6">Loading assigned students...</p>;
+    }
+
     return (
         <div className="min-h-screen bg-gray-50 p-6">
-            <h2 className="text-2xl font-bold mb-4">Add Lesson</h2>
+            <h2 className="text-2xl font-bold mb-4">Add Multiple Lessons</h2>
 
-            <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow max-w-lg">
-                {/* Student Dropdown */}
-                <label className="block mb-2 font-semibold">Student</label>
-                {loading ? (
-                    <p>Loading students...</p>
-                ) : (
-                    <select
-                        className="w-full p-2 mb-4 border rounded bg-white text-black"
-                        value={selectedStudent}
-                        onChange={(e) => setSelectedStudent(e.target.value)}
-                        required
+            <form
+                onSubmit={handleSubmit}
+                className="bg-white p-6 rounded-lg shadow max-w-3xl"
+            >
+                {/* Date/Time for ALL rows */}
+                <div className="mb-6 p-4 bg-gray-50 rounded">
+                    <label className="block mb-2 font-semibold">Lesson Date</label>
+                    <input
+                        type="date"
+                        className="w-full p-2 mb-4 border rounded"
+                        value={lessonDate}
+                        onChange={(e) => setLessonDate(e.target.value)}
+                    />
+
+                    <label className="block mb-2 font-semibold">Begin Time</label>
+                    <input
+                        type="time"
+                        className="w-full p-2 mb-4 border rounded"
+                        value={lessonTime}
+                        onChange={(e) => setLessonTime(e.target.value)}
+                    />
+                </div>
+
+                {/* Rows */}
+                {lessonRows.map((row, index) => (
+                    <div
+                        key={index}
+                        className="border rounded p-4 mb-4 bg-gray-50 relative"
                     >
-                        <option value="">-- Select a Student --</option>
-                        {assignedStudents.map(stu => (
-                            <option key={stu.id} value={stu.id}>
-                                {stu.name || `Student ID: ${stu.id}`}
-                            </option>
-                        ))}
-                    </select>
-                )}
+                        {lessonRows.length > 1 && (
+                            <button
+                                type="button"
+                                onClick={() => handleRemoveRow(index)}
+                                className="absolute top-2 right-2 text-red-500"
+                            >
+                                Remove
+                            </button>
+                        )}
 
-                {/* Subject Dropdown */}
-                <label className="block mb-2 font-semibold">Subject</label>
-                <select
-                    className="w-full p-2 mb-4 border rounded bg-white text-black"
-                    value={subject}
-                    onChange={(e) => setSubject(e.target.value)}
-                    required
+                        <label className="block mb-2 font-semibold">Student</label>
+                        <select
+                            className="w-full p-2 mb-4 border rounded"
+                            value={row.student_id}
+                            onChange={(e) =>
+                                handleRowChange(index, "student_id", e.target.value)
+                            }
+                            required
+                        >
+                            <option value="">-- Select a Student --</option>
+                            {assignedStudents.map((stu) => (
+                                <option key={stu.id} value={stu.id}>
+                                    {stu.name}
+                                </option>
+                            ))}
+                        </select>
+
+                        <label className="block mb-2 font-semibold">Subject</label>
+                        <select
+                            className="w-full p-2 mb-4 border rounded"
+                            value={row.subject}
+                            onChange={(e) => handleRowChange(index, "subject", e.target.value)}
+                        >
+                            <option value="">-- Select Subject --</option>
+                            <option value="Math">Math</option>
+                            <option value="Hebrew">Hebrew</option>
+                            <option value="Arabic">Arabic</option>
+                            <option value="English">English</option>
+                        </select>
+
+                        <label className="block mb-2 font-semibold">Duration (minutes)</label>
+                        <input
+                            type="number"
+                            className="w-full p-2 mb-4 border rounded"
+                            value={row.duration}
+                            onChange={(e) => handleRowChange(index, "duration", e.target.value)}
+                            placeholder="e.g. 60"
+                        />
+
+                        <label className="block mb-2 font-semibold">Lesson Notes</label>
+                        <textarea
+                            className="w-full p-2 mb-4 border rounded"
+                            value={row.notes}
+                            onChange={(e) => handleRowChange(index, "notes", e.target.value)}
+                            placeholder="Notes..."
+                        />
+
+                        <label className="block mb-2 font-semibold">Progress Assessment</label>
+                        <input
+                            type="text"
+                            className="w-full p-2 mb-4 border rounded"
+                            value={row.progress}
+                            onChange={(e) => handleRowChange(index, "progress", e.target.value)}
+                            placeholder="e.g. Good, Needs Improvement, etc."
+                        />
+                    </div>
+                ))}
+
+                <button
+                    type="button"
+                    onClick={handleAddRow}
+                    className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mr-4"
                 >
-                    <option value="">-- Select Subject --</option>
-                    <option value="Math">Math</option>
-                    <option value="Hebrew">Hebrew</option>
-                    <option value="Arabic">Arabic</option>
-                    <option value="English">English</option>
-                </select>
+                    + Add Row
+                </button>
 
-                {/* Date Picker */}
-                <label className="block mb-2 font-semibold">Date</label>
-                <input
-                    type="date"
-                    className="w-full p-2 mb-4 border rounded bg-white text-black"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    required
-                />
-
-                {/* Duration Input */}
-                <label className="block mb-2 font-semibold">Duration (minutes)</label>
-                <input
-                    type="number"
-                    className="w-full p-2 mb-4 border rounded bg-white text-black"
-                    value={duration}
-                    onChange={(e) => setDuration(e.target.value)}
-                    placeholder="e.g. 60"
-                    required
-                />
-
-                {/* Lesson Notes */}
-                <label className="block mb-2 font-semibold">Lesson Notes</label>
-                <textarea
-                    className="w-full p-2 mb-4 border rounded bg-white text-black"
-                    value={lessonNotes}
-                    onChange={(e) => setLessonNotes(e.target.value)}
-                    placeholder="Notes about the lesson..."
-                />
-
-                {/* Progress Assessment */}
-                <label className="block mb-2 font-semibold">Progress Assessment</label>
-                <input
-                    type="text"
-                    className="w-full p-2 mb-4 border rounded bg-white text-black"
-                    value={progressAssessment}
-                    onChange={(e) => setProgressAssessment(e.target.value)}
-                    placeholder="e.g. Good, Needs Improvement, etc."
-                />
-
-                {/* Student Number (1-5) */}
-                <label className="block mb-2 font-semibold">Student Number</label>
-                <select
-                    className="w-full p-2 mb-4 border rounded bg-white text-black"
-                    value={studentNum}
-                    onChange={(e) => setStudentNum(e.target.value)}
-                >
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5</option>
-                </select>
-
-                {/* Submit Button */}
                 <button
                     type="submit"
                     className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
                 >
-                    Save Lesson
+                    Save All Lessons
                 </button>
             </form>
         </div>
     );
 }
 
-export default AddLesson;
+export default AddMultipleLessons;
