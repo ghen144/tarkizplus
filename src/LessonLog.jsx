@@ -11,8 +11,10 @@ import {
 } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
+
 // Predefined subject options (adjust as needed)
 const SUBJECT_OPTIONS = ["Math", "English", "Hebrew", "Arabic"];
+
 
 const LessonLog = () => {
     const auth = getAuth();
@@ -90,7 +92,6 @@ const LessonLog = () => {
                 setLoading(true);
                 const lessonsQuery = query(
                     collection(db, "lessons"),
-                    where("student_id", "in", assignedStudentIds),
                     orderBy("lesson_date", "desc"),
                     limit(lessonsLimit)  // <-- IMPORTANT: now we use lessonsLimit here
                 );
