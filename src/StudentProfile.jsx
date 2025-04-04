@@ -22,9 +22,35 @@ const StudentProfile = () => {
     const [teachersMap, setTeachersMap] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [selectedTeacher, setSelectedTeacher] = useState("");
-    const [selectedSubject, setSelectedSubject] = useState("");    
+    const [selectedTeacherFilters, setSelectedTeacherFilters] = useState([]);
+    const [selectedSubjectFilters, setSelectedSubjectFilters] = useState([]);       
     const [selectedDate, setSelectedDate] = useState("");
+    const [sortOrder, setSortOrder] = useState("desc"); // "desc" = newest first
+    const handleAddTeacherFilter = (e) => {
+        const teacherName = e.target.value;
+        if (teacherName && !selectedTeacherFilters.includes(teacherName)) {
+            setSelectedTeacherFilters((prev) => [...prev, teacherName]);
+        }
+        e.target.value = "";
+    };
+    
+    const handleAddSubjectFilter = (e) => {
+        const subject = e.target.value;
+        if (subject && !selectedSubjectFilters.includes(subject)) {
+            setSelectedSubjectFilters((prev) => [...prev, subject]);
+        }
+        e.target.value = "";
+    };
+    
+    const removeTeacherFilter = (name) => {
+        setSelectedTeacherFilters((prev) => prev.filter((t) => t !== name));
+    };
+    
+    const removeSubjectFilter = (subject) => {
+        setSelectedSubjectFilters((prev) => prev.filter((s) => s !== subject));
+    };
+    
+
 
 
     useEffect(() => {
@@ -135,6 +161,12 @@ const StudentProfile = () => {
 
     // Helper for lesson date
     const formatDate = (ts) => (ts ? ts.toDate().toLocaleDateString() : "No date");
+    const sortedLessons = [...lessons].sort((a, b) => {
+        const dateA = a.lesson_date?.toDate();
+        const dateB = b.lesson_date?.toDate();
+        if (!dateA || !dateB) return 0;
+        return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
+        });
 
     return (
         <div className="flex min-h-screen bg-gray-50">
@@ -206,31 +238,50 @@ const StudentProfile = () => {
 
                     {/* Filter Controls */}
                 <div className="flex flex-wrap gap-4 mb-4">
+
+
                     {/* Filter by Teacher */}
-                    <select
-                    value={selectedTeacher}
-                    onChange={(e) => setSelectedTeacher(e.target.value)}
-                    className="p-2 border rounded bg-white text-gray-700"
-                    >
-                    <option value="">All Teachers</option>
+                    {/* Teacher Filter */}
+                <div>
+                    <p className="font-medium mb-1">Teacher</p>
+                    <select onChange={handleAddTeacherFilter} className="p-2 border rounded text-sm">
+                    <option value="">Select</option>
                     {Object.entries(teachersMap).map(([id, name]) => (
                     <option key={id} value={name}>{name}</option>
                     ))}
                     </select>
 
+                    <div className="mt-2 flex flex-wrap gap-2">
+                    {selectedTeacherFilters.map((name) => (
+                    <span key={name} className="bg-blue-200 text-blue-800 rounded px-2 py-1 text-sm flex items-center">
+                    {name}
+                    <button onClick={() => removeTeacherFilter(name)} className="ml-1 text-blue-600 font-bold">&times;</button>
+                    </span>
+                    ))}
+                    </div>
+                </div>
 
 
-                     {/* Filter by Subject */}
-                     <select
-                     value={selectedSubject}
-                     onChange={(e) => setSelectedSubject(e.target.value)}
-                     className="p-2 border rounded bg-white text-gray-700"
-                     >
-                     <option value="">All Subjects</option>
-                     {[...new Set(lessons.map((l) => l.subject))].map((subject) => (
-                     <option key={subject} value={subject}>{subject}</option>
-                     ))}
+                    {/* Subject Filter */}
+                <div>
+                    <p className="font-medium mb-1">Subject</p>
+                    <select onChange={handleAddSubjectFilter} className="p-2 border rounded text-sm">
+                    <option value="">Select</option>
+                    {[...new Set(lessons.map((l) => l.subject))].map((subject) => (
+                    <option key={subject} value={subject}>{subject}</option>
+                    ))}
                     </select>
+
+                    <div className="mt-2 flex flex-wrap gap-2">
+                    {selectedSubjectFilters.map((subject) => (
+                    <span key={subject} className="bg-green-200 text-green-800 rounded px-2 py-1 text-sm flex items-center">
+                    {subject}
+                    <button onClick={() => removeSubjectFilter(subject)} className="ml-1 text-green-600 font-bold">&times;</button>
+                    </span>
+                    ))}
+                    </div>
+                </div>
+
 
 
 
@@ -241,6 +292,15 @@ const StudentProfile = () => {
                            onChange={(e) => setSelectedDate(e.target.value)}
                            className="p-2 border rounded"
                        />
+
+                    {/* Sort button */}
+                        <button
+                        onClick={() => setSortOrder((prev) => (prev === "desc" ? "asc" : "desc"))}
+                        className="p-2 border rounded bg-white text-gray-700 hover:bg-gray-100"
+                        >
+                        {sortOrder === "desc" ? "Sort: Newest First" : "Sort: Oldest First"}
+                        </button>
+
     </div>
 
                     <div className="overflow-x-auto">
@@ -266,15 +326,17 @@ const StudentProfile = () => {
                                 </tr>
                                 </thead>
                                 <tbody>
-                                {lessons.filter((lesson) => {
-                                  const teacherName = teachersMap[lesson.teacher_id] || lesson.teacher_id;
-                                  const dateString = lesson.lesson_date?.toDate().toISOString().split("T")[0];
-                                  return (
-                                    (!selectedTeacher || teacherName === selectedTeacher) &&
-                                    (!selectedSubject || lesson.subject === selectedSubject)&&
-                                    (!selectedDate || selectedDate === dateString)
-                                         );
-                                         }).map((lesson) => {
+                                
+
+                                {sortedLessons.filter((lesson) => {
+                                const teacherName = teachersMap[lesson.teacher_id] || lesson.teacher_id;
+                                const dateString = lesson.lesson_date?.toDate().toISOString().split("T")[0];
+                                 return (
+                                (selectedTeacherFilters.length === 0 || selectedTeacherFilters.includes(teacherName)) &&
+                                (selectedSubjectFilters.length === 0 || selectedSubjectFilters.includes(lesson.subject)) &&
+                                (!selectedDate || selectedDate === dateString)
+                                );
+                                }).map((lesson) => {
 
                                     const teacherName =
                                         teachersMap[lesson.teacher_id] || lesson.teacher_id || "No teacher";
