@@ -7,37 +7,54 @@ import {
     getDocs,
     query,
     where,
-    orderBy
+    orderBy,
+    addDoc,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import Sidebar from "./Sidebar";
-import { ArrowLeft, BookOpen, AlertCircle, User, Smartphone, Calendar, ClipboardList } from "lucide-react";
-import { addDoc } from "firebase/firestore"; // تأكدي أنك مستوردة addDoc
+import {
+    ArrowLeft,
+    BookOpen,
+    AlertCircle,
+    User,
+    Smartphone,
+    Calendar,
+    ClipboardList,
+    // FIX #1: Import CheckCircle here
+    CheckCircle,
+} from "lucide-react";
+
 const StudentProfile = () => {
     const navigate = useNavigate();
     const { studentId } = useParams();
+
     const [studentData, setStudentData] = useState(null);
     const [lessons, setLessons] = useState([]);
     const [teachersMap, setTeachersMap] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    // Filters
     const [selectedTeacherFilters, setSelectedTeacherFilters] = useState([]);
     const [selectedSubjectFilters, setSelectedSubjectFilters] = useState([]);
     const [selectedDate, setSelectedDate] = useState("");
-    const [sortOrder, setSortOrder] = useState("desc"); // "desc" = newest first
-    const [exams, setExams] = useState([]); 
+    const [sortOrder, setSortOrder] = useState("desc");
+
+    // Exams
+    const [exams, setExams] = useState([]);
     const [showExamForm, setShowExamForm] = useState(false);
     const [newExam, setNewExam] = useState({
         subject: "",
         exam_date: "",
         material: "",
     });
+
     const handleSaveExam = async () => {
         if (!newExam.subject || !newExam.exam_date || !newExam.material) {
             alert("Please fill in all exam fields.");
             return;
         }
-    
+
         try {
             const examDateTimestamp = new Date(newExam.exam_date);
             await addDoc(collection(db, "exams"), {
@@ -49,8 +66,8 @@ const StudentProfile = () => {
             alert("Exam added successfully!");
             setShowExamForm(false);
             setNewExam({ subject: "", exam_date: "", material: "" });
-    
-            // إعادة تحميل الامتحانات بعد الإضافة:
+
+            // Reload exams after adding
             const updatedSnapshot = await getDocs(
                 query(collection(db, "exams"), where("student_id", "==", studentId))
             );
@@ -64,7 +81,6 @@ const StudentProfile = () => {
             alert("Failed to add exam.");
         }
     };
-    
 
     const handleAddTeacherFilter = (e) => {
         const teacherName = e.target.value;
@@ -89,9 +105,6 @@ const StudentProfile = () => {
     const removeSubjectFilter = (subject) => {
         setSelectedSubjectFilters((prev) => prev.filter((s) => s !== subject));
     };
-
-
-
 
     useEffect(() => {
         const fetchStudentDataAndLessons = async () => {
@@ -134,19 +147,18 @@ const StudentProfile = () => {
                     tMap[tdoc.id] = tData.name || "Unnamed Teacher";
                 });
                 setTeachersMap(tMap);
+
                 // 4. Fetch exams for this student
                 const examsQuery = query(
-                collection(db, "exams"),
-                where("student_id", "==", studentId)
+                    collection(db, "exams"),
+                    where("student_id", "==", studentId)
                 );
                 const examsSnapshot = await getDocs(examsQuery);
                 const examsList = examsSnapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
+                    id: doc.id,
+                    ...doc.data(),
                 }));
                 setExams(examsList);
-  
-
             } catch (err) {
                 console.error("Error fetching student/lessons:", err);
                 setError(`Error loading data: ${err.message}`);
@@ -195,12 +207,13 @@ const StudentProfile = () => {
         );
     }
 
-    // Extract fields you want to display (adjust as needed)
+    // Destructure fields from the student doc
+    // FIX #2: Use 'learning_difficulties' (plural) if that's what's in Firestore
     const {
         name,
         grade,
         subjects,
-        learning_difficulty,
+        learning_difficulties,
         parent_phone_number,
         PreferredLearningStyle,
         engagement_level,
@@ -219,6 +232,8 @@ const StudentProfile = () => {
 
     // Helper for lesson date
     const formatDate = (ts) => (ts ? ts.toDate().toLocaleDateString() : "No date");
+
+    // Sorting lessons
     const sortedLessons = [...lessons].sort((a, b) => {
         const dateA = a.lesson_date?.toDate();
         const dateB = b.lesson_date?.toDate();
@@ -253,7 +268,7 @@ const StudentProfile = () => {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div><strong>Preferred Learning Style:</strong> {PreferredLearningStyle || "N/A"}</div>
-                        <div><strong>Learning Difficulty:</strong> {learning_difficulty || "No"}</div>
+                        <div><strong>Learning Difficulties:</strong> {learning_difficulties || "No"}</div>
                         <div><strong>Private / Group Lessons:</strong> {private_or_group_lessons || "N/A"}</div>
                         <div><strong>Reading Accommodation:</strong> {reading_accommodation ? "Yes" : "No"}</div>
                         <div><strong>Oral Response Allowed:</strong> {oral_response_allowed ? "Yes" : "No"}</div>
@@ -282,13 +297,12 @@ const StudentProfile = () => {
                         <Calendar className="h-5 w-5 text-blue-500" />
                         <h2 className="text-2xl font-bold">Lesson History</h2>
                     </div>
-                    <p className="text-sm text-gray-500 mb-2">You can filter by one or more teachers or subjects:</p>
+                    <p className="text-sm text-gray-500 mb-2">
+                        You can filter by one or more teachers or subjects:
+                    </p>
 
                     {/* Filter Controls */}
                     <div className="flex flex-wrap gap-4 mb-4">
-
-
-                        {/* Filter by Teacher */}
                         {/* Teacher Filter */}
                         <div>
                             <p className="font-medium mb-1">Teacher</p>
@@ -298,17 +312,23 @@ const StudentProfile = () => {
                                     <option key={id} value={name}>{name}</option>
                                 ))}
                             </select>
-
                             <div className="mt-2 flex flex-wrap gap-2">
                                 {selectedTeacherFilters.map((name) => (
-                                    <span key={name} className="bg-blue-200 text-blue-800 rounded px-2 py-1 text-sm flex items-center">
+                                    <span
+                                        key={name}
+                                        className="bg-blue-200 text-blue-800 rounded px-2 py-1 text-sm flex items-center"
+                                    >
                     {name}
-                                        <button onClick={() => removeTeacherFilter(name)} className="ml-1 text-blue-600 font-bold">&times;</button>
-                    </span>
+                                        <button
+                                            onClick={() => removeTeacherFilter(name)}
+                                            className="ml-1 text-blue-600 font-bold"
+                                        >
+                      &times;
+                    </button>
+                  </span>
                                 ))}
                             </div>
                         </div>
-
 
                         {/* Subject Filter */}
                         <div>
@@ -319,17 +339,25 @@ const StudentProfile = () => {
                                     <option key={subject} value={subject}>{subject}</option>
                                 ))}
                             </select>
-
                             <div className="mt-2 flex flex-wrap gap-2">
                                 {selectedSubjectFilters.map((subject) => (
-                                    <span key={subject} className="bg-green-200 text-green-800 rounded px-2 py-1 text-sm flex items-center">
+                                    <span
+                                        key={subject}
+                                        className="bg-green-200 text-green-800 rounded px-2 py-1 text-sm flex items-center"
+                                    >
                     {subject}
-                                        <button onClick={() => removeSubjectFilter(subject)} className="ml-1 text-green-600 font-bold">&times;</button>
-                    </span>
+                                        <button
+                                            onClick={() => removeSubjectFilter(subject)}
+                                            className="ml-1 text-green-600 font-bold"
+                                        >
+                      &times;
+                    </button>
+                  </span>
                                 ))}
                             </div>
                         </div>
-                        {/* Filter by Date */}
+
+                        {/* Date Filter */}
                         <input
                             type="date"
                             value={selectedDate}
@@ -337,14 +365,13 @@ const StudentProfile = () => {
                             className="p-2 border rounded"
                         />
 
-                        {/* Sort button */}
+                        {/* Sort Button */}
                         <button
                             onClick={() => setSortOrder((prev) => (prev === "desc" ? "asc" : "desc"))}
                             className="p-2 border rounded bg-white text-gray-700 hover:bg-gray-100"
                         >
                             {sortOrder === "desc" ? "Sort: Newest First" : "Sort: Oldest First"}
                         </button>
-
                     </div>
 
                     <div className="overflow-x-auto">
@@ -370,41 +397,43 @@ const StudentProfile = () => {
                                 </tr>
                                 </thead>
                                 <tbody>
-
-
-                                {sortedLessons.filter((lesson) => {
-                                    const teacherName = teachersMap[lesson.teacher_id] || lesson.teacher_id;
-                                    const dateString = lesson.lesson_date?.toDate().toISOString().split("T")[0];
-                                    return (
-                                        (selectedTeacherFilters.length === 0 || selectedTeacherFilters.includes(teacherName)) &&
-                                        (selectedSubjectFilters.length === 0 || selectedSubjectFilters.includes(lesson.subject)) &&
-                                        (!selectedDate || selectedDate === dateString)
-                                    );
-                                }).map((lesson) => {
-
-                                    const teacherName =
-                                        teachersMap[lesson.teacher_id] || lesson.teacher_id || "No teacher";
-
-                                    return (
-                                        <tr key={lesson.id} className="hover:bg-gray-50">
-                                            <td className="px-6 py-4 border-b border-gray-200">
-                                                {formatDate(lesson.lesson_date)}
-                                            </td>
-                                            <td className="px-6 py-4 border-b border-gray-200">
-                                                {teacherName}
-                                            </td>
-                                            <td className="px-6 py-4 border-b border-gray-200">
-                                                {lesson.subject || "No subject"}
-                                            </td>
-                                            <td className="px-6 py-4 border-b border-gray-200">
-                                                {lesson.lesson_notes || "No notes"}
-                                            </td>
-                                            <td className="px-6 py-4 border-b border-gray-200">
-                                                {lesson.progress_assessment || "No Progress"}
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
+                                {sortedLessons
+                                    .filter((lesson) => {
+                                        const teacherName =
+                                            teachersMap[lesson.teacher_id] || lesson.teacher_id;
+                                        const dateString =
+                                            lesson.lesson_date?.toDate().toISOString().split("T")[0];
+                                        return (
+                                            (selectedTeacherFilters.length === 0 ||
+                                                selectedTeacherFilters.includes(teacherName)) &&
+                                            (selectedSubjectFilters.length === 0 ||
+                                                selectedSubjectFilters.includes(lesson.subject)) &&
+                                            (!selectedDate || selectedDate === dateString)
+                                        );
+                                    })
+                                    .map((lesson) => {
+                                        const teacherName =
+                                            teachersMap[lesson.teacher_id] || lesson.teacher_id || "No teacher";
+                                        return (
+                                            <tr key={lesson.id} className="hover:bg-gray-50">
+                                                <td className="px-6 py-4 border-b border-gray-200">
+                                                    {formatDate(lesson.lesson_date)}
+                                                </td>
+                                                <td className="px-6 py-4 border-b border-gray-200">
+                                                    {teacherName}
+                                                </td>
+                                                <td className="px-6 py-4 border-b border-gray-200">
+                                                    {lesson.subject || "No subject"}
+                                                </td>
+                                                <td className="px-6 py-4 border-b border-gray-200">
+                                                    {lesson.lesson_notes || "No notes"}
+                                                </td>
+                                                <td className="px-6 py-4 border-b border-gray-200">
+                                                    {lesson.progress_assessment || "No Progress"}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         ) : (
@@ -414,101 +443,100 @@ const StudentProfile = () => {
                 </div>
 
                 {/* Exam Table */}
-<div className="bg-white p-6 rounded-lg shadow mt-6">
-<div className="flex items-center gap-2 mb-4">
-  <ClipboardList className="h-5 w-5 text-blue-500" />
-  <h2 className="text-xl font-semibold">Exams</h2>
-</div>
-  {exams.length > 0 ? (
-    <table className="min-w-full bg-white">
-      <thead>
-        <tr>
-          <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-            Subject
-          </th>
-          <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-            Exam Date
-          </th>
-          <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-            Material
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-      {exams.map((exam) => {
-  let examDate = "No date";
+                <div className="bg-white p-6 rounded-lg shadow mt-6">
+                    <div className="flex items-center gap-2 mb-4">
+                        <ClipboardList className="h-5 w-5 text-blue-500" />
+                        <h2 className="text-xl font-semibold">Exams</h2>
+                    </div>
+                    {exams.length > 0 ? (
+                        <table className="min-w-full bg-white">
+                            <thead>
+                            <tr>
+                                <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    Subject
+                                </th>
+                                <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    Exam Date
+                                </th>
+                                <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    Material
+                                </th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {exams.map((exam) => {
+                                let examDate = "No date";
+                                if (exam.exam_date && typeof exam.exam_date.toDate === "function") {
+                                    examDate = exam.exam_date.toDate().toLocaleDateString("en-GB");
+                                }
+                                return (
+                                    <tr key={exam.id} className="hover:bg-gray-50">
+                                        <td className="px-6 py-4 border-b border-gray-200">
+                                            {exam.subject}
+                                        </td>
+                                        <td className="px-6 py-4 border-b border-gray-200">
+                                            {examDate}
+                                        </td>
+                                        <td className="px-6 py-4 border-b border-gray-200">
+                                            {exam.material}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                            </tbody>
+                        </table>
+                    ) : (
+                        <p className="text-gray-500">No exams found for this student.</p>
+                    )}
+                </div>
 
-  if (exam.exam_date && typeof exam.exam_date.toDate === "function") {
-    examDate = exam.exam_date.toDate().toLocaleDateString("en-GB");
-  }
-
-  return (
-    <tr key={exam.id} className="hover:bg-gray-50">
-      <td className="px-6 py-4 border-b border-gray-200">{exam.subject}</td>
-      <td className="px-6 py-4 border-b border-gray-200">{examDate}</td>
-      <td className="px-6 py-4 border-b border-gray-200">{exam.material}</td>
-    </tr>
-  );
-})}
-
-
-      </tbody>
-    </table>
-  ) : (
-    <p className="text-gray-500">No exams found for this student.</p>
-  )}
-</div>
-
-<div className="mt-4">
-  <button
-    onClick={() => setShowExamForm((prev) => !prev)}
-    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-  >
-    {showExamForm ? "Cancel" : "Add Exam"}
-  </button>
-</div>
-{showExamForm && (
-  <div className="bg-gray-50 p-4 mt-4 rounded shadow space-y-4 max-w-md">
-    <div>
-      <label className="block font-medium">Subject</label>
-      <input
-        type="text"
-        value={newExam.subject}
-        onChange={(e) => setNewExam({ ...newExam, subject: e.target.value })}
-        className="w-full border p-2 rounded"
-        placeholder="Enter subject"
-      />
-    </div>
-    <div>
-      <label className="block font-medium">Exam Date</label>
-      <input
-        type="datetime-local"
-        value={newExam.exam_date}
-        onChange={(e) => setNewExam({ ...newExam, exam_date: e.target.value })}
-        className="w-full border p-2 rounded"
-      />
-    </div>
-    <div>
-      <label className="block font-medium">Material</label>
-      <input
-        type="text"
-        value={newExam.material}
-        onChange={(e) => setNewExam({ ...newExam, material: e.target.value })}
-        className="w-full border p-2 rounded"
-        placeholder="e.g. Unit 3: Fractions"
-      />
-    </div>
-    <button
-      onClick={handleSaveExam}
-      className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-    >
-      Save Exam
-    </button>
-  </div>
-)}
-
-
-
+                <div className="mt-4">
+                    <button
+                        onClick={() => setShowExamForm((prev) => !prev)}
+                        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                    >
+                        {showExamForm ? "Cancel" : "Add Exam"}
+                    </button>
+                </div>
+                {showExamForm && (
+                    <div className="bg-gray-50 p-4 mt-4 rounded shadow space-y-4 max-w-md">
+                        <div>
+                            <label className="block font-medium">Subject</label>
+                            <input
+                                type="text"
+                                value={newExam.subject}
+                                onChange={(e) => setNewExam({ ...newExam, subject: e.target.value })}
+                                className="w-full border p-2 rounded"
+                                placeholder="Enter subject"
+                            />
+                        </div>
+                        <div>
+                            <label className="block font-medium">Exam Date</label>
+                            <input
+                                type="datetime-local"
+                                value={newExam.exam_date}
+                                onChange={(e) => setNewExam({ ...newExam, exam_date: e.target.value })}
+                                className="w-full border p-2 rounded"
+                            />
+                        </div>
+                        <div>
+                            <label className="block font-medium">Material</label>
+                            <input
+                                type="text"
+                                value={newExam.material}
+                                onChange={(e) => setNewExam({ ...newExam, material: e.target.value })}
+                                className="w-full border p-2 rounded"
+                                placeholder="e.g. Unit 3: Fractions"
+                            />
+                        </div>
+                        <button
+                            onClick={handleSaveExam}
+                            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                        >
+                            Save Exam
+                        </button>
+                    </div>
+                )}
 
                 {/* Return Button */}
                 <div className="mt-6">
@@ -526,4 +554,3 @@ const StudentProfile = () => {
 };
 
 export default StudentProfile;
-
