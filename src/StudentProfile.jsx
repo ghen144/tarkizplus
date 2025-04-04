@@ -11,7 +11,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 import Sidebar from "./Sidebar";
-import { ArrowLeft, BookOpen, AlertCircle, User, Smartphone, Calendar } from "lucide-react";
+import {ArrowLeft, BookOpen, AlertCircle, User, Smartphone, Calendar, CheckCircle} from "lucide-react";
 
 const StudentProfile = () => {
     const navigate = useNavigate();
@@ -23,7 +23,7 @@ const StudentProfile = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [selectedTeacherFilters, setSelectedTeacherFilters] = useState([]);
-    const [selectedSubjectFilters, setSelectedSubjectFilters] = useState([]);       
+    const [selectedSubjectFilters, setSelectedSubjectFilters] = useState([]);
     const [selectedDate, setSelectedDate] = useState("");
     const [sortOrder, setSortOrder] = useState("desc"); // "desc" = newest first
     const handleAddTeacherFilter = (e) => {
@@ -33,7 +33,7 @@ const StudentProfile = () => {
         }
         e.target.value = "";
     };
-    
+
     const handleAddSubjectFilter = (e) => {
         const subject = e.target.value;
         if (subject && !selectedSubjectFilters.includes(subject)) {
@@ -41,15 +41,15 @@ const StudentProfile = () => {
         }
         e.target.value = "";
     };
-    
+
     const removeTeacherFilter = (name) => {
         setSelectedTeacherFilters((prev) => prev.filter((t) => t !== name));
     };
-    
+
     const removeSubjectFilter = (subject) => {
         setSelectedSubjectFilters((prev) => prev.filter((s) => s !== subject));
     };
-    
+
 
 
 
@@ -150,10 +150,16 @@ const StudentProfile = () => {
         subjects,
         learning_difficulty,
         parent_phone_number,
-        preferred_learning_style,
+        PreferredLearningStyle,
         engagement_level,
         recent_performance,
-        // ... any other fields
+        attendance_count_weekly,
+        reading_accommodation,
+        oral_response_allowed,
+        extra_time,
+        spelling_mistakes_ignored,
+        calculator_or_formula_sheet,
+        private_or_group_lessons,
     } = studentData || {};
 
     // Convert array of subjects into a string
@@ -166,65 +172,55 @@ const StudentProfile = () => {
         const dateB = b.lesson_date?.toDate();
         if (!dateA || !dateB) return 0;
         return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
-        });
+    });
 
     return (
-        <div className="flex min-h-screen bg-gray-50">
+        <div className="flex min-h-screen bg-gray-200">
             <Sidebar activePage="students" />
 
-            <main className="ml-0 flex-1 p-6">
-                {/* Student Details Card */}
-                <div className="bg-white p-6 rounded-lg shadow">
+            <main className="ml-0 flex-1 p-6 space-y-6">
+                {/* General Information Card */}
+                <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
                     <div className="flex items-center gap-2 mb-4">
-                        <User className="h-5 w-5 text-blue-500" />
-                        <h2 className="text-xl font-semibold">{name}'s Profile</h2>
+                        <User className="h-5 w-5 text-blue-600" />
+                        <h2 className="text-2xl font-bold">General Information</h2>
                     </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div><strong>Name:</strong> {name || "N/A"}</div>
+                        <div><strong>Grade:</strong> {grade || "N/A"}</div>
+                        <div><strong>Subjects:</strong> {subjectsText}</div>
+                        <div><strong>Parent Phone:</strong> {parent_phone_number || "N/A"}</div>
+                    </div>
+                </div>
 
-                    {/*
-            2) We'll use a grid with 3 columns on medium screens, 1 column on small screens
-               so we can place fields side by side. Adjust `md:grid-cols-3` to `grid-cols-2` or `grid-cols-4` if needed
-          */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {/* Field 1 */}
-                        <div className="p-3 bg-gray-50 rounded">
-                            <p className="font-medium">Grade</p>
-                            <p className="text-sm text-gray-600">{grade || "N/A"}</p>
-                        </div>
-                        {/* Field 2 */}
-                        <div className="p-3 bg-gray-50 rounded">
-                            <p className="font-medium">Engagement Level</p>
-                            <p className="text-sm text-gray-600">{engagement_level || "N/A"}</p>
-                        </div>
-                        {/* Field 3 */}
-                        <div className="p-3 bg-gray-50 rounded">
-                            <p className="font-medium">Subjects</p>
-                            <p className="text-sm text-gray-600">{subjectsText}</p>
-                        </div>
+                {/* Learning Accommodations Card */}
+                <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
+                    <div className="flex items-center gap-2 mb-4">
+                        <BookOpen className="h-5 w-5 text-blue-600" />
+                        <h2 className="text-2xl font-bold">Learning Accommodations</h2>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div><strong>Preferred Learning Style:</strong> {PreferredLearningStyle || "N/A"}</div>
+                        <div><strong>Learning Difficulty:</strong> {learning_difficulty || "No"}</div>
+                        <div><strong>Private / Group Lessons:</strong> {private_or_group_lessons || "N/A"}</div>
+                        <div><strong>Reading Accommodation:</strong> {reading_accommodation ? "Yes" : "No"}</div>
+                        <div><strong>Oral Response Allowed:</strong> {oral_response_allowed ? "Yes" : "No"}</div>
+                        <div><strong>Extra Time:</strong> {extra_time ? "Yes" : "No"}</div>
+                        <div><strong>Spelling Mistakes Ignored:</strong> {spelling_mistakes_ignored ? "Yes" : "No"}</div>
+                        <div><strong>Calculator or Formula Sheet:</strong> {calculator_or_formula_sheet ? "Yes" : "No"}</div>
+                    </div>
+                </div>
 
-                        {/* Field 4 */}
-                        <div className="p-3 bg-gray-50 rounded">
-                            <p className="font-medium">Preferred Learning Style</p>
-                            <p className="text-sm text-gray-600">{preferred_learning_style || "N/A"}</p>
-                        </div>
-                        {/* Field 5 */}
-                        <div className="p-3 bg-gray-50 rounded">
-                            <p className="font-medium">Learning Difficulty</p>
-                            <p className="text-sm text-gray-600">
-                                {learning_difficulty ? "Yes" : "No"}
-                            </p>
-                        </div>
-                        {/* Field 6 */}
-                        <div className="p-3 bg-gray-50 rounded">
-                            <p className="font-medium">Recent Performance</p>
-                            <p className="text-sm text-gray-600">{recent_performance || "N/A"}</p>
-                        </div>
-
-                        {/* Field 7 */}
-                        <div className="p-3 bg-gray-50 rounded">
-                            <p className="font-medium">Parent Phone</p>
-                            <p className="text-sm text-gray-600">{parent_phone_number || "N/A"}</p>
-                        </div>
-                        {/* ... Add more fields as needed in the grid */}
+                {/* Performance & Progress Card */}
+                <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
+                    <div className="flex items-center gap-2 mb-4">
+                        <CheckCircle className="h-5 w-5 text-blue-600" />
+                        <h2 className="text-2xl font-bold">Performance & Progress</h2>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div><strong>Engagement Level:</strong> {engagement_level || "N/A"}</div>
+                        <div><strong>Recent Performance:</strong> {recent_performance || "N/A"}</div>
+                        <div><strong>Attendance Count Weekly:</strong> {attendance_count_weekly || "N/A"}</div>
                     </div>
                 </div>
 
@@ -232,76 +228,72 @@ const StudentProfile = () => {
                 <div className="bg-white p-6 rounded-lg shadow mt-6">
                     <div className="flex items-center gap-2 mb-4">
                         <Calendar className="h-5 w-5 text-blue-500" />
-                        <h2 className="text-xl font-semibold">Lesson History</h2>
+                        <h2 className="text-2xl font-bold">Lesson History</h2>
                     </div>
                     <p className="text-sm text-gray-500 mb-2">You can filter by one or more teachers or subjects:</p>
 
                     {/* Filter Controls */}
-                <div className="flex flex-wrap gap-4 mb-4">
+                    <div className="flex flex-wrap gap-4 mb-4">
 
 
-                    {/* Filter by Teacher */}
-                    {/* Teacher Filter */}
-                <div>
-                    <p className="font-medium mb-1">Teacher</p>
-                    <select onChange={handleAddTeacherFilter} className="p-2 border rounded text-sm">
-                    <option value="">Select</option>
-                    {Object.entries(teachersMap).map(([id, name]) => (
-                    <option key={id} value={name}>{name}</option>
-                    ))}
-                    </select>
+                        {/* Filter by Teacher */}
+                        {/* Teacher Filter */}
+                        <div>
+                            <p className="font-medium mb-1">Teacher</p>
+                            <select onChange={handleAddTeacherFilter} className="p-2 border rounded text-sm">
+                                <option value="">Select</option>
+                                {Object.entries(teachersMap).map(([id, name]) => (
+                                    <option key={id} value={name}>{name}</option>
+                                ))}
+                            </select>
 
-                    <div className="mt-2 flex flex-wrap gap-2">
-                    {selectedTeacherFilters.map((name) => (
-                    <span key={name} className="bg-blue-200 text-blue-800 rounded px-2 py-1 text-sm flex items-center">
+                            <div className="mt-2 flex flex-wrap gap-2">
+                                {selectedTeacherFilters.map((name) => (
+                                    <span key={name} className="bg-blue-200 text-blue-800 rounded px-2 py-1 text-sm flex items-center">
                     {name}
-                    <button onClick={() => removeTeacherFilter(name)} className="ml-1 text-blue-600 font-bold">&times;</button>
+                                        <button onClick={() => removeTeacherFilter(name)} className="ml-1 text-blue-600 font-bold">&times;</button>
                     </span>
-                    ))}
-                    </div>
-                </div>
+                                ))}
+                            </div>
+                        </div>
 
 
-                    {/* Subject Filter */}
-                <div>
-                    <p className="font-medium mb-1">Subject</p>
-                    <select onChange={handleAddSubjectFilter} className="p-2 border rounded text-sm">
-                    <option value="">Select</option>
-                    {[...new Set(lessons.map((l) => l.subject))].map((subject) => (
-                    <option key={subject} value={subject}>{subject}</option>
-                    ))}
-                    </select>
+                        {/* Subject Filter */}
+                        <div>
+                            <p className="font-medium mb-1">Subject</p>
+                            <select onChange={handleAddSubjectFilter} className="p-2 border rounded text-sm">
+                                <option value="">Select</option>
+                                {[...new Set(lessons.map((l) => l.subject))].map((subject) => (
+                                    <option key={subject} value={subject}>{subject}</option>
+                                ))}
+                            </select>
 
-                    <div className="mt-2 flex flex-wrap gap-2">
-                    {selectedSubjectFilters.map((subject) => (
-                    <span key={subject} className="bg-green-200 text-green-800 rounded px-2 py-1 text-sm flex items-center">
+                            <div className="mt-2 flex flex-wrap gap-2">
+                                {selectedSubjectFilters.map((subject) => (
+                                    <span key={subject} className="bg-green-200 text-green-800 rounded px-2 py-1 text-sm flex items-center">
                     {subject}
-                    <button onClick={() => removeSubjectFilter(subject)} className="ml-1 text-green-600 font-bold">&times;</button>
+                                        <button onClick={() => removeSubjectFilter(subject)} className="ml-1 text-green-600 font-bold">&times;</button>
                     </span>
-                    ))}
-                    </div>
-                </div>
-
-
-
-
-                    {/* Filter by Date */}
+                                ))}
+                            </div>
+                        </div>
+                        {/* Filter by Date */}
                         <input
-                           type="date"
-                           value={selectedDate}
-                           onChange={(e) => setSelectedDate(e.target.value)}
-                           className="p-2 border rounded"
-                       />
+                            type="date"
+                            value={selectedDate}
+                            onChange={(e) => setSelectedDate(e.target.value)}
+                            className="p-2 border rounded"
+                        />
 
-                    {/* Sort button */}
+                        {/* Sort button */}
                         <button
-                        onClick={() => setSortOrder((prev) => (prev === "desc" ? "asc" : "desc"))}
-                        className="p-2 border rounded bg-white text-gray-700 hover:bg-gray-100"
+                            onClick={() => setSortOrder((prev) => (prev === "desc" ? "asc" : "desc"))}
+                            className="p-2 border rounded bg-white text-gray-700 hover:bg-gray-100"
                         >
-                        {sortOrder === "desc" ? "Sort: Newest First" : "Sort: Oldest First"}
+                            {sortOrder === "desc" ? "Sort: Newest First" : "Sort: Oldest First"}
                         </button>
 
-    </div>
+                    </div>
 
                     <div className="overflow-x-auto">
                         {lessons.length > 0 ? (
@@ -326,16 +318,16 @@ const StudentProfile = () => {
                                 </tr>
                                 </thead>
                                 <tbody>
-                                
+
 
                                 {sortedLessons.filter((lesson) => {
-                                const teacherName = teachersMap[lesson.teacher_id] || lesson.teacher_id;
-                                const dateString = lesson.lesson_date?.toDate().toISOString().split("T")[0];
-                                 return (
-                                (selectedTeacherFilters.length === 0 || selectedTeacherFilters.includes(teacherName)) &&
-                                (selectedSubjectFilters.length === 0 || selectedSubjectFilters.includes(lesson.subject)) &&
-                                (!selectedDate || selectedDate === dateString)
-                                );
+                                    const teacherName = teachersMap[lesson.teacher_id] || lesson.teacher_id;
+                                    const dateString = lesson.lesson_date?.toDate().toISOString().split("T")[0];
+                                    return (
+                                        (selectedTeacherFilters.length === 0 || selectedTeacherFilters.includes(teacherName)) &&
+                                        (selectedSubjectFilters.length === 0 || selectedSubjectFilters.includes(lesson.subject)) &&
+                                        (!selectedDate || selectedDate === dateString)
+                                    );
                                 }).map((lesson) => {
 
                                     const teacherName =
