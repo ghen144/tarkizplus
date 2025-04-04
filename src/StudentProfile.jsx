@@ -22,6 +22,10 @@ const StudentProfile = () => {
     const [teachersMap, setTeachersMap] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [selectedTeacher, setSelectedTeacher] = useState("");
+    const [selectedSubject, setSelectedSubject] = useState("");    
+    const [selectedDate, setSelectedDate] = useState("");
+
 
     useEffect(() => {
         const fetchStudentDataAndLessons = async () => {
@@ -198,6 +202,47 @@ const StudentProfile = () => {
                         <Calendar className="h-5 w-5 text-blue-500" />
                         <h2 className="text-xl font-semibold">Lesson History</h2>
                     </div>
+                    <p className="text-sm text-gray-500 mb-2">You can filter by one or more teachers or subjects:</p>
+
+                    {/* Filter Controls */}
+                <div className="flex flex-wrap gap-4 mb-4">
+                    {/* Filter by Teacher */}
+                    <select
+                    value={selectedTeacher}
+                    onChange={(e) => setSelectedTeacher(e.target.value)}
+                    className="p-2 border rounded bg-white text-gray-700"
+                    >
+                    <option value="">All Teachers</option>
+                    {Object.entries(teachersMap).map(([id, name]) => (
+                    <option key={id} value={name}>{name}</option>
+                    ))}
+                    </select>
+
+
+
+                     {/* Filter by Subject */}
+                     <select
+                     value={selectedSubject}
+                     onChange={(e) => setSelectedSubject(e.target.value)}
+                     className="p-2 border rounded bg-white text-gray-700"
+                     >
+                     <option value="">All Subjects</option>
+                     {[...new Set(lessons.map((l) => l.subject))].map((subject) => (
+                     <option key={subject} value={subject}>{subject}</option>
+                     ))}
+                    </select>
+
+
+
+                    {/* Filter by Date */}
+                        <input
+                           type="date"
+                           value={selectedDate}
+                           onChange={(e) => setSelectedDate(e.target.value)}
+                           className="p-2 border rounded"
+                       />
+    </div>
+
                     <div className="overflow-x-auto">
                         {lessons.length > 0 ? (
                             <table className="min-w-full bg-white">
@@ -221,7 +266,16 @@ const StudentProfile = () => {
                                 </tr>
                                 </thead>
                                 <tbody>
-                                {lessons.map((lesson) => {
+                                {lessons.filter((lesson) => {
+                                  const teacherName = teachersMap[lesson.teacher_id] || lesson.teacher_id;
+                                  const dateString = lesson.lesson_date?.toDate().toISOString().split("T")[0];
+                                  return (
+                                    (!selectedTeacher || teacherName === selectedTeacher) &&
+                                    (!selectedSubject || lesson.subject === selectedSubject)&&
+                                    (!selectedDate || selectedDate === dateString)
+                                         );
+                                         }).map((lesson) => {
+
                                     const teacherName =
                                         teachersMap[lesson.teacher_id] || lesson.teacher_id || "No teacher";
 
