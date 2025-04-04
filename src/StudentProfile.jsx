@@ -11,12 +11,11 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 import Sidebar from "./Sidebar";
-import {ArrowLeft, BookOpen, AlertCircle, User, Smartphone, Calendar, CheckCircle} from "lucide-react";
-
+import { ArrowLeft, BookOpen, AlertCircle, User, Smartphone, Calendar, ClipboardList } from "lucide-react";
+import { addDoc } from "firebase/firestore"; // تأكدي أنك مستوردة addDoc
 const StudentProfile = () => {
     const navigate = useNavigate();
     const { studentId } = useParams();
-
     const [studentData, setStudentData] = useState(null);
     const [lessons, setLessons] = useState([]);
     const [teachersMap, setTeachersMap] = useState({});
@@ -26,6 +25,47 @@ const StudentProfile = () => {
     const [selectedSubjectFilters, setSelectedSubjectFilters] = useState([]);
     const [selectedDate, setSelectedDate] = useState("");
     const [sortOrder, setSortOrder] = useState("desc"); // "desc" = newest first
+    const [exams, setExams] = useState([]); 
+    const [showExamForm, setShowExamForm] = useState(false);
+    const [newExam, setNewExam] = useState({
+        subject: "",
+        exam_date: "",
+        material: "",
+    });
+    const handleSaveExam = async () => {
+        if (!newExam.subject || !newExam.exam_date || !newExam.material) {
+            alert("Please fill in all exam fields.");
+            return;
+        }
+    
+        try {
+            const examDateTimestamp = new Date(newExam.exam_date);
+            await addDoc(collection(db, "exams"), {
+                student_id: studentId,
+                subject: newExam.subject,
+                exam_date: examDateTimestamp,
+                material: newExam.material,
+            });
+            alert("Exam added successfully!");
+            setShowExamForm(false);
+            setNewExam({ subject: "", exam_date: "", material: "" });
+    
+            // إعادة تحميل الامتحانات بعد الإضافة:
+            const updatedSnapshot = await getDocs(
+                query(collection(db, "exams"), where("student_id", "==", studentId))
+            );
+            const updatedExams = updatedSnapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+            }));
+            setExams(updatedExams);
+        } catch (err) {
+            console.error("Error adding exam:", err);
+            alert("Failed to add exam.");
+        }
+    };
+    
+
     const handleAddTeacherFilter = (e) => {
         const teacherName = e.target.value;
         if (teacherName && !selectedTeacherFilters.includes(teacherName)) {
@@ -94,6 +134,18 @@ const StudentProfile = () => {
                     tMap[tdoc.id] = tData.name || "Unnamed Teacher";
                 });
                 setTeachersMap(tMap);
+                // 4. Fetch exams for this student
+                const examsQuery = query(
+                collection(db, "exams"),
+                where("student_id", "==", studentId)
+                );
+                const examsSnapshot = await getDocs(examsQuery);
+                const examsList = examsSnapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+                }));
+                setExams(examsList);
+  
 
             } catch (err) {
                 console.error("Error fetching student/lessons:", err);
@@ -360,6 +412,103 @@ const StudentProfile = () => {
                         )}
                     </div>
                 </div>
+
+                {/* Exam Table */}
+<div className="bg-white p-6 rounded-lg shadow mt-6">
+<div className="flex items-center gap-2 mb-4">
+  <ClipboardList className="h-5 w-5 text-blue-500" />
+  <h2 className="text-xl font-semibold">Exams</h2>
+</div>
+  {exams.length > 0 ? (
+    <table className="min-w-full bg-white">
+      <thead>
+        <tr>
+          <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+            Subject
+          </th>
+          <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+            Exam Date
+          </th>
+          <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+            Material
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+      {exams.map((exam) => {
+  let examDate = "No date";
+
+  if (exam.exam_date && typeof exam.exam_date.toDate === "function") {
+    examDate = exam.exam_date.toDate().toLocaleDateString("en-GB");
+  }
+
+  return (
+    <tr key={exam.id} className="hover:bg-gray-50">
+      <td className="px-6 py-4 border-b border-gray-200">{exam.subject}</td>
+      <td className="px-6 py-4 border-b border-gray-200">{examDate}</td>
+      <td className="px-6 py-4 border-b border-gray-200">{exam.material}</td>
+    </tr>
+  );
+})}
+
+
+      </tbody>
+    </table>
+  ) : (
+    <p className="text-gray-500">No exams found for this student.</p>
+  )}
+</div>
+
+<div className="mt-4">
+  <button
+    onClick={() => setShowExamForm((prev) => !prev)}
+    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+  >
+    {showExamForm ? "Cancel" : "Add Exam"}
+  </button>
+</div>
+{showExamForm && (
+  <div className="bg-gray-50 p-4 mt-4 rounded shadow space-y-4 max-w-md">
+    <div>
+      <label className="block font-medium">Subject</label>
+      <input
+        type="text"
+        value={newExam.subject}
+        onChange={(e) => setNewExam({ ...newExam, subject: e.target.value })}
+        className="w-full border p-2 rounded"
+        placeholder="Enter subject"
+      />
+    </div>
+    <div>
+      <label className="block font-medium">Exam Date</label>
+      <input
+        type="datetime-local"
+        value={newExam.exam_date}
+        onChange={(e) => setNewExam({ ...newExam, exam_date: e.target.value })}
+        className="w-full border p-2 rounded"
+      />
+    </div>
+    <div>
+      <label className="block font-medium">Material</label>
+      <input
+        type="text"
+        value={newExam.material}
+        onChange={(e) => setNewExam({ ...newExam, material: e.target.value })}
+        className="w-full border p-2 rounded"
+        placeholder="e.g. Unit 3: Fractions"
+      />
+    </div>
+    <button
+      onClick={handleSaveExam}
+      className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+    >
+      Save Exam
+    </button>
+  </div>
+)}
+
+
+
 
                 {/* Return Button */}
                 <div className="mt-6">
