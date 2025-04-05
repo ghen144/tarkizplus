@@ -11,45 +11,53 @@ import EditLesson from './EditLesson';
 import TeacherProfile from './TeacherProfile';
 import AppSettings from './AppSettings';
 import LessonDetails from './LessonDetails';
+import AdminStudentsPage from './AdminStudentsPage';
+import AdminSidebar from './AdminSidebar';
+import AddStudentPage from './AddStudentPage';
 
 function AppLayout() {
-    const location = useLocation();
-    const isLoginPage = location.pathname === '/login';
+  const location = useLocation();
+  const isLoginPage = location.pathname === '/login';
 
-    return (
-        <div className="flex min-h-screen bg-gray-50">
-            {/* Render Sidebar only if not on login page */}
-            {!isLoginPage && <Sidebar />}
+  const role = localStorage.getItem('userRole');
 
-            {/* Main Content Area */}
-            <div className={`flex-1 ${!isLoginPage ? 'ml-64' : ''}`}>
-                {/* Render Header only if not on login page */}
-                {!isLoginPage && <Header />}
-                <div className="p-6">
-                    <Routes>
-                        <Route path="/login" element={<LoginPage />} />
-                        <Route path="/" element={<HomePage />} />
-                        <Route path="/students" element={<StudentsPage />} />
-                        <Route path="/students/:studentId" element={<StudentProfile />} />
-                        <Route path="/lesson-log" element={<LessonLog />} />
-                        <Route path="/lesson-log/add" element={<AddLesson />} />
-                        <Route path="/lesson-log/:lessonId/edit" element={<EditLesson />} />
-                        <Route path="/profile" element={<TeacherProfile />} />
-                        <Route path="/settings" element={<AppSettings />} />
-                        <Route path="/lesson-log/:lessonId/details" element={<LessonDetails />} />
+  return (
+    <div className="flex min-h-screen bg-gray-50">
+      {!isLoginPage && (
+        role === "admin" ? <AdminSidebar /> : <Sidebar />
+      )}
 
+      <div className={`flex-1 ${!isLoginPage ? 'ml-64' : ''}`}>
+        {!isLoginPage && <Header />}
+        <div className="p-6">
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/" element={<HomePage />} />
+            <Route path="/students" element={<StudentsPage />} />
+            <Route path="/students/:studentId" element={<StudentProfile />} />
+            <Route path="/lesson-log" element={<LessonLog />} />
+            <Route path="/lesson-log/add" element={<AddLesson />} />
+            <Route path="/lesson-log/:lessonId/edit" element={<EditLesson />} />
+            <Route path="/profile" element={<TeacherProfile />} />
+            <Route path="/settings" element={<AppSettings />} />
+            <Route path="/lesson-log/:lessonId/details" element={<LessonDetails />} />
+            <Route path="/admin/students" element={<AdminStudentsPage />} />
+            <Route path="/admin/students/add" element={<AddStudentPage />} />
 
-                    </Routes>
-                </div>
-            </div>
+          </Routes>
         </div>
-    );
+      </div>
+    </div>
+  );
 }
 
-export default function App() {
-    return (
-        <Router>
-            <AppLayout />
-        </Router>
-    );
+// 👇 هذا السطر هو اللي ناقصك
+function App() {
+  return (
+    <Router>
+      <AppLayout />
+    </Router>
+  );
 }
+
+export default App;

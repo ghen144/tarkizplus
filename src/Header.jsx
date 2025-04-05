@@ -1,4 +1,3 @@
-// Header.jsx
 import React, { useEffect, useState } from 'react';
 import { Search } from 'lucide-react';
 import DropdownMenu from './DropdownMenu';
@@ -8,48 +7,45 @@ import { db } from './firebase';
 
 const Header = () => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const [teacherName, setTeacherName] = useState('Teacher');
+    const [userName, setUserName] = useState('User');
     const [searchQuery, setSearchQuery] = useState('');
     const auth = getAuth();
+
+    const role = localStorage.getItem('userRole'); // ✅ نحدد الدور
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
                 try {
-                    const teachersQuery = query(
-                        collection(db, 'teachers'),
-                        where('email', '==', user.email)
-                    );
-                    const teachersSnapshot = await getDocs(teachersQuery);
-                    if (!teachersSnapshot.empty) {
-                        const teacherDoc = teachersSnapshot.docs[0];
-                        const teacherData = teacherDoc.data();
-                        setTeacherName(teacherData.name || 'Teacher');
+                    let collectionName = role === 'admin' ? 'admin' : 'teachers';
+                    const q = query(collection(db, collectionName), where('email', '==', user.email));
+                    const snapshot = await getDocs(q);
+                    if (!snapshot.empty) {
+                        const data = snapshot.docs[0].data();
+                        setUserName(data.name || (role === 'admin' ? 'Admin' : 'Teacher'));
                     }
                 } catch (error) {
-                    console.error('Error fetching teacher data:', error);
+                    console.error('Error fetching user data:', error);
                 }
             }
         });
         return () => unsubscribe();
-    }, [auth]);
+    }, [auth, role]);
 
     const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
     const closeDropdown = () => setIsDropdownOpen(false);
 
-    // Example function to handle search (you can modify it to actually perform a search)
     const handleSearch = (e) => {
         const queryValue = e.target.value;
         setSearchQuery(queryValue);
         console.log('Search query:', queryValue);
-        // Here you can add logic to filter data or query your database
     };
 
     return (
         <header className="bg-white p-4 border-b flex justify-between items-center">
             <div>
                 <h1 className="text-xl font-semibold">
-                    Welcome, {teacherName ? teacherName.split(' ')[0] : 'Teacher'}
+                    Welcome, {userName?.split(' ')[0] || 'User'}
                 </h1>
             </div>
             <div className="flex items-center gap-4">

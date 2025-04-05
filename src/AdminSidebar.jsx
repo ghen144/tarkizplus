@@ -1,10 +1,11 @@
+// AdminSidebar.jsx
 import React from 'react';
-import { Home, Users, BookOpenText, LogOut } from 'lucide-react';
+import { Home, Users, LogOut, GraduationCap } from 'lucide-react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { getAuth, signOut } from 'firebase/auth';
 import Logo from './Logo';
 
-const Sidebar = () => {
+const AdminSidebar = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const auth = getAuth();
@@ -16,14 +17,12 @@ const Sidebar = () => {
         } catch (error) {
             console.error('Error signing out:', error);
         }
-        localStorage.removeItem("userRole");
-
     };
 
     const menuItems = [
-        { icon: Home, label: 'Home', path: '/', active: location.pathname === '/' },
-        { icon: Users, label: 'Students', path: '/students', active: location.pathname === '/students' },
-        { icon: BookOpenText, label: 'Lesson Log', path: '/lesson-log', active: location.pathname === '/lesson-log' }
+        { icon: Home, label: 'Home', path: '/' },
+        { icon: Users, label: 'Students', path: '/admin/students' },
+        { icon: GraduationCap, label: 'Teachers', path: '/admin/teachers' }
     ];
 
     return (
@@ -38,7 +37,9 @@ const Sidebar = () => {
                         key={item.path}
                         to={item.path}
                         className={`flex items-center p-3 mb-2 rounded ${
-                            item.active ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
+                            location.pathname === item.path
+                                ? 'bg-blue-100 text-blue-600'
+                                : 'hover:bg-gray-100'
                         }`}
                     >
                         <item.icon className="mr-3" size={20} />
@@ -60,4 +61,4 @@ const Sidebar = () => {
     );
 };
 
-export default Sidebar;
+export default AdminSidebar;

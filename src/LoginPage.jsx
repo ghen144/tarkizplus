@@ -3,6 +3,9 @@ import React, { useState } from 'react';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import Logo from './Logo'; // Import the logo component
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from './firebase';
+
 
 const LoginPage = () => {
     const [loginType, setLoginType] = useState('teacher'); // 'teacher' or 'admin'
@@ -14,19 +17,42 @@ const LoginPage = () => {
 
     const handleLogin = async (e) => {
         e.preventDefault();
+        setError(""); // مسح الأخطاء السابقة
+    
         try {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
+    
             if (loginType === 'admin') {
-                navigate('/admin/dashboard');
-            } else {
-                navigate('/');
+                // تحقق إذا الإيميل موجود في كولكشن admin
+                const q = query(collection(db, "admin"), where("email", "==", email));
+                const snapshot = await getDocs(q);
+    
+                if (!snapshot.empty) {
+                    localStorage.setItem("userRole", "admin");
+                    navigate("/admin/students");
+                } else {
+                    setError("You are not authorized as an admin.");
+                }
+    
+            } else if (loginType === 'teacher') {
+                // تحقق إذا الإيميل موجود في كولكشن teachers
+                const q = query(collection(db, "teachers"), where("email", "==", email));
+                const snapshot = await getDocs(q);
+    
+                if (!snapshot.empty) {
+                    localStorage.setItem("userRole", "teacher");
+                    navigate("/");
+                } else {
+                    setError("You are not registered as a teacher.");
+                }
             }
         } catch (err) {
             console.error(err);
-            setError('Login failed. Please check your credentials.');
+            setError("Login failed. Please check your credentials.");
         }
     };
+    
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100">
