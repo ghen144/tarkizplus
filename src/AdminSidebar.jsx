@@ -1,6 +1,6 @@
 // AdminSidebar.jsx
 import React from 'react';
-import { Home, Users, LogOut, GraduationCap } from 'lucide-react';
+import { Home, Users, LogOut, GraduationCap, BookOpen } from 'lucide-react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { getAuth, signOut } from 'firebase/auth';
 import Logo from './Logo';
@@ -20,9 +20,11 @@ const AdminSidebar = () => {
     };
 
     const menuItems = [
-        { icon: Home, label: 'Home', path: '/' },
+        { icon: Home, label: 'Home', path: '/admin/home' },
         { icon: Users, label: 'Students', path: '/admin/students' },
-        { icon: GraduationCap, label: 'Teachers', path: '/admin/teachers' }
+        { icon: GraduationCap, label: 'Teachers', path: '/admin/teachers' },
+        { icon: BookOpen, label: 'Schedules', path: '/admin/schedule' },
+
     ];
 
     return (

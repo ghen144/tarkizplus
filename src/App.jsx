@@ -14,6 +14,12 @@ import LessonDetails from './LessonDetails';
 import AdminStudentsPage from './AdminStudentsPage';
 import AdminSidebar from './AdminSidebar';
 import AddStudentPage from './AddStudentPage';
+import AdminHomePage from './AdminHomePage';
+import EditTeacherSchedule from './EditTeacherSchedule';
+import AdminTeacherSchedules from './AdminTeacherSchedules';
+import NewSchedule from './NewSchedule';
+
+
 
 function AppLayout() {
   const location = useLocation();
@@ -43,6 +49,12 @@ function AppLayout() {
             <Route path="/lesson-log/:lessonId/details" element={<LessonDetails />} />
             <Route path="/admin/students" element={<AdminStudentsPage />} />
             <Route path="/admin/students/add" element={<AddStudentPage />} />
+            <Route path="/admin/home" element={<AdminHomePage />} />
+            <Route path="/admin/schedule/edit/:id" element={<EditTeacherSchedule />} />
+            <Route path="/admin/schedule" element={<AdminTeacherSchedules />} />
+            <Route path="/admin/schedule/new" element={<NewSchedule />} />
+
+
 
           </Routes>
         </div>

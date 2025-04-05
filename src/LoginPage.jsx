@@ -30,7 +30,7 @@ const LoginPage = () => {
     
                 if (!snapshot.empty) {
                     localStorage.setItem("userRole", "admin");
-                    navigate("/admin/students");
+                    navigate("/admin/home");
                 } else {
                     setError("You are not authorized as an admin.");
                 }
