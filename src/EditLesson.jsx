@@ -24,32 +24,38 @@ const EditLesson = () => {
 
     // Fetch the lesson + check if the current user is allowed to edit
     useEffect(() => {
-        const fetchLessonAndTeacher = async () => {
+        const fetchLessonAndUserRole = async () => {
             try {
                 const user = auth.currentUser;
                 if (!user) {
-                    // If not logged in, redirect or show error
                     navigate("/login");
                     return;
                 }
 
-                // 1. Find the teacher's document (based on email or UID)
+                // Check if user is a teacher
                 const teacherQuery = query(
                     collection(db, "teachers"),
-                    where("email", "==", user.email) // or where("uid", "==", user.uid)
+                    where("email", "==", user.email)
                 );
                 const teacherSnap = await getDocs(teacherQuery);
+                const isTeacher = !teacherSnap.empty;
+                const teacherDocId = isTeacher ? teacherSnap.docs[0].id : null;
 
-                if (teacherSnap.empty) {
-                    setError("No teacher profile found for this user.");
+                // Check if user is an admin
+                const adminQuery = query(
+                    collection(db, "admin"),
+                    where("email", "==", user.email)
+                );
+                const adminSnap = await getDocs(adminQuery);
+                const isAdmin = !adminSnap.empty;
+
+                if (!isTeacher && !isAdmin) {
+                    setError("You are not authorized to edit this lesson.");
                     setLoading(false);
                     return;
                 }
 
-                const teacherDoc = teacherSnap.docs[0];
-                const teacherDocId = teacherDoc.id; // e.g. "T001"
-
-                // 2. Fetch the lesson document
+                // Fetch the lesson
                 const lessonRef = doc(db, "lessons", lessonId);
                 const lessonSnap = await getDoc(lessonRef);
 
@@ -61,24 +67,24 @@ const EditLesson = () => {
 
                 const data = lessonSnap.data();
 
-                // 3. Check if the lesson belongs to the logged-in teacher
-                if (data.teacher_id !== teacherDocId) {
+                // If the user is a teacher, make sure they own this lesson
+                if (isTeacher && data.teacher_id !== teacherDocId) {
                     setError("You are not authorized to edit this lesson.");
                     setLoading(false);
                     return;
                 }
 
-                // 4. Convert lesson_date from Firestore Timestamp to a string (for <input type="date">)
+                // Format lesson date for input
                 let formattedDate = "";
-                if (data.lesson_date && data.lesson_date.toDate) {
+                if (data.lesson_date?.toDate) {
                     formattedDate = data.lesson_date.toDate().toISOString().slice(0, 10);
                 }
 
-                // 5. Store the lesson data in state
                 setLessonData({
                     ...data,
-                    lesson_date: formattedDate, // If you want to show it in a date input
+                    lesson_date: formattedDate,
                 });
+
                 setLoading(false);
             } catch (err) {
                 console.error("Error fetching lesson:", err);
@@ -87,8 +93,9 @@ const EditLesson = () => {
             }
         };
 
-        fetchLessonAndTeacher();
+        fetchLessonAndUserRole();
     }, [lessonId, auth, navigate]);
+
 
     // Update state as user edits the form
     const handleChange = (e) => {
@@ -105,23 +112,27 @@ const EditLesson = () => {
         if (!lessonData) return;
 
         try {
-            // Convert the lesson_date string back to a JS Date if your Firestore schema expects a Timestamp
-            // const newDate = lessonData.lesson_date ? new Date(lessonData.lesson_date) : null;
-
             const updatedFields = {
                 subject: lessonData.subject,
                 lesson_notes: lessonData.lesson_notes,
                 progress_assessment: lessonData.progress_assessment,
                 duration_minutes: parseInt(lessonData.duration_minutes, 10) || 0,
-                // lesson_date: newDate, // Uncomment if you want to store it back as a Timestamp
             };
 
-            // Update Firestore
             const lessonRef = doc(db, "lessons", lessonId);
             await updateDoc(lessonRef, updatedFields);
-
             console.log("Lesson updated successfully!");
-            navigate("/lesson-log"); // Go back to the lessons list
+
+            // Determine if user is admin
+            const user = auth.currentUser;
+            const adminQuery = query(collection(db, "admin"), where("email", "==", user.email));
+            const adminSnap = await getDocs(adminQuery);
+
+            if (!adminSnap.empty) {
+                navigate("/admin/lessonlog"); // Go to admin log
+            } else {
+                navigate("/lesson-log"); // Go to teacher log
+            }
         } catch (err) {
             console.error("Error updating lesson:", err);
             setError("Failed to update lesson.");

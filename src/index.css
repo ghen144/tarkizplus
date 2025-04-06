@@ -28,6 +28,13 @@ html, body {
   width: 100%;
   overflow-x: hidden; /* Prevent horizontal scrolling */
 }
+const subjectColors  {
+  Math: "bg-green-200";
+  English: "bg-blue-200";
+  Hebrew: "bg-yellow-200";
+  Arabic: "bg-pink-200";
+
+}
 
 
 h1 {

@@ -18,6 +18,8 @@ import AdminHomePage from './AdminHomePage';
 import EditTeacherSchedule from './EditTeacherSchedule';
 import AdminTeacherSchedules from './AdminTeacherSchedules';
 import NewSchedule from './NewSchedule';
+import AdminTeachers from './adminteachers';
+import AdminLessonLog from './AdminLessonLog'
 
 
 
@@ -48,11 +50,14 @@ function AppLayout() {
             <Route path="/settings" element={<AppSettings />} />
             <Route path="/lesson-log/:lessonId/details" element={<LessonDetails />} />
             <Route path="/admin/students" element={<AdminStudentsPage />} />
-            <Route path="/admin/students/add" element={<AddStudentPage />} />
+              <Route path="/admin/students/add" element={<AddStudentPage />} />
             <Route path="/admin/home" element={<AdminHomePage />} />
             <Route path="/admin/schedule/edit/:id" element={<EditTeacherSchedule />} />
             <Route path="/admin/schedule" element={<AdminTeacherSchedules />} />
             <Route path="/admin/schedule/new" element={<NewSchedule />} />
+            <Route path= "/admin/teachers" element={<AdminTeachers/>} />
+            <Route path= "/admin/lessonlog" element={<AdminLessonLog/>} />
+
 
 
 

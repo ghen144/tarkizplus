@@ -12,6 +12,7 @@ function AdminStudentsPage() {
     const [selectedSubjects, setSelectedSubjects] = useState([]);
     const [gradeDropdownOpen, setGradeDropdownOpen] = useState(false);
     const [subjectDropdownOpen, setSubjectDropdownOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState("");
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -51,6 +52,7 @@ function AdminStudentsPage() {
 
     const filteredStudents = students
         .filter(student =>
+            (!searchTerm || student.name?.toLowerCase().includes(searchTerm.toLowerCase())) &&
             (selectedGrades.length === 0 || selectedGrades.includes(student.grade)) &&
             (
                 selectedSubjects.length === 0 ||
@@ -78,8 +80,17 @@ function AdminStudentsPage() {
                 </button>
             </div>
 
-            {/* Filters & Sorting */}
-            <div className="flex flex-wrap gap-4 mb-4 items-start">
+            {/* Search + Filters */}
+            <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
+                {/* Search Bar */}
+                <input
+                    type="text"
+                    placeholder="Search by student name..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="border px-4 py-2 rounded w-full md:w-64"
+                />
+
                 {/* Grade Dropdown */}
                 <div className="relative">
                     <button
@@ -164,28 +175,28 @@ function AdminStudentsPage() {
                 <div className="overflow-x-auto">
                     <table className="min-w-full bg-white rounded shadow">
                         <thead className="bg-gray-100">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Name</th>
-                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Grade</th>
-                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Subjects</th>
-                            </tr>
+                        <tr>
+                            <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Name</th>
+                            <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Grade</th>
+                            <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Subjects</th>
+                        </tr>
                         </thead>
                         <tbody>
-                            {filteredStudents.map((student) => (
-                                <tr
-                                    key={student.id}
-                                    onClick={() => handleStudentClick(student.id)}
-                                    className="hover:bg-gray-50 cursor-pointer border-b"
-                                >
-                                    <td className="px-6 py-4">{student.name}</td>
-                                    <td className="px-6 py-4">{student.grade}</td>
-                                    <td className="px-6 py-4">
-                                        {Array.isArray(student.subjects)
-                                            ? student.subjects.join(', ')
-                                            : student.subjects || '—'}
-                                    </td>
-                                </tr>
-                            ))}
+                        {filteredStudents.map((student) => (
+                            <tr
+                                key={student.id}
+                                onClick={() => handleStudentClick(student.id)}
+                                className="hover:bg-gray-50 cursor-pointer border-b"
+                            >
+                                <td className="px-6 py-4">{student.name}</td>
+                                <td className="px-6 py-4">{student.grade}</td>
+                                <td className="px-6 py-4">
+                                    {Array.isArray(student.subjects)
+                                        ? student.subjects.join(', ')
+                                        : student.subjects || '—'}
+                                </td>
+                            </tr>
+                        ))}
                         </tbody>
                     </table>
                 </div>

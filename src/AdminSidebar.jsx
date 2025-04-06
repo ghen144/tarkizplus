@@ -1,6 +1,6 @@
 // AdminSidebar.jsx
 import React from 'react';
-import { Home, Users, LogOut, GraduationCap, BookOpen } from 'lucide-react';
+import { Home, Users, LogOut, GraduationCap, BookOpen, ClipboardList } from 'lucide-react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { getAuth, signOut } from 'firebase/auth';
 import Logo from './Logo';
@@ -24,6 +24,9 @@ const AdminSidebar = () => {
         { icon: Users, label: 'Students', path: '/admin/students' },
         { icon: GraduationCap, label: 'Teachers', path: '/admin/teachers' },
         { icon: BookOpen, label: 'Schedules', path: '/admin/schedule' },
+        { icon: ClipboardList, label: 'Lesson Log', path: '/admin/lessonlog' },
+
+
 
     ];
 

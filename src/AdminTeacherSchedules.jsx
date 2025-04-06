@@ -1,23 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { collection, getDocs, updateDoc, doc, deleteDoc } from "firebase/firestore";
 import { db } from "./firebase";
+import { Link } from "react-router-dom";
 import AdminSidebar from "./AdminSidebar";
+import DaySchedule, { subjectColors } from "./DaySchedule";
 
-// Define the days and hour range (using 24-hour format, e.g. 13 = 1 PM, etc.)
-const DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-const HOURS_RANGE = [13, 14, 15, 16, 17, 18, 19, 20];
-
-// Helper to parse hour from "HH:MM"
-function parseHour(timeStr) {
-    if (!timeStr) return 0;
-    const [hourStr] = timeStr.split(":");
-    return parseInt(hourStr, 10) || 0;
-}
+const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 const AdminTeacherSchedule = () => {
     const [schedules, setSchedules] = useState([]);
+    const [teacherMap, setTeacherMap] = useState({});
     const [loading, setLoading] = useState(true);
-    // For editing a lesson in a modal
+    const [selectedDay, setSelectedDay] = useState("Monday"); // default day selection
     const [selectedLesson, setSelectedLesson] = useState(null);
     const [editForm, setEditForm] = useState({
         day_of_week: "",
@@ -25,58 +19,78 @@ const AdminTeacherSchedule = () => {
         end_time: "",
         subject: "",
         class_type: "",
-        active: ""
+        active: "Yes"
     });
+    const [editError, setEditError] = useState("");
 
-    // Fetch all schedules from the "weekly_schedule" collection
+    // Fetch schedules from Firestore
+    const fetchSchedules = async () => {
+        try {
+            const snapshot = await getDocs(collection(db, "weekly_schedule"));
+            const data = snapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            setSchedules(data);
+        } catch (err) {
+            console.error("Error fetching schedules:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Fetch teacher data to build teacherMap
+    const fetchTeachers = async () => {
+        try {
+            const snapshot = await getDocs(collection(db, "teachers"));
+            const map = {};
+            snapshot.docs.forEach((doc) => {
+                const d = doc.data();
+                map[doc.id] = d.name;
+            });
+            setTeacherMap(map);
+        } catch (err) {
+            console.error("Error fetching teacher data:", err);
+        }
+    };
+
     useEffect(() => {
-        const fetchSchedules = async () => {
-            try {
-                const snapshot = await getDocs(collection(db, "weekly_schedule"));
-                const data = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
-                setSchedules(data);
-            } catch (err) {
-                console.error("Error fetching schedules:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchSchedules();
+        fetchTeachers();
     }, []);
 
-    // Handler when a lesson is clicked (opens edit modal)
+    // Group lessons by day
+    const lessonsByDay = {};
+    DAYS.forEach(day => {
+        lessonsByDay[day] = schedules.filter((lesson) => lesson.day_of_week === day);
+    });
+
+    // Handler when a lesson is clicked (open edit modal)
     const handleLessonClick = (lesson) => {
         setSelectedLesson(lesson);
+        setEditError("");
         setEditForm({
             day_of_week: lesson.day_of_week,
             start_time: lesson.start_time,
             end_time: lesson.end_time,
             subject: lesson.subject,
             class_type: lesson.class_type,
-            active: lesson.active
+            active: lesson.active || "Yes"
         });
     };
 
     // Update the selected lesson in Firestore
     const handleUpdateLesson = async (e) => {
         e.preventDefault();
+        setEditError("");
+        // (Optional: add conflict check here)
         try {
-            const lessonRef = doc(db, "weekly_schedule", selectedLesson.id);
-            await updateDoc(lessonRef, {
-                ...editForm
-            });
-            // Update local state:
-            setSchedules(prev =>
-                prev.map(sch =>
-                    sch.id === selectedLesson.id ? { ...sch, ...editForm } : sch
-                )
-            );
+            await updateDoc(doc(db, "weekly_schedule", selectedLesson.id), { ...editForm });
+            await fetchSchedules();
             setSelectedLesson(null);
         } catch (err) {
             console.error("Error updating lesson:", err);
+            setEditError("Failed to update lesson.");
         }
     };
 
@@ -85,7 +99,7 @@ const AdminTeacherSchedule = () => {
         if (!window.confirm("Are you sure you want to delete this lesson?")) return;
         try {
             await deleteDoc(doc(db, "weekly_schedule", selectedLesson.id));
-            setSchedules(prev => prev.filter(sch => sch.id !== selectedLesson.id));
+            await fetchSchedules();
             setSelectedLesson(null);
         } catch (err) {
             console.error("Error deleting lesson:", err);
@@ -98,63 +112,54 @@ const AdminTeacherSchedule = () => {
         <div className="flex min-h-screen bg-gray-100">
             <AdminSidebar active="schedules" />
             <main className="flex-1 p-6">
-                <h1 className="text-3xl font-bold mb-6">Teacher Schedules</h1>
-                <div className="overflow-auto">
-                    <table className="w-full border-collapse">
-                        <thead>
-                        <tr>
-                            <th className="border p-2 bg-gray-200">Time / Day</th>
-                            {DAYS_OF_WEEK.map(day => (
-                                <th key={day} className="border p-2 bg-gray-200">{day}</th>
-                            ))}
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {HOURS_RANGE.map(hour => (
-                            <tr key={hour}>
-                                <td className="border p-2 text-center">{hour}:00</td>
-                                {DAYS_OF_WEEK.map(day => {
-                                    // Filter schedules that fall in this day and hour.
-                                    const cellLessons = schedules.filter(lesson => {
-                                        if (lesson.day_of_week !== day) return false;
-                                        // We check if the hour falls within the lesson's time span.
-                                        const lessonStart = parseHour(lesson.start_time);
-                                        const lessonEnd = parseHour(lesson.end_time);
-                                        return hour >= lessonStart && hour < lessonEnd;
-                                    });
-                                    return (
-                                        <td key={day} className="border p-2">
-                                            {cellLessons.map(lesson => (
-                                                <div
-                                                    key={lesson.id}
-                                                    className="bg-blue-50 p-1 mb-1 rounded cursor-pointer hover:bg-blue-100"
-                                                    onClick={() => handleLessonClick(lesson)}
-                                                >
-                                                    <p className="text-sm font-bold">{lesson.subject}</p>
-                                                    <p className="text-xs">{lesson.class_type}</p>
-                                                </div>
-                                            ))}
-                                        </td>
-                                    );
-                                })}
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
+                <div className="flex items-center justify-between mb-6">
+                    <h1 className="text-3xl font-bold">Teacher Schedules</h1>
+                    <Link
+                        to="/admin/schedule/new"
+                        className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                    >
+                        + Add Schedule
+                    </Link>
                 </div>
 
-                {/* Edit Modal (Simple Inline Modal) */}
+                {/* Day Selector */}
+                <div className="mb-4 flex flex-wrap gap-2">
+                    {DAYS.map(day => (
+                        <button
+                            key={day}
+                            onClick={() => setSelectedDay(day)}
+                            className={`px-4 py-1 rounded ${
+                                selectedDay === day ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-700"
+                            }`}
+                        >
+                            {day}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Render schedule for the selected day */}
+                <DaySchedule
+                    day={selectedDay}
+                    lessons={lessonsByDay[selectedDay]}
+                    teacherMap={teacherMap}
+                    onLessonClick={handleLessonClick}
+                />
+
+                {/* Edit Modal */}
                 {selectedLesson && (
                     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
                         <div className="bg-white p-6 rounded shadow-lg w-full max-w-md">
                             <h2 className="text-2xl font-bold mb-4">Edit Lesson</h2>
+                            {editError && <p className="text-red-500 mb-2">{editError}</p>}
                             <form onSubmit={handleUpdateLesson} className="space-y-4">
                                 <div>
                                     <label className="block font-medium">Day of Week</label>
                                     <input
                                         type="text"
                                         value={editForm.day_of_week}
-                                        onChange={e => setEditForm({...editForm, day_of_week: e.target.value})}
+                                        onChange={(e) =>
+                                            setEditForm({ ...editForm, day_of_week: e.target.value })
+                                        }
                                         className="w-full border p-2 rounded"
                                     />
                                 </div>
@@ -164,7 +169,9 @@ const AdminTeacherSchedule = () => {
                                         <input
                                             type="time"
                                             value={editForm.start_time}
-                                            onChange={e => setEditForm({...editForm, start_time: e.target.value})}
+                                            onChange={(e) =>
+                                                setEditForm({ ...editForm, start_time: e.target.value })
+                                            }
                                             className="w-full border p-2 rounded"
                                         />
                                     </div>
@@ -173,7 +180,9 @@ const AdminTeacherSchedule = () => {
                                         <input
                                             type="time"
                                             value={editForm.end_time}
-                                            onChange={e => setEditForm({...editForm, end_time: e.target.value})}
+                                            onChange={(e) =>
+                                                setEditForm({ ...editForm, end_time: e.target.value })
+                                            }
                                             className="w-full border p-2 rounded"
                                         />
                                     </div>
@@ -183,7 +192,9 @@ const AdminTeacherSchedule = () => {
                                     <input
                                         type="text"
                                         value={editForm.subject}
-                                        onChange={e => setEditForm({...editForm, subject: e.target.value})}
+                                        onChange={(e) =>
+                                            setEditForm({ ...editForm, subject: e.target.value })
+                                        }
                                         className="w-full border p-2 rounded"
                                     />
                                 </div>
@@ -192,7 +203,9 @@ const AdminTeacherSchedule = () => {
                                     <input
                                         type="text"
                                         value={editForm.class_type}
-                                        onChange={e => setEditForm({...editForm, class_type: e.target.value})}
+                                        onChange={(e) =>
+                                            setEditForm({ ...editForm, class_type: e.target.value })
+                                        }
                                         className="w-full border p-2 rounded"
                                     />
                                 </div>
@@ -200,7 +213,9 @@ const AdminTeacherSchedule = () => {
                                     <label className="block font-medium">Active</label>
                                     <select
                                         value={editForm.active}
-                                        onChange={e => setEditForm({...editForm, active: e.target.value})}
+                                        onChange={(e) =>
+                                            setEditForm({ ...editForm, active: e.target.value })
+                                        }
                                         className="w-full border p-2 rounded"
                                     >
                                         <option value="Yes">Yes</option>
