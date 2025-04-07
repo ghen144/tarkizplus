@@ -23,6 +23,8 @@ import AdminLessonLog from './AdminLessonLog'
 import AddTeacherPage from './AddTeacherPage';
 import EditStudentPage from './EditStudentPage';
 import EditTeacherPage from './EditTeacherPage';
+import AdminExamsPage from "./AdminExamsPage";
+
 
 
 
@@ -65,6 +67,8 @@ function AppLayout() {
             <Route path="/add-teacher" element={<AddTeacherPage />} />
             <Route path="/admin/students/:studentId/edit" element={<EditStudentPage />} />
             <Route path="/admin/teachers/:teacherId/edit" element={<EditTeacherPage />} />
+            <Route path="/admin/exams" element={<AdminExamsPage />} />
+
 
 
 
