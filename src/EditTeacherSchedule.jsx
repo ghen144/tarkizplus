@@ -11,13 +11,14 @@ const EditTeacherSchedule = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    // Form state (initialize with empty strings)
+    // Form state
     const [dayOfWeek, setDayOfWeek] = useState("");
     const [startTime, setStartTime] = useState("");
     const [endTime, setEndTime] = useState("");
     const [subject, setSubject] = useState("");
     const [classType, setClassType] = useState("");
     const [active, setActive] = useState("");
+    const [studentIds, setStudentIds] = useState([]);
 
     useEffect(() => {
         const fetchSchedule = async () => {
@@ -33,6 +34,7 @@ const EditTeacherSchedule = () => {
                     setSubject(data.subject || "");
                     setClassType(data.class_type || "");
                     setActive(data.active || "");
+                    setStudentIds(data.student_ids || []);
                 } else {
                     setError("Schedule not found");
                 }
@@ -58,8 +60,9 @@ const EditTeacherSchedule = () => {
                 subject,
                 class_type: classType,
                 active,
+                student_ids: studentIds,
             });
-            navigate("/admin/schedule"); // or wherever you list schedules
+            navigate("/admin/schedule");
         } catch (err) {
             console.error("Error updating schedule:", err);
             setError("Failed to update schedule");
@@ -147,6 +150,18 @@ const EditTeacherSchedule = () => {
                             <option value="Yes">Yes</option>
                             <option value="No">No</option>
                         </select>
+                    </div>
+                    <div>
+                        <label className="block font-medium mb-1">Student IDs (comma-separated)</label>
+                        <textarea
+                            value={studentIds.join(", ")}
+                            onChange={(e) =>
+                                setStudentIds(e.target.value.split(",").map(id => id.trim()))
+                            }
+                            className="w-full border rounded p-2"
+                            rows={3}
+                            placeholder="S001, S002, S003"
+                        />
                     </div>
                     <button
                         type="submit"

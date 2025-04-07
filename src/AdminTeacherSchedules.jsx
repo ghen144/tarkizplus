@@ -3,7 +3,8 @@ import { collection, getDocs, updateDoc, doc, deleteDoc } from "firebase/firesto
 import { db } from "./firebase";
 import { Link } from "react-router-dom";
 import AdminSidebar from "./AdminSidebar";
-import DaySchedule, { subjectColors } from "./DaySchedule";
+import DaySchedule from "./DaySchedule";
+import Select from "react-select";
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -11,7 +12,7 @@ const AdminTeacherSchedule = () => {
     const [schedules, setSchedules] = useState([]);
     const [teacherMap, setTeacherMap] = useState({});
     const [loading, setLoading] = useState(true);
-    const [selectedDay, setSelectedDay] = useState("Monday"); // default day selection
+    const [selectedDay, setSelectedDay] = useState("Monday");
     const [selectedLesson, setSelectedLesson] = useState(null);
     const [editForm, setEditForm] = useState({
         day_of_week: "",
@@ -21,9 +22,10 @@ const AdminTeacherSchedule = () => {
         class_type: "",
         active: "Yes"
     });
+    const [studentNames, setStudentNames] = useState([]);
+    const [allStudents, setAllStudents] = useState([]);
     const [editError, setEditError] = useState("");
 
-    // Fetch schedules from Firestore
     const fetchSchedules = async () => {
         try {
             const snapshot = await getDocs(collection(db, "weekly_schedule"));
@@ -39,7 +41,6 @@ const AdminTeacherSchedule = () => {
         }
     };
 
-    // Fetch teacher data to build teacherMap
     const fetchTeachers = async () => {
         try {
             const snapshot = await getDocs(collection(db, "teachers"));
@@ -54,20 +55,36 @@ const AdminTeacherSchedule = () => {
         }
     };
 
+    const fetchStudents = async () => {
+        try {
+            const snapshot = await getDocs(collection(db, "students"));
+            const list = snapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            setAllStudents(list);
+        } catch (err) {
+            console.error("Error fetching students:", err);
+        }
+    };
+
     useEffect(() => {
         fetchSchedules();
         fetchTeachers();
+        fetchStudents();
     }, []);
 
-    // Group lessons by day
     const lessonsByDay = {};
     DAYS.forEach(day => {
         lessonsByDay[day] = schedules.filter((lesson) => lesson.day_of_week === day);
     });
 
-    // Handler when a lesson is clicked (open edit modal)
     const handleLessonClick = (lesson) => {
+        const names = (lesson.student_ids || []).map(id =>
+            allStudents.find(s => s.id === id)?.name || id
+        );
         setSelectedLesson(lesson);
+        setStudentNames(names);
         setEditError("");
         setEditForm({
             day_of_week: lesson.day_of_week,
@@ -79,13 +96,22 @@ const AdminTeacherSchedule = () => {
         });
     };
 
-    // Update the selected lesson in Firestore
     const handleUpdateLesson = async (e) => {
         e.preventDefault();
         setEditError("");
-        // (Optional: add conflict check here)
+
+        const student_ids = studentNames.map(name => {
+            const match = allStudents.find(s =>
+                s.name.toLowerCase().trim() === name.toLowerCase().trim()
+            );
+            return match?.id;
+        }).filter(Boolean); // remove any nulls
+
         try {
-            await updateDoc(doc(db, "weekly_schedule", selectedLesson.id), { ...editForm });
+            await updateDoc(doc(db, "weekly_schedule", selectedLesson.id), {
+                ...editForm,
+                student_ids
+            });
             await fetchSchedules();
             setSelectedLesson(null);
         } catch (err) {
@@ -94,7 +120,6 @@ const AdminTeacherSchedule = () => {
         }
     };
 
-    // Delete the selected lesson
     const handleDeleteLesson = async () => {
         if (!window.confirm("Are you sure you want to delete this lesson?")) return;
         try {
@@ -137,7 +162,6 @@ const AdminTeacherSchedule = () => {
                     ))}
                 </div>
 
-                {/* Render schedule for the selected day */}
                 <DaySchedule
                     day={selectedDay}
                     lessons={lessonsByDay[selectedDay]}
@@ -145,7 +169,6 @@ const AdminTeacherSchedule = () => {
                     onLessonClick={handleLessonClick}
                 />
 
-                {/* Edit Modal */}
                 {selectedLesson && (
                     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
                         <div className="bg-white p-6 rounded shadow-lg w-full max-w-md">
@@ -154,15 +177,19 @@ const AdminTeacherSchedule = () => {
                             <form onSubmit={handleUpdateLesson} className="space-y-4">
                                 <div>
                                     <label className="block font-medium">Day of Week</label>
-                                    <input
-                                        type="text"
+                                    <select
                                         value={editForm.day_of_week}
-                                        onChange={(e) =>
-                                            setEditForm({ ...editForm, day_of_week: e.target.value })
-                                        }
+                                        onChange={(e) => setEditForm({ ...editForm, day_of_week: e.target.value })}
                                         className="w-full border p-2 rounded"
-                                    />
+                                    >
+                                        {DAYS.map((day) => (
+                                            <option key={day} value={day}>
+                                                {day}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
+
                                 <div className="flex gap-2">
                                     <div className="flex-1">
                                         <label className="block font-medium">Start Time</label>
@@ -187,41 +214,62 @@ const AdminTeacherSchedule = () => {
                                         />
                                     </div>
                                 </div>
+
                                 <div>
                                     <label className="block font-medium">Subject</label>
-                                    <input
-                                        type="text"
+                                    <select
                                         value={editForm.subject}
-                                        onChange={(e) =>
-                                            setEditForm({ ...editForm, subject: e.target.value })
-                                        }
+                                        onChange={(e) => setEditForm({ ...editForm, subject: e.target.value })}
                                         className="w-full border p-2 rounded"
-                                    />
+                                    >
+                                        {[...new Set(schedules.map((s) => s.subject))].map((subj) => (
+                                            <option key={subj} value={subj}>
+                                                {subj}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
+
                                 <div>
                                     <label className="block font-medium">Class Type</label>
-                                    <input
-                                        type="text"
+                                    <select
                                         value={editForm.class_type}
-                                        onChange={(e) =>
-                                            setEditForm({ ...editForm, class_type: e.target.value })
-                                        }
+                                        onChange={(e) => setEditForm({ ...editForm, class_type: e.target.value })}
                                         className="w-full border p-2 rounded"
-                                    />
+                                    >
+                                        <option value="Group">Group</option>
+                                        <option value="Private">Private</option>
+                                    </select>
                                 </div>
+
                                 <div>
                                     <label className="block font-medium">Active</label>
                                     <select
                                         value={editForm.active}
-                                        onChange={(e) =>
-                                            setEditForm({ ...editForm, active: e.target.value })
-                                        }
+                                        onChange={(e) => setEditForm({ ...editForm, active: e.target.value })}
                                         className="w-full border p-2 rounded"
                                     >
                                         <option value="Yes">Yes</option>
                                         <option value="No">No</option>
                                     </select>
                                 </div>
+
+                                <div>
+                                    <label className="block font-medium">Students</label>
+                                    <Select
+                                        isMulti
+                                        options={allStudents.map(student => ({
+                                            value: student.name,
+                                            label: student.name
+                                        }))}
+                                        value={studentNames.map(name => ({ value: name, label: name }))}
+                                        onChange={(selectedOptions) =>
+                                            setStudentNames(selectedOptions.map(opt => opt.value))
+                                        }
+                                    />
+
+                                </div>
+
                                 <div className="flex justify-end gap-2">
                                     <button
                                         type="button"
