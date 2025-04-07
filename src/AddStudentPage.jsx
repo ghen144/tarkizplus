@@ -27,7 +27,7 @@ const AddStudentPage = () => {
     });
 
     const allGrades = Array.from({ length: 12 }, (_, i) => `${i + 1}th Grade`);
-    const availableSubjects = ["Hebrew", "English", "Math"];
+    const availableSubjects = ["Hebrew", "English", "Math" , "Arabic"];
     const lessonTypes = ["Private", "Group"];
 
     const handleCheckboxChange = (subject) => {

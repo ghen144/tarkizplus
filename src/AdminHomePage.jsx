@@ -34,15 +34,16 @@ const AdminHomePage = () => {
           exams: eSnap.size
         });
 
+        // تصحيح الأخطاء في النصوص
         const recentLessons = lSnap.docs
           .sort((a, b) => b.data().lesson_date.toDate() - a.data().lesson_date.toDate())
           .slice(0, 3)
-          .map(d => `📝 ${d.data().subject} lesson on ${d.data().lesson_date.toDate().toLocaleDateString()}`);
+          .map(d => `📝 ${d.data().subject} lesson on ${d.data().lesson_date.toDate().toLocaleDateString()}`);  // تم إضافة backticks هنا
 
         const recentExams = eSnap.docs
           .sort((a, b) => b.data().exam_date.toDate() - a.data().exam_date.toDate())
           .slice(0, 2)
-          .map(d => `📅 Exam: ${d.data().subject} on ${d.data().exam_date.toDate().toLocaleDateString()}`);
+          .map(d => `📅 Exam: ${d.data().subject} on ${d.data().exam_date.toDate().toLocaleDateString()}`);  // تم إضافة backticks هنا
 
         setRecentActivity([...recentLessons, ...recentExams]);
       } catch (err) {

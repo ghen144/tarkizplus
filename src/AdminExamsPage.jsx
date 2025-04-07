@@ -76,6 +76,8 @@ const AdminExamsPage = () => {
             <option value="Math">Math</option>
             <option value="English">English</option>
             <option value="Hebrew">Hebrew</option>
+            <option value="Arabic">Arabic</option>
+
           </select>
 
           <select
