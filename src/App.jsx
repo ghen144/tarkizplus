@@ -20,6 +20,11 @@ import AdminTeacherSchedules from './AdminTeacherSchedules';
 import NewSchedule from './NewSchedule';
 import AdminTeachers from './adminteachers';
 import AdminLessonLog from './AdminLessonLog'
+import AddTeacherPage from './AddTeacherPage';
+import EditStudentPage from './EditStudentPage';
+import EditTeacherPage from './EditTeacherPage';
+
+
 
 
 
@@ -50,13 +55,18 @@ function AppLayout() {
             <Route path="/settings" element={<AppSettings />} />
             <Route path="/lesson-log/:lessonId/details" element={<LessonDetails />} />
             <Route path="/admin/students" element={<AdminStudentsPage />} />
-              <Route path="/admin/students/add" element={<AddStudentPage />} />
+            <Route path="/admin/students/add" element={<AddStudentPage />} />
             <Route path="/admin/home" element={<AdminHomePage />} />
             <Route path="/admin/schedule/edit/:id" element={<EditTeacherSchedule />} />
             <Route path="/admin/schedule" element={<AdminTeacherSchedules />} />
             <Route path="/admin/schedule/new" element={<NewSchedule />} />
-            <Route path= "/admin/teachers" element={<AdminTeachers/>} />
+            <Route path="/admin/teachers" element={<AdminTeachers />} />
             <Route path= "/admin/lessonlog" element={<AdminLessonLog/>} />
+            <Route path="/add-teacher" element={<AddTeacherPage />} />
+            <Route path="/admin/students/:studentId/edit" element={<EditStudentPage />} />
+            <Route path="/admin/teachers/:teacherId/edit" element={<EditTeacherPage />} />
+
+
 
 
 

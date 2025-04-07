@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { db } from './firebase';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
@@ -33,6 +33,19 @@ function AdminStudentsPage() {
 
         fetchStudents();
     }, []);
+
+    const handleDeleteStudent = async (studentId) => {
+        const confirmDelete = window.confirm("Are you sure you want to delete this student?");
+        if (!confirmDelete) return;
+
+        try {
+            await deleteDoc(doc(db, 'students', studentId));
+            setStudents(prev => prev.filter(s => s.id !== studentId));
+        } catch (error) {
+            console.error("Error deleting student:", error);
+            alert("Failed to delete student.");
+        }
+    };
 
     const handleStudentClick = (studentId) => {
         navigate(`/students/${studentId}`);
@@ -80,9 +93,8 @@ function AdminStudentsPage() {
                 </button>
             </div>
 
-            {/* Search + Filters */}
+            {/* Filters */}
             <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
-                {/* Search Bar */}
                 <input
                     type="text"
                     placeholder="Search by student name..."
@@ -91,7 +103,6 @@ function AdminStudentsPage() {
                     className="border px-4 py-2 rounded w-full md:w-64"
                 />
 
-                {/* Grade Dropdown */}
                 <div className="relative">
                     <button
                         onClick={() => setGradeDropdownOpen(!gradeDropdownOpen)}
@@ -102,22 +113,19 @@ function AdminStudentsPage() {
                     {gradeDropdownOpen && (
                         <div className="absolute z-10 mt-2 bg-white border rounded shadow p-2 max-h-60 overflow-y-auto">
                             {allGrades.map((grade) => (
-                                <div key={grade}>
-                                    <label className="flex items-center space-x-2">
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedGrades.includes(grade)}
-                                            onChange={() => toggleSelection(grade, selectedGrades, setSelectedGrades)}
-                                        />
-                                        <span>{grade}</span>
-                                    </label>
-                                </div>
+                                <label key={grade} className="flex items-center space-x-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedGrades.includes(grade)}
+                                        onChange={() => toggleSelection(grade, selectedGrades, setSelectedGrades)}
+                                    />
+                                    <span>{grade}</span>
+                                </label>
                             ))}
                         </div>
                     )}
                 </div>
 
-                {/* Subject Dropdown */}
                 <div className="relative">
                     <button
                         onClick={() => setSubjectDropdownOpen(!subjectDropdownOpen)}
@@ -128,22 +136,19 @@ function AdminStudentsPage() {
                     {subjectDropdownOpen && (
                         <div className="absolute z-10 mt-2 bg-white border rounded shadow p-2 max-h-60 overflow-y-auto">
                             {allSubjects.map((subject) => (
-                                <div key={subject}>
-                                    <label className="flex items-center space-x-2">
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedSubjects.includes(subject)}
-                                            onChange={() => toggleSelection(subject, selectedSubjects, setSelectedSubjects)}
-                                        />
-                                        <span>{subject}</span>
-                                    </label>
-                                </div>
+                                <label key={subject} className="flex items-center space-x-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedSubjects.includes(subject)}
+                                        onChange={() => toggleSelection(subject, selectedSubjects, setSelectedSubjects)}
+                                    />
+                                    <span>{subject}</span>
+                                </label>
                             ))}
                         </div>
                     )}
                 </div>
 
-                {/* Sort Order */}
                 <button
                     onClick={() => setSortOrder(prev => (prev === "asc" ? "desc" : "asc"))}
                     className="bg-white border px-4 py-2 rounded text-sm hover:bg-gray-100"
@@ -152,7 +157,6 @@ function AdminStudentsPage() {
                 </button>
             </div>
 
-            {/* Active Filters Tags */}
             <div className="flex flex-wrap gap-2 mb-6">
                 {selectedGrades.map((grade) => (
                     <span key={grade} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
@@ -168,35 +172,55 @@ function AdminStudentsPage() {
                 ))}
             </div>
 
-            {/* Students Table */}
             {loading ? (
                 <p>Loading...</p>
             ) : (
                 <div className="overflow-x-auto">
                     <table className="min-w-full bg-white rounded shadow">
                         <thead className="bg-gray-100">
-                        <tr>
-                            <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Name</th>
-                            <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Grade</th>
-                            <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Subjects</th>
-                        </tr>
+                            <tr>
+                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Name</th>
+                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Grade</th>
+                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Subjects</th>
+                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Actions</th>
+                            </tr>
                         </thead>
                         <tbody>
-                        {filteredStudents.map((student) => (
-                            <tr
-                                key={student.id}
-                                onClick={() => handleStudentClick(student.id)}
-                                className="hover:bg-gray-50 cursor-pointer border-b"
-                            >
-                                <td className="px-6 py-4">{student.name}</td>
-                                <td className="px-6 py-4">{student.grade}</td>
-                                <td className="px-6 py-4">
-                                    {Array.isArray(student.subjects)
-                                        ? student.subjects.join(', ')
-                                        : student.subjects || '—'}
-                                </td>
-                            </tr>
-                        ))}
+                            {filteredStudents.map((student) => (
+                                <tr
+                                    key={student.id}
+                                    onClick={() => handleStudentClick(student.id)}
+                                    className="hover:bg-gray-50 cursor-pointer border-b"
+                                >
+                                    <td className="px-6 py-4">{student.name}</td>
+                                    <td className="px-6 py-4">{student.grade}</td>
+                                    <td className="px-6 py-4">
+                                        {Array.isArray(student.subjects)
+                                            ? student.subjects.join(', ')
+                                            : student.subjects || '—'}
+                                    </td>
+                                    <td className="px-6 py-4 flex gap-2">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                navigate(`/admin/students/${student.id}/edit`);
+                                            }}
+                                            className="bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-1 rounded text-sm"
+                                        >
+                                            Edit
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDeleteStudent(student.id);
+                                            }}
+                                            className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
+                                        >
+                                            Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
                         </tbody>
                     </table>
                 </div>

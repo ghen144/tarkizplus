@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { db } from './firebase';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 
-function adminteachers() {
+function AdminTeachers() {
     const [teachers, setTeachers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -40,6 +40,19 @@ function adminteachers() {
         );
     };
 
+    const handleDelete = async (teacherId) => {
+        const confirmDelete = window.confirm("Are you sure you want to delete this teacher?");
+        if (!confirmDelete) return;
+
+        try {
+            await deleteDoc(doc(db, "teachers", teacherId));
+            setTeachers(prev => prev.filter(t => t.teacher_id !== teacherId));
+        } catch (error) {
+            console.error("Error deleting teacher:", error);
+            alert("Failed to delete teacher.");
+        }
+    };
+
     const allSubjects = Array.from(
         new Set(teachers.flatMap(t => Array.isArray(t.subject_specialties) ? t.subject_specialties : []))
     );
@@ -62,10 +75,15 @@ function adminteachers() {
         <div className="p-6">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-semibold">All Teachers</h2>
+                <button
+                    onClick={() => navigate('/add-teacher')}
+                    className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded"
+                >
+                    Add Teacher
+                </button>
             </div>
 
             <div className="flex flex-wrap gap-4 mb-6 items-start">
-                {/* 🔍 Search */}
                 <input
                     type="text"
                     placeholder="Search by name or email"
@@ -74,7 +92,6 @@ function adminteachers() {
                     className="border px-4 py-2 rounded w-64"
                 />
 
-                {/* 🎯 Subject Filter */}
                 <div className="relative">
                     <button
                         onClick={() => setSubjectDropdownOpen(!subjectDropdownOpen)}
@@ -98,7 +115,6 @@ function adminteachers() {
                     )}
                 </div>
 
-                {/* 🔄 Active Status Filter */}
                 <select
                     value={statusFilter}
                     onChange={e => setStatusFilter(e.target.value)}
@@ -110,7 +126,6 @@ function adminteachers() {
                 </select>
             </div>
 
-            {/* Tags */}
             <div className="flex flex-wrap gap-2 mb-4">
                 {selectedSubjects.map(subject => (
                     <span key={subject} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
@@ -120,41 +135,54 @@ function adminteachers() {
                 ))}
             </div>
 
-            {/* Table */}
             {loading ? (
                 <p>Loading...</p>
             ) : (
                 <div className="overflow-x-auto">
                     <table className="min-w-full bg-white rounded shadow">
                         <thead className="bg-gray-100">
-                        <tr>
-                            <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Name</th>
-                            <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Email</th>
-                            <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Subjects</th>
-                            <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Experience</th>
-                            <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Status</th>
-                        </tr>
+                            <tr>
+                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Name</th>
+                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Email</th>
+                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Subjects</th>
+                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Experience</th>
+                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Status</th>
+                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Actions</th>
+                            </tr>
                         </thead>
                         <tbody>
-                        {filteredTeachers.map(teacher => (
-                            <tr
-                                key={teacher.id}
-                                onClick={() => navigate(`/profile?teacherId=${teacher.teacher_id}`)}
-                                className="hover:bg-gray-50 cursor-pointer border-b"
-                            >
-                                <td className="px-6 py-4">{teacher.name}</td>
-                                <td className="px-6 py-4">{teacher.email}</td>
-                                <td className="px-6 py-4">{(teacher.subject_specialties || []).join(", ")}</td>
-                                <td className="px-6 py-4">{teacher.experience_years || 0} yrs</td>
-                                <td className="px-6 py-4">
-                                    {teacher.active_status ? (
-                                        <span className="text-green-600 font-semibold">Active</span>
-                                    ) : (
-                                        <span className="text-red-600 font-semibold">Inactive</span>
-                                    )}
-                                </td>
-                            </tr>
-                        ))}
+                            {filteredTeachers.map(teacher => (
+                                <tr
+                                    key={teacher.id}
+                                    className="hover:bg-gray-50 border-b"
+                                >
+                                    <td className="px-6 py-4">{teacher.name}</td>
+                                    <td className="px-6 py-4">{teacher.email}</td>
+                                    <td className="px-6 py-4">{(teacher.subject_specialties || []).join(", ")}</td>
+                                    <td className="px-6 py-4">{teacher.experience_years || 0} yrs</td>
+                                    <td className="px-6 py-4">
+                                        {teacher.active_status ? (
+                                            <span className="text-green-600 font-semibold">Active</span>
+                                        ) : (
+                                            <span className="text-red-600 font-semibold">Inactive</span>
+                                        )}
+                                    </td>
+                                    <td className="px-6 py-4 flex gap-2">
+                                        <button
+                                            onClick={() => navigate(`/admin/teachers/${teacher.id}/edit`)}
+                                            className="bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-1 rounded text-sm"
+                                        >
+                                            Edit
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(teacher.teacher_id)}
+                                            className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
+                                        >
+                                            Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
                         </tbody>
                     </table>
                 </div>
@@ -163,4 +191,4 @@ function adminteachers() {
     );
 }
 
-export default adminteachers;
+export default AdminTeachers;

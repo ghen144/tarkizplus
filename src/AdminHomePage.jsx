@@ -114,7 +114,7 @@ const AdminHomePage = () => {
                 <div className="bg-white p-6 rounded shadow space-y-4">
                     <h2 className="text-xl font-semibold">Quick Actions</h2>
                     <div className="flex flex-wrap gap-4">
-                        <Link to="/admin/teachers/add" className="inline-flex items-center bg-blue-500 text-white px-4 py-2 rounded">
+                        <Link to="/add-teacher" className="inline-flex items-center bg-blue-500 text-white px-4 py-2 rounded">
                             <PlusCircle className="mr-2" /> Add Teacher
                         </Link>
                         <Link to="/admin/students/add" className="inline-flex items-center bg-green-500 text-white px-4 py-2 rounded">
