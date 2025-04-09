@@ -12,7 +12,7 @@ const Sidebar = () => {
     const handleSignOut = async () => {
         try {
             await signOut(auth);
-            navigate('/login');
+            navigate('/');
         } catch (error) {
             console.error('Error signing out:', error);
         }
@@ -21,7 +21,7 @@ const Sidebar = () => {
     };
 
     const menuItems = [
-        { icon: Home, label: 'Home', path: '/', active: location.pathname === '/' },
+        { icon: Home, label: 'Home', path: '/homepage', active: location.pathname === '/homepage' },
         { icon: Users, label: 'Students', path: '/students', active: location.pathname === '/students' },
         { icon: BookOpenText, label: 'Lesson Log', path: '/lesson-log', active: location.pathname === '/lesson-log' }
     ];

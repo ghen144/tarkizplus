@@ -65,12 +65,12 @@ const Header = () => {
                         className="flex items-center gap-2 text-gray-600 hover:text-blue-500 focus:outline-none"
                     >
                         <img
-                            src="https://via.placeholder.com/40"
+                            src={`https://ui-avatars.com/api/?name=${userName || 'User'}&background=random`}
                             alt="User"
                             className="h-10 w-10 rounded-full"
                         />
                     </button>
-                    {isDropdownOpen && <DropdownMenu onClose={closeDropdown} />}
+                    {isDropdownOpen && <DropdownMenu onClose={closeDropdown}/>}
                 </div>
             </div>
         </header>

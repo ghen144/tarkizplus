@@ -1,6 +1,5 @@
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import Sidebar from './Sidebar';
-import Header from './Header';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Layout from './Layout';
 import LoginPage from './LoginPage';
 import HomePage from './HomePage';
 import StudentsPage from './StudentsPage';
@@ -12,42 +11,28 @@ import TeacherProfile from './TeacherProfile';
 import AppSettings from './AppSettings';
 import LessonDetails from './LessonDetails';
 import AdminStudentsPage from './AdminStudentsPage';
-import AdminSidebar from './AdminSidebar';
 import AddStudentPage from './AddStudentPage';
 import AdminHomePage from './AdminHomePage';
 import EditTeacherSchedule from './EditTeacherSchedule';
 import AdminTeacherSchedules from './AdminTeacherSchedules';
 import NewSchedule from './NewSchedule';
 import AdminTeachers from './adminteachers';
-import AdminLessonLog from './AdminLessonLog'
+import AdminLessonLog from './AdminLessonLog';
 import AddTeacherPage from './AddTeacherPage';
 import EditStudentPage from './EditStudentPage';
 import EditTeacherPage from './EditTeacherPage';
 import AdminExamsPage from "./AdminExamsPage";
 
-
-
-
-
-
-function AppLayout() {
-  const location = useLocation();
-  const isLoginPage = location.pathname === '/login';
-
-  const role = localStorage.getItem('userRole');
-
+function App() {
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      {!isLoginPage && (
-        role === "admin" ? <AdminSidebar /> : <Sidebar />
-      )}
+      <Router>
+        <Routes>
+          {/* Login route (no layout) */}
+          <Route path="/" element={<LoginPage />} />
 
-      <div className={`flex-1 ${!isLoginPage ? 'ml-64' : ''}`}>
-        {!isLoginPage && <Header />}
-        <div className="p-6">
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/" element={<HomePage />} />
+          {/* Routes that share the layout */}
+          <Route element={<Layout />}>
+            <Route path="/homepage" element={<HomePage />} />
             <Route path="/students" element={<StudentsPage />} />
             <Route path="/students/:studentId" element={<StudentProfile />} />
             <Route path="/lesson-log" element={<LessonLog />} />
@@ -63,31 +48,14 @@ function AppLayout() {
             <Route path="/admin/schedule" element={<AdminTeacherSchedules />} />
             <Route path="/admin/schedule/new" element={<NewSchedule />} />
             <Route path="/admin/teachers" element={<AdminTeachers />} />
-            <Route path= "/admin/lessonlog" element={<AdminLessonLog/>} />
+            <Route path="/admin/lessonlog" element={<AdminLessonLog />} />
             <Route path="/add-teacher" element={<AddTeacherPage />} />
             <Route path="/admin/students/:studentId/edit" element={<EditStudentPage />} />
             <Route path="/admin/teachers/:teacherId/edit" element={<EditTeacherPage />} />
             <Route path="/admin/exams" element={<AdminExamsPage />} />
-
-
-
-
-
-
-
-          </Routes>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// 👇 هذا السطر هو اللي ناقصك
-function App() {
-  return (
-    <Router>
-      <AppLayout />
-    </Router>
+          </Route>
+        </Routes>
+      </Router>
   );
 }
 

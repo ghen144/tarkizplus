@@ -99,7 +99,7 @@ const LessonDetails = () => {
                 {/* Add any additional fields here */}
             </div>
             <div className="mt-4">
-                <Link to="/lesson-log" className="text-blue-500 hover:underline">
+                <Link to="/admin/lessonlog" className="text-blue-500 hover:underline">
                     Back to Lesson Log
                 </Link>
             </div>

@@ -1,24 +1,31 @@
 import React from 'react';
-import { useLocation } from 'react-router-dom';
-import Sidebar from './Sidebar';
+import { useLocation, Outlet } from 'react-router-dom';
+import Sidebar from './Sidebar'; // Teacher Sidebar
+import AdminSidebar from './AdminSidebar'; // Admin Sidebar
 import Header from './Header';
 
-const Layout = ({ children }) => {
+const Layout = () => {
     const location = useLocation();
-    const isLoginPage = location.pathname === '/login';
+    const isLoginPage = location.pathname === '/';
+    const userRole = localStorage.getItem('userRole'); // Check the role of the user
 
     if (isLoginPage) {
-        return <>{children}</>;
+        return <Outlet />; // Return the outlet for the login page
     }
 
+    // Make sure that the sidebar is consistent with the role
     return (
         <div className="flex min-h-screen bg-gray-50">
+            {/* Conditionally render Sidebar based on userRole */}
             <div className="w-64 bg-white border-r h-screen fixed left-0 top-0">
-                <Sidebar />
+                {userRole === 'admin' ? <AdminSidebar /> : <Sidebar />}
             </div>
+
             <div className="flex-1 ml-64">
                 <Header />
-                <main className="p-6">{children}</main>
+                <main className="p-6">
+                    <Outlet /> {/* This renders the matched route component */}
+                </main>
             </div>
         </div>
     );

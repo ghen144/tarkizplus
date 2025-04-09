@@ -12,6 +12,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 import Sidebar from "./Sidebar";
+import AdminSidebar from "./AdminSidebar";
 import {
     ArrowLeft,
     BookOpen,

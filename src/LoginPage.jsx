@@ -42,7 +42,7 @@ const LoginPage = () => {
     
                 if (!snapshot.empty) {
                     localStorage.setItem("userRole", "teacher");
-                    navigate("/");
+                    navigate("/homepage");
                 } else {
                     setError("You are not registered as a teacher.");
                 }
