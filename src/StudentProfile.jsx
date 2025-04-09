@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import React, { useState, useEffect  } from "react";
+import { useNavigate, useParams,useLocation } from "react-router-dom";
 import {
     doc,
     getDoc,
@@ -11,8 +11,7 @@ import {
     addDoc,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import Sidebar from "./Sidebar";
-import AdminSidebar from "./AdminSidebar";
+import { getAuth } from "firebase/auth";
 import {
     ArrowLeft,
     BookOpen,
@@ -28,13 +27,11 @@ import {
 const StudentProfile = () => {
     const navigate = useNavigate();
     const { studentId } = useParams();
-
     const [studentData, setStudentData] = useState(null);
     const [lessons, setLessons] = useState([]);
     const [teachersMap, setTeachersMap] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-
     // Filters
     const [selectedTeacherFilters, setSelectedTeacherFilters] = useState([]);
     const [selectedSubjectFilters, setSelectedSubjectFilters] = useState([]);
@@ -49,6 +46,37 @@ const StudentProfile = () => {
         exam_date: "",
         material: "",
     });
+    const [isAdmin, setIsAdmin] = useState(false);
+
+
+// Add this useEffect to check user role
+    useEffect(() => {
+        const auth = getAuth();
+        const user = auth.currentUser;
+
+        if (user) {
+            // Check if the user is an admin (you'll need to implement this logic)
+            // For example, you might have an admins collection in Firestore
+            // or check the user's email against a list of admin emails
+            const checkAdminStatus = async () => {
+                try {
+                    // Example: Check if user is in admins collection
+                    const adminRef = doc(db, "admins", user.uid);
+                    const adminSnap = await getDoc(adminRef);
+                    setIsAdmin(adminSnap.exists());
+
+                    // OR if you're using custom claims:
+                    // const idTokenResult = await user.getIdTokenResult();
+                    // setIsAdmin(!!idTokenResult.claims.admin);
+                } catch (error) {
+                    console.error("Error checking admin status:", error);
+                    setIsAdmin(false);
+                }
+            };
+
+            checkAdminStatus();
+        }
+    }, []);
 
     const handleSaveExam = async () => {
         if (!newExam.subject || !newExam.exam_date || !newExam.material) {
@@ -172,13 +200,13 @@ const StudentProfile = () => {
     }, [studentId]);
 
     const handleReturn = () => {
-        navigate("/students");
+        navigate(isAdmin ? "/admin/students" : "/students");
     };
+
 
     if (loading) {
         return (
             <div className="flex min-h-screen bg-gray-50">
-                <Sidebar activePage="students" />
                 <main className="ml-64 flex-1 p-6 flex items-center justify-center">
                     <p>Loading student data...</p>
                 </main>
@@ -189,7 +217,6 @@ const StudentProfile = () => {
     if (error) {
         return (
             <div className="flex min-h-screen bg-gray-50">
-                <Sidebar activePage="students" />
                 <main className="ml-64 flex-1 p-6">
                     <div className="flex items-center justify-center h-full">
                         <p className="text-red-500">{error}</p>
@@ -244,7 +271,6 @@ const StudentProfile = () => {
 
     return (
         <div className="flex min-h-screen bg-gray-200">
-            <Sidebar activePage="students" />
 
             <main className="ml-0 flex-1 p-6 space-y-6">
                 {/* General Information Card */}
@@ -543,9 +569,9 @@ const StudentProfile = () => {
                 <div className="mt-6">
                     <button
                         className="flex items-center bg-white p-3 rounded-lg shadow hover:bg-gray-100"
-                        onClick={() => navigate("/students")}
+                        onClick={handleReturn}
                     >
-                        <ArrowLeft className="h-5 w-5 text-gray-500 mr-2" />
+                        <ArrowLeft className="h-5 w-5 text-gray-500 mr-2"/>
                         Return to Students
                     </button>
                 </div>
