@@ -1,9 +1,22 @@
+// React & Hooks
 import React, { useState, useEffect } from "react";
-import { collection, getDocs, addDoc, doc, updateDoc, arrayUnion } from "firebase/firestore";
 import { db } from "./firebase";
-import { Link } from "react-router-dom";
+import {
+  collection,
+  getDocs,
+  addDoc,
+  doc,
+  updateDoc,
+  arrayUnion,
+} from "firebase/firestore";
+// Router
+import { useNavigate, useParams, useLocation, Link } from "react-router-dom";
+
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,  ResponsiveContainer,} from "recharts";
 import AdminSidebar from "./AdminSidebar";
-import { Users, User, BookOpen, ClipboardList, PlusCircle } from "lucide-react";
+import { Users, User, BookOpen, ClipboardList, PlusCircle,} from "lucide-react";
+
+
 
 const AdminHomePage = () => {
   const [counts, setCounts] = useState({ teachers: 0, students: 0, lessons: 0, exams: 0 });
@@ -16,6 +29,8 @@ const AdminHomePage = () => {
     exam_date: "",
     material: ""
   });
+  const [students, setStudents] = useState([]);
+  const [teachers, setTeachers] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -27,6 +42,15 @@ const AdminHomePage = () => {
           getDocs(collection(db, "exams"))
         ]);
 
+        // 👇 ADD THIS to extract and store student data
+        const studentsList = sSnap.docs.map((doc) => doc.data());
+        setStudents(studentsList);
+
+        // 👇 Likewise for teachers if needed:
+        const teachersList = tSnap.docs.map((doc) => doc.data());
+        setTeachers(teachersList);
+
+
         setCounts({
           teachers: tSnap.size,
           students: sSnap.size,
@@ -34,18 +58,18 @@ const AdminHomePage = () => {
           exams: eSnap.size
         });
 
-        // تصحيح الأخطاء في النصوص
         const recentLessons = lSnap.docs
-          .sort((a, b) => b.data().lesson_date.toDate() - a.data().lesson_date.toDate())
-          .slice(0, 3)
-          .map(d => `📝 ${d.data().subject} lesson on ${d.data().lesson_date.toDate().toLocaleDateString()}`);  // تم إضافة backticks هنا
+            .sort((a, b) => b.data().lesson_date.toDate() - a.data().lesson_date.toDate())
+            .slice(0, 3)
+            .map(d => `📝 ${d.data().subject} lesson on ${d.data().lesson_date.toDate().toLocaleDateString()}`);
 
         const recentExams = eSnap.docs
-          .sort((a, b) => b.data().exam_date.toDate() - a.data().exam_date.toDate())
-          .slice(0, 2)
-          .map(d => `📅 Exam: ${d.data().subject} on ${d.data().exam_date.toDate().toLocaleDateString()}`);  // تم إضافة backticks هنا
+            .sort((a, b) => b.data().exam_date.toDate() - a.data().exam_date.toDate())
+            .slice(0, 2)
+            .map(d => `📅 Exam: ${d.data().subject} on ${d.data().exam_date.toDate().toLocaleDateString()}`);
 
         setRecentActivity([...recentLessons, ...recentExams]);
+
       } catch (err) {
         console.error(err);
       } finally {
@@ -55,6 +79,20 @@ const AdminHomePage = () => {
 
     fetchData();
   }, []);
+
+  const subjectList = ["Math", "Arabic", "English", "Hebrew"];
+
+  const studentSubjectCounts = subjectList.map(subject => ({
+    subject,
+    count: students.filter(s => s.subjects?.includes(subject)).length
+  }));
+
+  const teacherSubjectCounts = subjectList.map(subject => ({
+    subject,
+    count: teachers.filter(t => t.subject_specialties?.includes(subject)).length
+  }));
+
+
 
   const handleAddExam = async (e) => {
     e.preventDefault();
@@ -66,10 +104,10 @@ const AdminHomePage = () => {
         exam_date: new Date(examForm.exam_date)
       };
 
-      // أضف الامتحان في Collection exams
+      //  Collection exams
       await addDoc(collection(db, "exams"), newExam);
 
-      // أضف الامتحان إلى الطالب
+
       const studentRef = doc(db, "students", examForm.student_id);
       await updateDoc(studentRef, {
         exams: arrayUnion(newExam)
@@ -158,6 +196,39 @@ const AdminHomePage = () => {
             </button>
           </div>
         </div>
+
+
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="bg-white p-6 rounded shadow">
+            <h2 className="text-xl font-semibold mb-4">Students by Subject</h2>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={studentSubjectCounts}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="subject" />
+                <YAxis allowDecimals={false} />
+                <Tooltip />
+                <Bar dataKey="count" fill="#60A5FA" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="bg-white p-6 rounded shadow">
+            <h2 className="text-xl font-semibold mb-4">Teachers by Subject</h2>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={teacherSubjectCounts}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="subject" />
+                <YAxis allowDecimals={false} />
+                <Tooltip />
+                <Bar dataKey="count" fill="#34D399" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+
+
 
         {/* Recent Activity */}
         <div className="bg-white p-6 rounded shadow">

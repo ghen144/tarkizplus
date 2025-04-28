@@ -10,6 +10,16 @@ import {
     orderBy,
     addDoc,
 } from "firebase/firestore";
+import {
+    LineChart,
+    Line,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer,
+} from "recharts";
+
 import { db } from "./firebase";
 import { getAuth } from "firebase/auth";
 import {
@@ -260,6 +270,14 @@ const StudentProfile = () => {
 
     // Helper for lesson date
     const formatDate = (ts) => (ts ? ts.toDate().toLocaleDateString() : "No date");
+    const progressData = lessons
+        .filter((lesson) => lesson.lesson_date && lesson.progress_assessment)
+        .sort((a, b) => a.lesson_date.toDate() - b.lesson_date.toDate())
+        .map((lesson) => ({
+            date: lesson.lesson_date.toDate().toLocaleDateString("en-GB"),
+            progress: Number(lesson.progress_assessment),
+        }));
+
 
     // Sorting lessons
     const sortedLessons = [...lessons].sort((a, b) => {
@@ -469,6 +487,47 @@ const StudentProfile = () => {
                     </div>
                 </div>
 
+                {/* Performance & Progress Card */}
+                <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
+                    <div className="flex items-center gap-2 mb-4">
+                        <CheckCircle className="h-5 w-5 text-blue-600" />
+                        <h2 className="text-2xl font-bold">Performance & Progress</h2>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div><strong>Engagement Level:</strong> {engagement_level || "N/A"}</div>
+                        <div><strong>Recent Performance:</strong> {recent_performance || "N/A"}</div>
+                        <div><strong>Attendance Count Weekly:</strong> {attendance_count_weekly || "N/A"}</div>
+                    </div>
+                </div>
+
+                {/* Progress Chart */}
+                <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
+                    <div className="flex items-center gap-2 mb-4">
+                        <CheckCircle className="h-5 w-5 text-blue-600" />
+                        <h2 className="text-2xl font-bold">Progress Over Time</h2>
+                    </div>
+                    {progressData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={300}>
+                            <LineChart data={progressData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="date" />
+                                <YAxis domain={[1, 5]} ticks={[1, 2, 3, 4, 5]} />
+                                <Tooltip />
+                                <Line
+                                    type="monotone"
+                                    dataKey="progress"
+                                    stroke="#3182ce"
+                                    strokeWidth={2}
+                                    dot={{ r: 4 }}
+                                />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <p className="text-gray-500">No progress data available.</p>
+                    )}
+                </div>
+
+
                 {/* Exam Table */}
                 <div className="bg-white p-6 rounded-lg shadow mt-6">
                     <div className="flex items-center gap-2 mb-4">
@@ -578,6 +637,7 @@ const StudentProfile = () => {
             </main>
         </div>
     );
+
 };
 
 export default StudentProfile;
