@@ -1,11 +1,11 @@
-// AddStudentPage.jsx
-
 import React, { useState } from 'react';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const AddStudentPage = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const [student, setStudent] = useState({
         student_id: "",
@@ -17,7 +17,6 @@ const AddStudentPage = () => {
         calculator_or_formula_sheet: false,
         created_at: new Date().toLocaleDateString("en-GB"),
         extra_time: false,
-        grade: "",
         learning_difficulties: false,
         oral_response_allowed: false,
         parent_phone_number: "",
@@ -26,8 +25,7 @@ const AddStudentPage = () => {
         spelling_mistakes_ignored: false,
     });
 
-    const allGrades = Array.from({ length: 12 }, (_, i) => `${i + 1}th Grade`);
-    const availableSubjects = ["Hebrew", "English", "Math" , "Arabic"];
+    const availableSubjects = ["Hebrew", "English", "Math", "Arabic"];
     const lessonTypes = ["Private", "Group"];
 
     const handleCheckboxChange = (subject) => {
@@ -42,25 +40,25 @@ const AddStudentPage = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!student.student_id || !student.name || !student.grade) {
-            alert("Please fill in required fields: ID, Name, Grade");
+            alert(t("fill_required"));
             return;
         }
         try {
             await setDoc(doc(db, "students", student.student_id), student);
-            alert("Student added successfully!");
+            alert(t("student_added"));
             navigate("/admin/students");
         } catch (err) {
             console.error("Error adding student:", err);
-            alert("Failed to add student.");
+            alert(t("student_add_failed"));
         }
     };
 
     return (
         <div className="p-6 max-w-2xl mx-auto bg-white shadow rounded">
-            <h2 className="text-2xl font-bold mb-6">Add New Student</h2>
+            <h2 className="text-2xl font-bold mb-6">{t("add_new_student")}</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                    <label className="block font-medium">Student ID *</label>
+                    <label className="block font-medium">{t("student_id")}</label>
                     <input
                         type="text"
                         value={student.student_id}
@@ -71,7 +69,7 @@ const AddStudentPage = () => {
                 </div>
 
                 <div>
-                    <label className="block font-medium">Full Name *</label>
+                    <label className="block font-medium">{t("full_name")}</label>
                     <input
                         type="text"
                         value={student.name}
@@ -82,36 +80,38 @@ const AddStudentPage = () => {
                 </div>
 
                 <div>
-                    <label className="block font-medium">Grade *</label>
+                    <label className="block font-medium">{t("grade")}</label>
                     <select
                         value={student.grade}
                         onChange={(e) => setStudent({ ...student, grade: e.target.value })}
                         className="w-full border p-2 rounded"
                         required
                     >
-                        <option value="">Select grade</option>
-                        {allGrades.map((grade) => (
-                            <option key={grade} value={grade}>{grade}</option>
+                        <option value="">{t("select_grade")}</option>
+                        {Array.from({ length: 12 }, (_, i) => (
+                            <option key={i + 1} value={`${i + 1}th Grade`}>
+                                {t(`grades.${i + 1}`)}
+                            </option>
                         ))}
                     </select>
                 </div>
 
                 <div>
-                    <label className="block font-medium">Private or Group Lessons</label>
+                    <label className="block font-medium">{t("lesson_type")}</label>
                     <select
                         value={student.private_or_group_lessons}
                         onChange={(e) => setStudent({ ...student, private_or_group_lessons: e.target.value })}
                         className="w-full border p-2 rounded"
                     >
-                        <option value="">Select</option>
+                        <option value="">{t("select")}</option>
                         {lessonTypes.map((type) => (
-                            <option key={type} value={type}>{type}</option>
+                            <option key={type} value={type}>{t(type.toLowerCase())}</option>
                         ))}
                     </select>
                 </div>
 
                 <div>
-                    <label className="block font-medium">Preferred Learning Style</label>
+                    <label className="block font-medium">{t("learning_style")}</label>
                     <input
                         type="text"
                         value={student.PreferredLearningStyle}
@@ -121,7 +121,7 @@ const AddStudentPage = () => {
                 </div>
 
                 <div>
-                    <label className="block font-medium">Attendance Count Weekly</label>
+                    <label className="block font-medium">{t("attendance_count")}</label>
                     <input
                         type="number"
                         value={student.attendance_count_weekly}
@@ -131,7 +131,7 @@ const AddStudentPage = () => {
                 </div>
 
                 <div>
-                    <label className="block font-medium">Parent Phone Number</label>
+                    <label className="block font-medium">{t("parent_phone")}</label>
                     <input
                         type="text"
                         value={student.parent_phone_number}
@@ -140,10 +140,9 @@ const AddStudentPage = () => {
                     />
                 </div>
 
-                {/* Subjects - Checkboxes */}
                 <div>
-                    <label className="block font-medium">Subjects</label>
-                    <div className="flex gap-4 mt-2">
+                    <label className="block font-medium">{t("subjects")}</label>
+                    <div className="flex gap-4 mt-2 flex-wrap">
                         {availableSubjects.map((subject) => (
                             <label key={subject} className="flex items-center gap-1">
                                 <input
@@ -151,28 +150,27 @@ const AddStudentPage = () => {
                                     checked={student.subjects.includes(subject)}
                                     onChange={() => handleCheckboxChange(subject)}
                                 />
-                                {subject}
+                                {t(`subjects.${subject.toLowerCase()}`)}
                             </label>
                         ))}
                     </div>
                 </div>
 
-                {/* Booleans */}
                 {[
-                    { key: "reading_accommodation", label: "Reading Accommodation" },
-                    { key: "oral_response_allowed", label: "Oral Response Allowed" },
-                    { key: "extra_time", label: "Extra Time" },
-                    { key: "spelling_mistakes_ignored", label: "Spelling Mistakes Ignored" },
-                    { key: "calculator_or_formula_sheet", label: "Calculator or Formula Sheet" },
-                    { key: "learning_difficulties", label: "Learning Difficulties" },
-                ].map(({ key, label }) => (
+                    "reading_accommodation",
+                    "oral_response_allowed",
+                    "extra_time",
+                    "spelling_mistakes_ignored",
+                    "calculator_or_formula_sheet",
+                    "learning_difficulties"
+                ].map((key) => (
                     <div key={key} className="flex items-center gap-2">
                         <input
                             type="checkbox"
                             checked={student[key]}
                             onChange={(e) => setStudent({ ...student, [key]: e.target.checked })}
                         />
-                        <label>{label}</label>
+                        <label>{t(key)}</label>
                     </div>
                 ))}
 
@@ -180,7 +178,7 @@ const AddStudentPage = () => {
                     type="submit"
                     className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
                 >
-                    Save Student
+                    {t("save_student")}
                 </button>
             </form>
         </div>

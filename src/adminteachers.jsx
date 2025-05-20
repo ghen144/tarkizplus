@@ -3,8 +3,10 @@ import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { db } from './firebase';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 function AdminTeachers() {
+    const { t } = useTranslation();
     const [teachers, setTeachers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -41,7 +43,7 @@ function AdminTeachers() {
     };
 
     const handleDelete = async (teacherId) => {
-        const confirmDelete = window.confirm("Are you sure you want to delete this teacher?");
+        const confirmDelete = window.confirm(t("confirm_delete_teacher"));
         if (!confirmDelete) return;
 
         try {
@@ -49,7 +51,7 @@ function AdminTeachers() {
             setTeachers(prev => prev.filter(t => t.teacher_id !== teacherId));
         } catch (error) {
             console.error("Error deleting teacher:", error);
-            alert("Failed to delete teacher.");
+            alert(t("delete_failed"));
         }
     };
 
@@ -74,19 +76,19 @@ function AdminTeachers() {
     return (
         <div className="p-6">
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-semibold">All Teachers</h2>
+                <h2 className="text-2xl font-semibold">{t("all_teachers")}</h2>
                 <button
                     onClick={() => navigate('/add-teacher')}
                     className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded"
                 >
-                    Add Teacher
+                    {t("add_teacher")}
                 </button>
             </div>
 
             <div className="flex flex-wrap gap-4 mb-6 items-start">
                 <input
                     type="text"
-                    placeholder="Search by name or email"
+                    placeholder={t("search_by_name_or_email")}
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
                     className="border px-4 py-2 rounded w-64"
@@ -97,7 +99,7 @@ function AdminTeachers() {
                         onClick={() => setSubjectDropdownOpen(!subjectDropdownOpen)}
                         className="bg-white border px-4 py-2 rounded text-sm hover:bg-gray-100"
                     >
-                        Filter by Subject
+                        {t("filter_by_subject")}
                     </button>
                     {subjectDropdownOpen && (
                         <div className="absolute z-10 mt-2 bg-white border rounded shadow p-2 max-h-60 overflow-y-auto">
@@ -108,7 +110,7 @@ function AdminTeachers() {
                                         checked={selectedSubjects.includes(subject)}
                                         onChange={() => toggleSubject(subject)}
                                     />
-                                    <span>{subject}</span>
+                                    <span>{t(`subjects.${subject.toLowerCase()}`)}</span>
                                 </label>
                             ))}
                         </div>
@@ -120,51 +122,58 @@ function AdminTeachers() {
                     onChange={e => setStatusFilter(e.target.value)}
                     className="border px-4 py-2 rounded text-sm"
                 >
-                    <option value="">All Statuses</option>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
+                    <option value="">{t("all_statuses")}</option>
+                    <option value="active">{t("active")}</option>
+                    <option value="inactive">{t("inactive")}</option>
                 </select>
             </div>
 
             <div className="flex flex-wrap gap-2 mb-4">
                 {selectedSubjects.map(subject => (
                     <span key={subject} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
-                        {subject}
+                        {t(`subjects.${subject.toLowerCase()}`)}
                         <X size={14} className="cursor-pointer" onClick={() => toggleSubject(subject)} />
                     </span>
                 ))}
             </div>
 
             {loading ? (
-                <p>Loading...</p>
+                <p>{t("loading")}</p>
             ) : (
                 <div className="overflow-x-auto">
                     <table className="min-w-full bg-white rounded shadow">
                         <thead className="bg-gray-100">
                             <tr>
-                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Name</th>
-                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Email</th>
-                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Subjects</th>
-                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Experience</th>
-                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Status</th>
-                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Actions</th>
+                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">{t("name")}</th>
+                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">{t("email")}</th>
+                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">{t("subjects")}</th>
+                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">{t("experience")}</th>
+                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">{t("status")}</th>
+                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">{t("actions")}</th>
                             </tr>
                         </thead>
                         <tbody>
                             {filteredTeachers.map(teacher => (
-                                <tr
-                                    key={teacher.id}
-                                    className="hover:bg-gray-50 border-b"
-                                >
+                                <tr key={teacher.id} className="hover:bg-gray-50 border-b">
                                     <td className="px-6 py-4">{teacher.name}</td>
                                     <td className="px-6 py-4">{teacher.email}</td>
-                                    <td className="px-6 py-4">{(teacher.subject_specialties || []).join(", ")}</td>
-                                    <td className="px-6 py-4">{teacher.experience_years || 0} yrs</td>
+                                    <td className="px-6 py-4">
+                                        {(teacher.subject_specialties || []).map((subj, idx) => (
+                                            <span key={idx} className="inline-block mr-1">
+                                                {t(`subjects.${subj.toLowerCase()}`)}
+                                            </span>
+                                        ))}
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        {teacher.experience_years
+                                            ? `${teacher.experience_years} ${t("years")}`
+                                            : `0 ${t("years")}`}
+                                    </td>
                                     <td className="px-6 py-4">
                                         {teacher.active_status ? (
-                                            <span className="text-green-600 font-semibold">Active</span>
+                                            <span className="text-green-600 font-semibold">{t("active")}</span>
                                         ) : (
-                                            <span className="text-red-600 font-semibold">Inactive</span>
+                                            <span className="text-red-600 font-semibold">{t("inactive")}</span>
                                         )}
                                     </td>
                                     <td className="px-6 py-4 flex gap-2">
@@ -172,13 +181,13 @@ function AdminTeachers() {
                                             onClick={() => navigate(`/admin/teachers/${teacher.id}/edit`)}
                                             className="bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-1 rounded text-sm"
                                         >
-                                            Edit
+                                            {t("edit")}
                                         </button>
                                         <button
                                             onClick={() => handleDelete(teacher.teacher_id)}
                                             className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
                                         >
-                                            Delete
+                                            {t("delete")}
                                         </button>
                                     </td>
                                 </tr>

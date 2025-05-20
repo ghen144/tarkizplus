@@ -3,8 +3,10 @@ import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { db } from './firebase';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 function AdminStudentsPage() {
+    const { t } = useTranslation();
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [sortOrder, setSortOrder] = useState("asc");
@@ -35,7 +37,7 @@ function AdminStudentsPage() {
     }, []);
 
     const handleDeleteStudent = async (studentId) => {
-        const confirmDelete = window.confirm("Are you sure you want to delete this student?");
+        const confirmDelete = window.confirm(t('confirm_delete_student'));
         if (!confirmDelete) return;
 
         try {
@@ -43,7 +45,7 @@ function AdminStudentsPage() {
             setStudents(prev => prev.filter(s => s.id !== studentId));
         } catch (error) {
             console.error("Error deleting student:", error);
-            alert("Failed to delete student.");
+            alert(t('delete_failed'));
         }
     };
 
@@ -78,18 +80,26 @@ function AdminStudentsPage() {
             return sortOrder === "asc" ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
         });
 
-    const allGrades = Array.from(new Set(students.map(s => s.grade))).filter(Boolean);
-    const allSubjects = Array.from(new Set(students.flatMap(s => Array.isArray(s.subjects) ? s.subjects : []))).filter(Boolean);
+    const allGrades = Array.from(new Set(students.map(s => s.grade)))
+        .filter(Boolean)
+        .map(grade => ({
+            key: grade.replace(/\D/g, ""), // "5th Grade" -> "5"
+            value: grade
+        }));
+
+    const allSubjects = Array.from(new Set(
+        students.flatMap(s => Array.isArray(s.subjects) ? s.subjects : [])
+    )).filter(Boolean);
 
     return (
         <div className="p-6">
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-semibold">All Students</h2>
+                <h2 className="text-2xl font-semibold">{t('all_students')}</h2>
                 <button
                     onClick={() => navigate("/admin/students/add")}
                     className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
                 >
-                    Add Student
+                    {t('add_student')}
                 </button>
             </div>
 
@@ -97,7 +107,7 @@ function AdminStudentsPage() {
             <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
                 <input
                     type="text"
-                    placeholder="Search by student name..."
+                    placeholder={t('search_by_name')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="border px-4 py-2 rounded w-full md:w-64"
@@ -108,18 +118,18 @@ function AdminStudentsPage() {
                         onClick={() => setGradeDropdownOpen(!gradeDropdownOpen)}
                         className="bg-white border rounded px-4 py-2 text-sm hover:bg-gray-100"
                     >
-                        Filter by Grade
+                        {t('filter_by_grade')}
                     </button>
                     {gradeDropdownOpen && (
                         <div className="absolute z-10 mt-2 bg-white border rounded shadow p-2 max-h-60 overflow-y-auto">
                             {allGrades.map((grade) => (
-                                <label key={grade} className="flex items-center space-x-2">
+                                <label key={grade.value} className="flex items-center space-x-2">
                                     <input
                                         type="checkbox"
-                                        checked={selectedGrades.includes(grade)}
-                                        onChange={() => toggleSelection(grade, selectedGrades, setSelectedGrades)}
+                                        checked={selectedGrades.includes(grade.value)}
+                                        onChange={() => toggleSelection(grade.value, selectedGrades, setSelectedGrades)}
                                     />
-                                    <span>{grade}</span>
+                                    <span>{t(`grades.${grade.key}`)}</span>
                                 </label>
                             ))}
                         </div>
@@ -131,7 +141,7 @@ function AdminStudentsPage() {
                         onClick={() => setSubjectDropdownOpen(!subjectDropdownOpen)}
                         className="bg-white border rounded px-4 py-2 text-sm hover:bg-gray-100"
                     >
-                        Filter by Subject
+                        {t('filter_by_subject')}
                     </button>
                     {subjectDropdownOpen && (
                         <div className="absolute z-10 mt-2 bg-white border rounded shadow p-2 max-h-60 overflow-y-auto">
@@ -142,7 +152,7 @@ function AdminStudentsPage() {
                                         checked={selectedSubjects.includes(subject)}
                                         onChange={() => toggleSelection(subject, selectedSubjects, setSelectedSubjects)}
                                     />
-                                    <span>{subject}</span>
+                                    <span>{t(`subjects.${subject.toLowerCase()}`)}</span>
                                 </label>
                             ))}
                         </div>
@@ -153,36 +163,36 @@ function AdminStudentsPage() {
                     onClick={() => setSortOrder(prev => (prev === "asc" ? "desc" : "asc"))}
                     className="bg-white border px-4 py-2 rounded text-sm hover:bg-gray-100"
                 >
-                    Sort: {sortOrder === "asc" ? "A → Z" : "Z → A"}
+                    {t('sort')}: {sortOrder === "asc" ? "A → Z" : "Z → A"}
                 </button>
             </div>
 
             <div className="flex flex-wrap gap-2 mb-6">
                 {selectedGrades.map((grade) => (
                     <span key={grade} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
-                        {grade}
+                        {t(`grades.${grade.replace(/\D/g, "")}`)}
                         <X size={14} className="cursor-pointer" onClick={() => removeTag(grade, setSelectedGrades)} />
                     </span>
                 ))}
                 {selectedSubjects.map((subject) => (
                     <span key={subject} className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
-                        {subject}
+                        {t(`subjects.${subject.toLowerCase()}`)}
                         <X size={14} className="cursor-pointer" onClick={() => removeTag(subject, setSelectedSubjects)} />
                     </span>
                 ))}
             </div>
 
             {loading ? (
-                <p>Loading...</p>
+                <p>{t('loading')}</p>
             ) : (
                 <div className="overflow-x-auto">
                     <table className="min-w-full bg-white rounded shadow">
                         <thead className="bg-gray-100">
                             <tr>
-                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Name</th>
-                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Grade</th>
-                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Subjects</th>
-                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Actions</th>
+                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">{t('name')}</th>
+                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">{t('grade')}</th>
+                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">{t('subjects')}</th>
+                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">{t('actions')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -193,10 +203,16 @@ function AdminStudentsPage() {
                                     className="hover:bg-gray-50 cursor-pointer border-b"
                                 >
                                     <td className="px-6 py-4">{student.name}</td>
-                                    <td className="px-6 py-4">{student.grade}</td>
+                                    <td className="px-6 py-4">
+                                        {t(`grades.${student.grade.replace(/\D/g, "")}`)}
+                                    </td>
                                     <td className="px-6 py-4">
                                         {Array.isArray(student.subjects)
-                                            ? student.subjects.join(', ')
+                                            ? student.subjects.map((sub, i) => (
+                                                <span key={i} className="inline-block mr-2">
+                                                    {t(`subjects.${sub.toLowerCase()}`)}
+                                                </span>
+                                            ))
                                             : student.subjects || '—'}
                                     </td>
                                     <td className="px-6 py-4 flex gap-2">
@@ -207,7 +223,7 @@ function AdminStudentsPage() {
                                             }}
                                             className="bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-1 rounded text-sm"
                                         >
-                                            Edit
+                                            {t('edit')}
                                         </button>
                                         <button
                                             onClick={(e) => {
@@ -216,7 +232,7 @@ function AdminStudentsPage() {
                                             }}
                                             className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
                                         >
-                                            Delete
+                                            {t('delete')}
                                         </button>
                                     </td>
                                 </tr>

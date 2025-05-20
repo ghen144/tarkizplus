@@ -2,10 +2,12 @@ import React, { useEffect, useState } from "react";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { useNavigate, useParams } from "react-router-dom";
 import { db } from "./firebase";
+import { useTranslation } from "react-i18next";
 
 function EditStudentPage() {
   const { studentId } = useParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -25,7 +27,7 @@ function EditStudentPage() {
     learning_difficulties: ""
   });
 
-  const allSubjects = ["Hebrew", "English", "Math"];
+  const availableSubjects = ["Hebrew", "English", "Math", "Arabic"];
 
   useEffect(() => {
     const fetchStudent = async () => {
@@ -78,26 +80,23 @@ function EditStudentPage() {
     }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      await updateDoc(doc(db, "students", studentId), formData);
-      alert("Student updated successfully!");
-      navigate("/admin/students");
-    } catch (err) {
-      console.error(err);
-      alert("Failed to update student.");
-    }
-  };
-
   return (
     <div className="p-6 max-w-2xl mx-auto">
-      <h2 className="text-2xl font-semibold mb-4">Edit Student</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <h2 className="text-2xl font-semibold mb-4">{t("editStudent")}</h2>
+      <form onSubmit={async (e) => {
+        e.preventDefault();
+        try {
+          await updateDoc(doc(db, "students", studentId), formData);
+          alert(t("studentUpdated"));
+          navigate("/admin/students");
+        } catch (err) {
+          console.error(err);
+          alert(t("updateFailed"));
+        }
+      }} className="space-y-4">
 
-        {/* Student ID - ثابت */}
         <div>
-          <label className="block font-semibold mb-1">Student ID</label>
+          <label className="block font-semibold mb-1">{t("studentId")}</label>
           <input
             type="text"
             value={studentId}
@@ -106,9 +105,8 @@ function EditStudentPage() {
           />
         </div>
 
-        {/* Full Name - ثابت */}
         <div>
-          <label className="block font-semibold mb-1">Full Name</label>
+          <label className="block font-semibold mb-1">{t("fullName")}</label>
           <input
             type="text"
             value={formData.name}
@@ -117,9 +115,8 @@ function EditStudentPage() {
           />
         </div>
 
-        {/* Grade */}
         <div>
-          <label className="block font-semibold mb-1">Grade</label>
+          <label className="block font-semibold mb-1">{t("grade")}</label>
           <select
             name="grade"
             value={formData.grade}
@@ -127,31 +124,31 @@ function EditStudentPage() {
             className="w-full border px-4 py-2 rounded"
             required
           >
-            <option value="">Select grade</option>
+            <option value="">{t("selectGrade")}</option>
             {Array.from({ length: 12 }, (_, i) => (
-              <option key={i + 1} value={`${i + 1}th Grade`}>{i + 1}th Grade</option>
+              <option key={i + 1} value={`${i + 1}th Grade`}>
+                {t(`grades.${i + 1}`)}
+              </option>
             ))}
           </select>
         </div>
 
-        {/* Private or Group Lessons */}
         <div>
-          <label className="block font-semibold mb-1">Private or Group Lessons</label>
+          <label className="block font-semibold mb-1">{t("lessonType")}</label>
           <select
             name="private_or_group_lessons"
             value={formData.private_or_group_lessons}
             onChange={handleChange}
             className="w-full border px-4 py-2 rounded"
           >
-            <option value="">Select</option>
-            <option value="Private">Private</option>
-            <option value="Group">Group</option>
+            <option value="">{t("select")}</option>
+            <option value="Private">{t("private")}</option>
+            <option value="Group">{t("group")}</option>
           </select>
         </div>
 
-        {/* Preferred Learning Style */}
         <div>
-          <label className="block font-semibold mb-1">Preferred Learning Style</label>
+          <label className="block font-semibold mb-1">{t("preferredLearningStyle")}</label>
           <input
             type="text"
             name="preferred_learning_style"
@@ -161,9 +158,8 @@ function EditStudentPage() {
           />
         </div>
 
-        {/* ✅ عدد الساعات الأسبوعية */}
         <div>
-          <label className="block font-semibold mb-1">عدد الساعات الأسبوعية</label>
+          <label className="block font-semibold mb-1">{t("weeklyAttendance")}</label>
           <input
             type="number"
             name="attendance_count_weekly"
@@ -174,9 +170,8 @@ function EditStudentPage() {
           />
         </div>
 
-        {/* Parent Phone Number */}
         <div>
-          <label className="block font-semibold mb-1">Parent Phone Number</label>
+          <label className="block font-semibold mb-1">{t("parentPhone")}</label>
           <input
             type="text"
             name="parent_phone_number"
@@ -186,38 +181,35 @@ function EditStudentPage() {
           />
         </div>
 
-        {/* Subjects */}
         <div>
-          <label className="block font-semibold mb-1">Subjects</label>
+          <label className="block font-semibold mb-1">{t("subjects")}</label>
           <div className="flex gap-4 flex-wrap">
-            {allSubjects.map(subject => (
+            {availableSubjects.map(subject => (
               <label key={subject} className="flex items-center gap-2">
                 <input
                   type="checkbox"
                   checked={formData.subjects.includes(subject)}
                   onChange={() => handleCheckboxChange(subject)}
                 />
-                {subject}
+                {t(`subjects.${subject.toLowerCase()}`)}
               </label>
             ))}
           </div>
         </div>
 
-        {/* Accommodations */}
         <div>
-          <label className="block font-semibold mb-1">Accommodations</label>
+          <label className="block font-semibold mb-1">{t("accommodations")}</label>
           <div className="flex flex-col gap-2">
-            <label><input type="checkbox" checked={formData.accommodations.reading} onChange={() => handleAccommodationsChange("reading")} /> Reading Accommodation</label>
-            <label><input type="checkbox" checked={formData.accommodations.oral_response} onChange={() => handleAccommodationsChange("oral_response")} /> Oral Response Allowed</label>
-            <label><input type="checkbox" checked={formData.accommodations.extra_time} onChange={() => handleAccommodationsChange("extra_time")} /> Extra Time</label>
-            <label><input type="checkbox" checked={formData.accommodations.spelling_ignored} onChange={() => handleAccommodationsChange("spelling_ignored")} /> Spelling Mistakes Ignored</label>
-            <label><input type="checkbox" checked={formData.accommodations.calculator} onChange={() => handleAccommodationsChange("calculator")} /> Calculator or Formula Sheet</label>
+            <label><input type="checkbox" checked={formData.accommodations.reading} onChange={() => handleAccommodationsChange("reading")} /> {t("accReading")}</label>
+            <label><input type="checkbox" checked={formData.accommodations.oral_response} onChange={() => handleAccommodationsChange("oral_response")} /> {t("accOral")}</label>
+            <label><input type="checkbox" checked={formData.accommodations.extra_time} onChange={() => handleAccommodationsChange("extra_time")} /> {t("accExtraTime")}</label>
+            <label><input type="checkbox" checked={formData.accommodations.spelling_ignored} onChange={() => handleAccommodationsChange("spelling_ignored")} /> {t("accSpelling")}</label>
+            <label><input type="checkbox" checked={formData.accommodations.calculator} onChange={() => handleAccommodationsChange("calculator")} /> {t("accCalculator")}</label>
           </div>
         </div>
 
-        {/* Learning Difficulties */}
         <div>
-          <label className="block font-semibold mb-1">Learning Difficulties</label>
+          <label className="block font-semibold mb-1">{t("learningDifficulties")}</label>
           <textarea
             name="learning_difficulties"
             value={formData.learning_difficulties}
@@ -226,13 +218,12 @@ function EditStudentPage() {
           />
         </div>
 
-        {/* Buttons */}
         <div className="flex gap-4">
           <button type="submit" className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-2 rounded">
-            Save
+            {t("save")}
           </button>
           <button type="button" onClick={() => navigate("/admin/students")} className="bg-gray-300 hover:bg-gray-400 px-6 py-2 rounded">
-            Cancel
+            {t("cancel")}
           </button>
         </div>
       </form>

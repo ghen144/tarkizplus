@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { db } from "./firebase";
 import {
     collection,
@@ -12,6 +13,7 @@ import {
 const SUBJECT_OPTIONS = ["Math", "English", "Hebrew", "Arabic"];
 
 const AdminLessonLog = () => {
+    const { t } = useTranslation();
     const [lessons, setLessons] = useState([]);
     const [teachersMap, setTeachersMap] = useState({});
     const [studentsMap, setStudentsMap] = useState({});
@@ -106,9 +108,9 @@ const AdminLessonLog = () => {
     return (
         <div className="p-6">
             <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold">Lesson Log (Admin)</h2>
+                <h2 className="text-xl font-bold">{t('lesson_log_admin')}</h2>
                 <div className="flex items-center">
-                    <label htmlFor="lessonsLimit" className="mr-2 text-sm">Show</label>
+                    <label htmlFor="lessonsLimit" className="mr-2 text-sm">{t('show')}</label>
                     <select
                         id="lessonsLimit"
                         value={lessonsLimit}
@@ -120,18 +122,18 @@ const AdminLessonLog = () => {
                         <option value={30}>30</option>
                         <option value={50}>50</option>
                     </select>
-                    <span className="ml-2 text-sm">lessons</span>
+                    <span className="ml-2 text-sm">{t('lessons')}</span>
                 </div>
             </div>
 
             <div className="mb-4 flex flex-col sm:flex-row gap-6">
                 <div>
-                    <p className="font-medium mb-1">Teacher</p>
+                    <p className="font-medium mb-1">{t('teacher')}</p>
                     <select
                         onChange={handleAddTeacherFilter}
                         className="border rounded p-1 text-sm"
                     >
-                        <option value="">Select</option>
+                        <option value="">{t('select')}</option>
                         {Object.entries(teachersMap).map(([id, name]) => (
                             <option key={id} value={id}>{name}</option>
                         ))}
@@ -155,14 +157,14 @@ const AdminLessonLog = () => {
                 </div>
 
                 <div>
-                    <p className="font-medium mb-1">Subject</p>
+                    <p className="font-medium mb-1">{t('subject')}</p>
                     <select
                         onChange={handleAddSubjectFilter}
                         className="border rounded p-1 text-sm"
                     >
-                        <option value="">Select</option>
+                        <option value="">{t('select')}</option>
                         {SUBJECT_OPTIONS.map((subj) => (
-                            <option key={subj} value={subj}>{subj}</option>
+                            <option key={subj} value={subj}>{t(subj.toLowerCase())}</option>
                         ))}
                     </select>
                     <div className="mt-2 flex flex-wrap gap-2">
@@ -171,7 +173,7 @@ const AdminLessonLog = () => {
                                 key={subj}
                                 className="bg-green-200 text-green-800 rounded px-2 py-1 text-sm flex items-center"
                             >
-                                {subj}
+                                {t(subj.toLowerCase())}
                                 <button
                                     onClick={() => removeSubjectFilter(subj)}
                                     className="ml-1 text-green-600 font-bold"
@@ -186,55 +188,54 @@ const AdminLessonLog = () => {
 
             <div className="bg-gray-100 p-4 rounded-lg shadow-md">
                 {loading ? (
-                    <p>Loading lessons...</p>
+                    <p>{t('loading_lessons')}</p>
                 ) : (
                     <table className="w-full border-collapse">
                         <thead>
-                        <tr className="border-b">
-                            <th className="text-left p-2">Date</th>
-                            <th className="text-left p-2">Subject</th>
-                            <th className="text-left p-2">Teacher</th>
-                            <th className="text-left p-2">Student</th>
-                            <th className="p-2"></th>
-                        </tr>
+                            <tr className="border-b">
+                                <th className="text-left p-2">{t('date')}</th>
+                                <th className="text-left p-2">{t('subject')}</th>
+                                <th className="text-left p-2">{t('teacher')}</th>
+                                <th className="text-left p-2">{t('student')}</th>
+                                <th className="p-2"></th>
+                            </tr>
                         </thead>
                         <tbody>
-                        {filteredLessons.length > 0 ? (
-                            filteredLessons.map((lesson) => (
-                                <tr key={lesson.id} className="border-b">
-                                    <td className="p-2">
-                                        {lesson.lesson_date.toDate().toLocaleDateString("en-GB")}
+                            {filteredLessons.length > 0 ? (
+                                filteredLessons.map((lesson) => (
+                                    <tr key={lesson.id} className="border-b">
+                                        <td className="p-2">
+                                            {lesson.lesson_date.toDate().toLocaleDateString("en-GB")}
+                                        </td>
+                                        <td className="p-2">{t(lesson.subject.toLowerCase())}</td>
+                                        <td className="p-2">{teachersMap[lesson.teacher_id] || t('unknown_teacher')}</td>
+                                        <td className="p-2">{studentsMap[lesson.student_id] || t('unknown_student')}</td>
+                                        <td className="p-2">
+                                            <div className="flex items-center justify-between w-full">
+                                                <Link
+                                                    to={`/lesson-log/${lesson.id}/details`}
+                                                    className="text-blue-500 hover:underline cursor-pointer"
+                                                >
+                                                    {t('show_more')}
+                                                </Link>
+                                                <Link
+                                                    to={`/lesson-log/${lesson.id}/edit`}
+                                                    className="text-blue-500 hover:text-blue-700 ml-4"
+                                                    title={t('edit_lesson')}
+                                                >
+                                                    📝
+                                                </Link>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan="5" className="p-4 text-center">
+                                        {t('no_lessons')}
                                     </td>
-                                    <td className="p-2">{lesson.subject}</td>
-                                    <td className="p-2">{teachersMap[lesson.teacher_id] || "Unknown Teacher"}</td>
-                                    <td className="p-2">{studentsMap[lesson.student_id] || "Unknown Student"}</td>
-                                    <td className="p-2">
-                                        <div className="flex items-center justify-between w-full">
-                                            <Link
-                                                to={`/lesson-log/${lesson.id}/details`}
-                                                className="text-blue-500 hover:underline cursor-pointer"
-                                            >
-                                                show more
-                                            </Link>
-                                            <Link
-                                                to={`/lesson-log/${lesson.id}/edit`}
-                                                className="text-blue-500 hover:text-blue-700 ml-4"
-                                                title="Edit this lesson"
-                                            >
-                                                📝
-                                            </Link>
-                                        </div>
-                                    </td>
-
                                 </tr>
-                            ))
-                        ) : (
-                            <tr>
-                                <td colSpan="5" className="p-4 text-center">
-                                    No lessons available.
-                                </td>
-                            </tr>
-                        )}
+                            )}
                         </tbody>
                     </table>
                 )}

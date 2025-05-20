@@ -2,10 +2,12 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "./firebase";
+import { useTranslation } from "react-i18next";
 
 function EditTeacherPage() {
   const { teacherId } = useParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [formData, setFormData] = useState({
     teacher_id: "",
@@ -66,21 +68,20 @@ function EditTeacherPage() {
         uid: formData.uid,
         active_status: formData.active_status === "active",
       });
-      alert("Teacher updated successfully!");
+      alert(t("successMessage"));
       navigate("/admin/teachers");
     } catch (err) {
       console.error(err);
-      alert("Failed to update teacher.");
+      alert(t("errorMessage"));
     }
   };
 
   return (
     <div className="p-6 max-w-xl mx-auto">
-      <h2 className="text-2xl font-semibold mb-4">Edit Teacher</h2>
+      <h2 className="text-2xl font-semibold mb-4">{t("editTeacher")}</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Teacher ID - ثابت */}
         <div>
-          <label className="block font-semibold mb-1">Teacher ID</label>
+          <label className="block font-semibold mb-1">{t("teacherId")}</label>
           <input
             type="text"
             value={formData.teacher_id}
@@ -89,9 +90,8 @@ function EditTeacherPage() {
           />
         </div>
 
-        {/* Name - ثابت */}
         <div>
-          <label className="block font-semibold mb-1">Full Name</label>
+          <label className="block font-semibold mb-1">{t("fullName")}</label>
           <input
             type="text"
             value={formData.name}
@@ -100,20 +100,18 @@ function EditTeacherPage() {
           />
         </div>
 
-        {/* Email */}
         <input
           type="email"
           name="email"
-          placeholder="Email"
+          placeholder={t("email")}
           className="w-full border px-4 py-2 rounded"
           value={formData.email}
           onChange={handleChange}
           required
         />
 
-        {/* Subjects */}
         <div>
-          <label className="block font-semibold mb-1">Subjects:</label>
+          <label className="block font-semibold mb-1">{t("subjects")}</label>
           <div className="flex flex-wrap gap-4">
             {allSubjects.map(subject => (
               <label key={subject} className="flex items-center gap-2">
@@ -122,47 +120,43 @@ function EditTeacherPage() {
                   checked={formData.subject_specialties.includes(subject)}
                   onChange={() => handleCheckboxChange(subject)}
                 />
-                {subject}
+                {t(subject.toLowerCase())}
               </label>
             ))}
           </div>
         </div>
 
-        {/* Years of Experience */}
         <input
           type="number"
           name="experience_years"
-          placeholder="Years of Experience"
+          placeholder={t("yearsOfExperience")}
           className="w-full border px-4 py-2 rounded"
           value={formData.experience_years}
           onChange={handleChange}
           required
         />
 
-        {/* Teaching Hours */}
         <input
           type="number"
           name="teaching_hours_week"
-          placeholder="Teaching Hours per Week"
+          placeholder={t("teachingHours")}
           className="w-full border px-4 py-2 rounded"
           value={formData.teaching_hours_week}
           onChange={handleChange}
           required
         />
 
-        {/* UID */}
         <input
           type="text"
           name="uid"
-          placeholder="Firebase UID (optional)"
+          placeholder={t("firebaseUid")}
           className="w-full border px-4 py-2 rounded"
           value={formData.uid}
           onChange={handleChange}
         />
 
-        {/* Status */}
         <div>
-          <label className="block font-semibold mb-1">Status:</label>
+          <label className="block font-semibold mb-1">{t("status")}</label>
           <select
             name="active_status"
             value={formData.active_status ? "active" : "inactive"}
@@ -174,22 +168,21 @@ function EditTeacherPage() {
             }
             className="w-full border px-4 py-2 rounded"
           >
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
+            <option value="active">{t("active")}</option>
+            <option value="inactive">{t("inactive")}</option>
           </select>
         </div>
 
-        {/* Buttons */}
         <div className="flex gap-4">
           <button type="submit" className="bg-yellow-500 text-white px-6 py-2 rounded hover:bg-yellow-600">
-            Save
+            {t("save")}
           </button>
           <button
             type="button"
             onClick={() => navigate("/admin/teachers")}
             className="bg-gray-300 px-6 py-2 rounded hover:bg-gray-400"
           >
-            Cancel
+            {t("cancel")}
           </button>
         </div>
       </form>

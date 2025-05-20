@@ -2,8 +2,10 @@ import React, { useEffect, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "./firebase";
 import AdminSidebar from "./AdminSidebar";
+import { useTranslation } from "react-i18next";
 
 const AdminExamsPage = () => {
+  const { t } = useTranslation();
   const [exams, setExams] = useState([]);
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +39,6 @@ const AdminExamsPage = () => {
     const student = students.find(s => s.student_id === studentId);
     return student?.name || studentId;
   };
-  
 
   const filteredExams = exams
     .filter(e => !subjectFilter || e.subject === subjectFilter)
@@ -55,13 +56,13 @@ const AdminExamsPage = () => {
     <div className="flex min-h-screen bg-gray-100">
       <AdminSidebar active="exams" />
       <main className="flex-1 p-6">
-        <h1 className="text-3xl font-bold mb-6">All Exams</h1>
+        <h1 className="text-3xl font-bold mb-6">{t('all_exams')}</h1>
 
         {/* Filters */}
         <div className="flex flex-wrap gap-4 mb-4">
           <input
             type="text"
-            placeholder="Search by student name..."
+            placeholder={t('search_student')}
             className="border px-4 py-2 rounded"
             value={searchName}
             onChange={(e) => setSearchName(e.target.value)}
@@ -72,12 +73,11 @@ const AdminExamsPage = () => {
             value={subjectFilter}
             onChange={(e) => setSubjectFilter(e.target.value)}
           >
-            <option value="">All Subjects</option>
-            <option value="Math">Math</option>
-            <option value="English">English</option>
-            <option value="Hebrew">Hebrew</option>
-            <option value="Arabic">Arabic</option>
-
+            <option value="">{t('all_subjects')}</option>
+            <option value="Math">{t('math')}</option>
+            <option value="English">{t('english')}</option>
+            <option value="Hebrew">{t('hebrew')}</option>
+            <option value="Arabic">{t('arabic')}</option>
           </select>
 
           <select
@@ -85,29 +85,29 @@ const AdminExamsPage = () => {
             value={sortByDate}
             onChange={(e) => setSortByDate(e.target.value)}
           >
-            <option value="asc">Nearest → Farthest</option>
-            <option value="desc">Farthest → Nearest</option>
+            <option value="asc">{t('nearest_first')}</option>
+            <option value="desc">{t('farthest_first')}</option>
           </select>
         </div>
 
         {loading ? (
-          <p>Loading exams...</p>
+          <p>{t('loading_exams')}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full bg-white rounded shadow">
               <thead className="bg-gray-100">
                 <tr>
-                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Student Name</th>
-                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Subject</th>
-                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Exam Date</th>
-                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">Material</th>
+                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">{t('student_name')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">{t('subject')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">{t('exam_date')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">{t('material')}</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredExams.map(exam => (
                   <tr key={exam.id} className="border-b hover:bg-gray-50">
                     <td className="px-6 py-4">{getStudentName(exam.student_id)}</td>
-                    <td className="px-6 py-4">{exam.subject}</td>
+                    <td className="px-6 py-4">{t(exam.subject.toLowerCase())}</td>
                     <td className="px-6 py-4">
                       {exam.exam_date?.seconds
                         ? new Date(exam.exam_date.seconds * 1000).toLocaleDateString()

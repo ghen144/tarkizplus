@@ -1,9 +1,13 @@
+// AddTeacherPage.jsx - مع دعم الترجمة
+
 import React, { useState } from 'react';
 import { collection, setDoc, doc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { db } from './firebase';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 function AddTeacherPage() {
+  const { t } = useTranslation();
   const [teacherId, setTeacherId] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -29,7 +33,7 @@ function AddTeacherPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const newDocRef = doc(db, 'teachers', teacherId); // ← استخدمنا teacherId كـ document ID
+      const newDocRef = doc(db, 'teachers', teacherId);
       await setDoc(newDocRef, {
         teacher_id: teacherId,
         name,
@@ -39,14 +43,13 @@ function AddTeacherPage() {
         active_status: activeStatus,
         teaching_hours_week: Number(teachingHoursWeek),
         joining_tarkiz_date: Timestamp.fromDate(new Date(joiningDate)),
-        uid: uid || "", // اختياري
-        assigned_students: [], // افتراضيًا فارغ
+        uid: uid || "",
+        assigned_students: [],
         created_at: serverTimestamp()
       });
-      alert('Teacher added successfully!');
+      alert(t('teacher_added'));
       navigate('/admin/teachers');
-      window.location.reload(); // إعادة تحميل البيانات
-
+      window.location.reload();
     } catch (error) {
       console.error("Error adding teacher:", error);
     }
@@ -54,11 +57,11 @@ function AddTeacherPage() {
 
   return (
     <div className="p-6 max-w-xl mx-auto">
-      <h2 className="text-2xl font-semibold mb-4">Add New Teacher</h2>
+      <h2 className="text-2xl font-semibold mb-4">{t('add_new_teacher')}</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
           type="text"
-          placeholder="Teacher ID (e.g., T001)"
+          placeholder={t('teacher_id_placeholder')}
           className="w-full border px-4 py-2 rounded"
           value={teacherId}
           onChange={e => setTeacherId(e.target.value)}
@@ -66,7 +69,7 @@ function AddTeacherPage() {
         />
         <input
           type="text"
-          placeholder="Full Name"
+          placeholder={t('full_name')}
           className="w-full border px-4 py-2 rounded"
           value={name}
           onChange={e => setName(e.target.value)}
@@ -74,14 +77,14 @@ function AddTeacherPage() {
         />
         <input
           type="email"
-          placeholder="Email"
+          placeholder={t('email')}
           className="w-full border px-4 py-2 rounded"
           value={email}
           onChange={e => setEmail(e.target.value)}
           required
         />
         <div>
-          <label className="block font-semibold mb-1">Subjects:</label>
+          <label className="block font-semibold mb-1">{t('subjects')}:</label>
           <div className="flex flex-wrap gap-4">
             {subjects.map(subject => (
               <label key={subject} className="flex items-center gap-2">
@@ -90,14 +93,14 @@ function AddTeacherPage() {
                   checked={subjectSpecialties.includes(subject)}
                   onChange={() => handleCheckboxChange(subject)}
                 />
-                {subject}
+                {t(subject.toLowerCase())}
               </label>
             ))}
           </div>
         </div>
         <input
           type="number"
-          placeholder="Years of Experience"
+          placeholder={t('experience_years')}
           className="w-full border px-4 py-2 rounded"
           value={experienceYears}
           onChange={e => setExperienceYears(e.target.value)}
@@ -105,14 +108,14 @@ function AddTeacherPage() {
         />
         <input
           type="number"
-          placeholder="Teaching Hours per Week"
+          placeholder={t('teaching_hours')}
           className="w-full border px-4 py-2 rounded"
           value={teachingHoursWeek}
           onChange={e => setTeachingHoursWeek(e.target.value)}
           required
         />
         <div>
-          <label className="block font-semibold mb-1">Joining Date:</label>
+          <label className="block font-semibold mb-1">{t('joining_date')}:</label>
           <input
             type="date"
             className="w-full border px-4 py-2 rounded"
@@ -123,28 +126,28 @@ function AddTeacherPage() {
         </div>
         <input
           type="text"
-          placeholder="Firebase UID (optional)"
+          placeholder={t('uid_optional')}
           className="w-full border px-4 py-2 rounded"
           value={uid}
           onChange={e => setUid(e.target.value)}
         />
         <div>
-          <label className="block font-semibold mb-1">Status:</label>
+          <label className="block font-semibold mb-1">{t('status')}:</label>
           <select
             className="w-full border px-4 py-2 rounded"
             value={activeStatus ? 'active' : 'inactive'}
             onChange={(e) => setActiveStatus(e.target.value === 'active')}
           >
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
+            <option value="active">{t('active')}</option>
+            <option value="inactive">{t('inactive')}</option>
           </select>
         </div>
         <div className="flex gap-4">
           <button type="submit" className="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600">
-            Save
+            {t('save')}
           </button>
           <button type="button" onClick={() => navigate('/admin-teachers')} className="bg-gray-300 px-6 py-2 rounded hover:bg-gray-400">
-            Cancel
+            {t('cancel')}
           </button>
         </div>
       </form>

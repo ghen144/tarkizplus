@@ -9,6 +9,7 @@ import {
 import {
     getStorage, ref, uploadBytesResumable, getDownloadURL
 } from 'firebase/storage';
+import { useTranslation } from 'react-i18next';
 
 const formatDate = (timestamp) => {
     if (timestamp instanceof Timestamp) {
@@ -18,6 +19,7 @@ const formatDate = (timestamp) => {
 };
 
 const TeacherProfile = () => {
+    const { t } = useTranslation();
     const [teacher, setTeacher] = useState(null);
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
@@ -127,8 +129,8 @@ const TeacherProfile = () => {
         setShowStudents(!showStudents);
     };
 
-    if (loading) return <p className="p-6">Loading teacher profile...</p>;
-    if (!teacher) return <p className="p-6">Teacher profile not found.</p>;
+    if (loading) return <p className="p-6">{t("teacherProfile.loading")}</p>;
+    if (!teacher) return <p className="p-6">{t("teacherProfile.not_found")}</p>;
 
     return (
         <div className="p-6 space-y-6">
@@ -140,24 +142,24 @@ const TeacherProfile = () => {
                         className="w-20 h-20 rounded-full border-2 border-gray-300"
                     />
                     <div>
-                        <h1 className="text-3xl font-extrabold text-blue-800">{teacher.name}'s Profile</h1>
+                        <h1 className="text-3xl font-extrabold text-blue-800">{teacher.name}'s {t("teacherProfile.profile")}</h1>
                         {!teacherIdParam && (
                             <>
                                 <input type="file" accept="image/*" onChange={handleImageUpload} disabled={uploading} className="mt-2" />
-                                {uploading && <p>Uploading...</p>}
+                                {uploading && <p>{t("teacherProfile.uploading")}</p>}
                             </>
                         )}
                     </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-6">
-                    <p><strong>Email:</strong> {teacher.email}</p>
-                    <p><strong>Experience:</strong> {teacher.experience_years} years</p>
-                    <p><strong>Subjects:</strong> {(teacher.subject_specialties || []).join(", ")}</p>
-                    <p><strong>Active Status:</strong> {teacher.active_status ? 'Active' : 'Inactive'}</p>
-                    <p><strong>Joining Tarkiz Date:</strong> {formatDate(teacher.joining_tarkiz_date)}</p>
+                    <p><strong>{t("teacherProfile.email")}:</strong> {teacher.email}</p>
+                    <p><strong>{t("teacherProfile.experience")}:</strong> {teacher.experience_years} {t("teacherProfile.years")}</p>
+                    <p><strong>{t("teacherProfile.subjects")}:</strong> {(teacher.subject_specialties || []).join(", ")}</p>
+                    <p><strong>{t("teacherProfile.status")}:</strong> {teacher.active_status ? t("teacherProfile.active") : t("teacherProfile.inactive")}</p>
+                    <p><strong>{t("teacherProfile.joining_date")}:</strong> {formatDate(teacher.joining_tarkiz_date)}</p>
                     <p>
-                        <strong>Total Students Assigned:</strong>{" "}
+                        <strong>{t("teacherProfile.total_students")}:</strong>{" "}
                         <button onClick={handleToggleStudents} className="text-blue-600 underline hover:text-blue-800">
                             {teacher.assigned_students?.length || 0}
                         </button>
@@ -166,7 +168,7 @@ const TeacherProfile = () => {
 
                 {showStudents && (
                     <div className="mt-6 bg-gray-50 p-4 rounded">
-                        <h3 className="text-lg font-semibold mb-2">Assigned Students</h3>
+                        <h3 className="text-lg font-semibold mb-2">{t("teacherProfile.assigned_students")}</h3>
                         {studentNames.length > 0 ? (
                             <ul className="list-disc pl-6 space-y-1">
                                 {studentNames.map((name, idx) => (
@@ -174,7 +176,7 @@ const TeacherProfile = () => {
                                 ))}
                             </ul>
                         ) : (
-                            <p className="text-sm text-gray-500">No student names found.</p>
+                            <p className="text-sm text-gray-500">{t("teacherProfile.no_students_found")}</p>
                         )}
                     </div>
                 )}

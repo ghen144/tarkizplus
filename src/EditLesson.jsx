@@ -1,4 +1,3 @@
-// EditLesson.jsx
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -12,9 +11,11 @@ import {
 } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { db } from "./firebase";
+import { useTranslation } from "react-i18next";
 
 const EditLesson = () => {
-    const { lessonId } = useParams(); // e.g. "abc123"
+    const { t } = useTranslation();
+    const { lessonId } = useParams();
     const navigate = useNavigate();
     const auth = getAuth();
 
@@ -22,7 +23,6 @@ const EditLesson = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    // Fetch the lesson + check if the current user is allowed to edit
     useEffect(() => {
         const fetchLessonAndUserRole = async () => {
             try {
@@ -32,7 +32,6 @@ const EditLesson = () => {
                     return;
                 }
 
-                // Check if user is a teacher
                 const teacherQuery = query(
                     collection(db, "teachers"),
                     where("email", "==", user.email)
@@ -41,7 +40,6 @@ const EditLesson = () => {
                 const isTeacher = !teacherSnap.empty;
                 const teacherDocId = isTeacher ? teacherSnap.docs[0].id : null;
 
-                // Check if user is an admin
                 const adminQuery = query(
                     collection(db, "admin"),
                     where("email", "==", user.email)
@@ -50,31 +48,28 @@ const EditLesson = () => {
                 const isAdmin = !adminSnap.empty;
 
                 if (!isTeacher && !isAdmin) {
-                    setError("You are not authorized to edit this lesson.");
+                    setError(t("notAuthorized"));
                     setLoading(false);
                     return;
                 }
 
-                // Fetch the lesson
                 const lessonRef = doc(db, "lessons", lessonId);
                 const lessonSnap = await getDoc(lessonRef);
 
                 if (!lessonSnap.exists()) {
-                    setError("Lesson not found.");
+                    setError(t("lessonNotFound"));
                     setLoading(false);
                     return;
                 }
 
                 const data = lessonSnap.data();
 
-                // If the user is a teacher, make sure they own this lesson
                 if (isTeacher && data.teacher_id !== teacherDocId) {
-                    setError("You are not authorized to edit this lesson.");
+                    setError(t("notAuthorized"));
                     setLoading(false);
                     return;
                 }
 
-                // Format lesson date for input
                 let formattedDate = "";
                 if (data.lesson_date?.toDate) {
                     formattedDate = data.lesson_date.toDate().toISOString().slice(0, 10);
@@ -88,16 +83,14 @@ const EditLesson = () => {
                 setLoading(false);
             } catch (err) {
                 console.error("Error fetching lesson:", err);
-                setError("An error occurred while fetching the lesson.");
+                setError(t("errorFetchingLesson"));
                 setLoading(false);
             }
         };
 
         fetchLessonAndUserRole();
-    }, [lessonId, auth, navigate]);
+    }, [lessonId, auth, navigate, t]);
 
-
-    // Update state as user edits the form
     const handleChange = (e) => {
         const { name, value } = e.target;
         setLessonData((prev) => ({
@@ -106,7 +99,6 @@ const EditLesson = () => {
         }));
     };
 
-    // Handle form submission
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!lessonData) return;
@@ -121,51 +113,47 @@ const EditLesson = () => {
 
             const lessonRef = doc(db, "lessons", lessonId);
             await updateDoc(lessonRef, updatedFields);
-            console.log("Lesson updated successfully!");
 
-            // Determine if user is admin
             const user = auth.currentUser;
             const adminQuery = query(collection(db, "admin"), where("email", "==", user.email));
             const adminSnap = await getDocs(adminQuery);
 
             if (!adminSnap.empty) {
-                navigate("/admin/lessonlog"); // Go to admin log
+                navigate("/admin/lessonlog");
             } else {
-                navigate("/lesson-log"); // Go to teacher log
+                navigate("/lesson-log");
             }
         } catch (err) {
             console.error("Error updating lesson:", err);
-            setError("Failed to update lesson.");
+            setError(t("updateError"));
         }
     };
 
-    if (loading) return <p>Loading...</p>;
+    if (loading) return <p>{t("loading")}...</p>;
     if (error) return <p className="text-red-600">{error}</p>;
-    if (!lessonData) return null; // If for some reason the data is missing
+    if (!lessonData) return null;
 
     return (
         <div className="p-4 max-w-md mx-auto">
-            <h1 className="text-xl font-semibold mb-4">Edit Lesson</h1>
+            <h1 className="text-xl font-semibold mb-4">{t("editLesson")}</h1>
             <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Subject */}
                 <div>
-                    <label className="block mb-1 font-medium">Subject</label>
+                    <label className="block mb-1 font-medium">{t("subject")}</label>
                     <select
                         name="subject"
                         value={lessonData.subject}
                         onChange={handleChange}
                         className="border p-2 rounded w-full"
                     >
-                        <option value="Math">Math</option>
-                        <option value="English">English</option>
-                        <option value="Hebrew">Hebrew</option>
-                        <option value="Arabic">Arabic</option>
+                        <option value="Math">{t("math")}</option>
+                        <option value="English">{t("english")}</option>
+                        <option value="Hebrew">{t("hebrew")}</option>
+                        <option value="Arabic">{t("arabic")}</option>
                     </select>
                 </div>
 
-                {/* Lesson Date */}
                 <div>
-                    <label className="block mb-1 font-medium">Date</label>
+                    <label className="block mb-1 font-medium">{t("date")}</label>
                     <input
                         type="date"
                         name="lesson_date"
@@ -175,9 +163,8 @@ const EditLesson = () => {
                     />
                 </div>
 
-                {/* Duration */}
                 <div>
-                    <label className="block mb-1 font-medium">Duration (minutes)</label>
+                    <label className="block mb-1 font-medium">{t("duration")}</label>
                     <input
                         type="number"
                         name="duration_minutes"
@@ -187,9 +174,8 @@ const EditLesson = () => {
                     />
                 </div>
 
-                {/* Lesson Notes */}
                 <div>
-                    <label className="block mb-1 font-medium">Lesson Notes</label>
+                    <label className="block mb-1 font-medium">{t("lessonNotes")}</label>
                     <textarea
                         name="lesson_notes"
                         value={lessonData.lesson_notes || ""}
@@ -198,9 +184,8 @@ const EditLesson = () => {
                     />
                 </div>
 
-                {/* Progress Assessment */}
                 <div>
-                    <label className="block mb-1 font-medium">Progress Assessment</label>
+                    <label className="block mb-1 font-medium">{t("progressAssessment")}</label>
                     <input
                         type="text"
                         name="progress_assessment"
@@ -216,7 +201,7 @@ const EditLesson = () => {
                     type="submit"
                     className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
                 >
-                    Update Lesson
+                    {t("updateLesson")}
                 </button>
             </form>
         </div>
