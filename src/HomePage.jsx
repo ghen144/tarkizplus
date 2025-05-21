@@ -15,7 +15,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import i18n from './i18n';
 
-const DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const RAW_DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const HOURS_RANGE = [13, 14, 15, 16, 17, 18, 19, 20];
 
 function parseHour(timeStr) {
@@ -165,9 +165,11 @@ const HomePage = () => {
                                     className="bg-blue-50 p-3 rounded-lg mb-2 shadow-sm cursor-pointer"
                                     onClick={() => handleLessonClick(slot)}
                                 >
-                                    <span className="text-black font-semibold">{slot.subject}</span>
-                                    <span className="ml-2 text-black">({slot.start_time} - {slot.end_time})</span>
-                                    <span className="ml-2 text-black">{slot.class_type}</span>
+                                    <div className="text-black font-semibold">{t(slot.subject)}</div>
+<div className="text-sm text-gray-700">{slot.start_time} - {slot.end_time}</div>
+<div className="text-sm text-gray-700">{t(slot.class_type)}</div>
+
+
                                 </div>
                             ))
                         )}
@@ -177,21 +179,23 @@ const HomePage = () => {
                         <h2 className="text-2xl font-bold mb-4 text-blue-800">{t('weekly_schedule')}</h2>
                         <div className="overflow-auto">
                             <table className="table-fixed w-full border-collapse text-sm">
-                                <thead>
-                                    <tr>
-                                        <th className="border px-2 py-1 bg-gray-200 w-16">Time / Day</th>
-                                        {DAYS_OF_WEEK.map(day => (
-                                            <th key={day} className="border px-2 py-1 bg-gray-200">{day}</th>
-                                        ))}
-                                    </tr>
-                                </thead>
+                            <thead>
+  <tr>
+    <th className="border px-2 py-1 bg-gray-200 w-16">{t("time_day")}</th>
+    {RAW_DAYS_OF_WEEK.map(day => (
+      <th key={day} className="border px-2 py-1 bg-gray-200">{t(day)}</th>
+    ))}
+  </tr>
+</thead>
+
                                 <tbody>
                                     {HOURS_RANGE.map(hour => (
                                         <tr key={hour}>
                                             <td className="border px-2 py-1 font-semibold text-center align-middle h-12 w-16">
                                                 {hour}:00
                                             </td>
-                                            {DAYS_OF_WEEK.map(day => {
+                                            {RAW_DAYS_OF_WEEK.map(day => {
+
                                                 const slot = weeklySchedules.find(sch => {
                                                     if (sch.day_of_week !== day) return false;
                                                     const start = parseHour(sch.start_time);
@@ -199,16 +203,15 @@ const HomePage = () => {
                                                     return hour >= start && hour < end;
                                                 });
                                                 return (
-                                                    <td key={day} className="border px-2 py-1 text-center align-top h-12">
+                                                    <td key={day}
+                                                    className="border px-2 py-1 text-center align-top h-12">
                                                         {slot ? (
-                                                            <div
-                                                                className="bg-blue-100 p-2 rounded cursor-pointer"
-                                                                onClick={() => handleLessonClick(slot)}
-                                                            >
-                                                                <div className="font-bold">{slot.subject}</div>
-                                                                <div className="text-xs">{slot.class_type}</div>
-                                                            </div>
-                                                        ) : null}
+  <div className="bg-blue-100 p-2 rounded cursor-pointer" onClick={() => handleLessonClick(slot)}>
+    <div className="font-bold">{t(slot.subject)}</div>
+    <div className="text-xs">{t(slot.class_type)}</div>
+  </div>
+) : null}
+
                                                     </td>
                                                 );
                                             })}

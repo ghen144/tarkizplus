@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { collection, getDocs, deleteDoc, doc, query, where, Timestamp } from 'firebase/firestore';
 import { db } from './firebase';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
@@ -13,6 +13,7 @@ function AdminTeachers() {
     const [selectedSubjects, setSelectedSubjects] = useState([]);
     const [subjectDropdownOpen, setSubjectDropdownOpen] = useState(false);
     const [statusFilter, setStatusFilter] = useState('');
+    const [hoursMap, setHoursMap] = useState({});
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -24,6 +25,13 @@ function AdminTeachers() {
                     ...doc.data()
                 }));
                 setTeachers(teacherList);
+
+                const hoursResult = {};
+                for (const teacher of teacherList) {
+                    const hours = await getTeacherHoursThisMonth(teacher.teacher_id);
+                    hoursResult[teacher.teacher_id] = hours;
+                }
+                setHoursMap(hoursResult);
             } catch (error) {
                 console.error("Error fetching teachers:", error);
             } finally {
@@ -34,6 +42,41 @@ function AdminTeachers() {
         fetchTeachers();
     }, []);
 
+    const getTeacherHoursThisMonth = async (teacherId) => {
+        const now = new Date();
+        const fromDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+        const lessonsRef = collection(db, "lessons");
+        const q = query(
+            lessonsRef,
+            where("teacher_id", "==", teacherId),
+            where("lesson_date", ">=", Timestamp.fromDate(fromDate))
+        );
+    
+        const snapshot = await getDocs(q);
+        let totalMinutes = 0;
+    
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.lesson_date && data.duration_minutes) {
+                const lessonDate = data.lesson_date.toDate();
+                const lessonMonth = lessonDate.getMonth();
+                const lessonYear = lessonDate.getFullYear();
+    
+                if (
+                    lessonYear === now.getFullYear() &&
+                    lessonMonth === now.getMonth()
+                ) {
+                    totalMinutes += Number(data.duration_minutes);
+                }
+            }
+        });
+    
+        return (totalMinutes / 60).toFixed(1);
+    };
+    
+    
+    
     const toggleSubject = (subject) => {
         setSelectedSubjects(prev =>
             prev.includes(subject)
@@ -148,6 +191,7 @@ function AdminTeachers() {
                                 <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">{t("email")}</th>
                                 <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">{t("subjects")}</th>
                                 <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">{t("experience")}</th>
+                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">{t("hours_this_month")}</th>
                                 <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">{t("status")}</th>
                                 <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">{t("actions")}</th>
                             </tr>
@@ -165,9 +209,11 @@ function AdminTeachers() {
                                         ))}
                                     </td>
                                     <td className="px-6 py-4">
-                                        {teacher.experience_years
-                                            ? `${teacher.experience_years} ${t("years")}`
-                                            : `0 ${t("years")}`}
+                                        {teacher.experience_years ? `${teacher.experience_years} ${t("years")}` : `0 ${t("years")}`}
+                                    </td>
+                                    <td className="px-6 py-4">
+                                    {hoursMap[teacher.teacher_id] || 0} {t("hours_unit")}
+
                                     </td>
                                     <td className="px-6 py-4">
                                         {teacher.active_status ? (

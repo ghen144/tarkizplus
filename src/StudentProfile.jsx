@@ -239,8 +239,9 @@ const StudentProfile = () => {
   } = studentData || {};
 
   const subjectsText = Array.isArray(subjects)
-    ? subjects.join(", ")
-    : t("na");
+  ? subjects.map((s) => t(s)).join(", ")
+  : t("na");
+
 
   const formatDate = (ts) =>
     ts ? ts.toDate().toLocaleDateString() : t("no_date");
@@ -276,7 +277,8 @@ const StudentProfile = () => {
               <strong>{t("name")}:</strong> {name || t("na")}
             </div>
             <div>
-              <strong>{t("grade")}:</strong> {t(grade) || t("na")}
+            <strong>{t("grade")}:</strong> {t(grade) || t("na")}
+
             </div>
             <div>
               <strong>{t("subjects")}:</strong> {subjectsText}
@@ -297,7 +299,7 @@ const StudentProfile = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div><strong>{t("preferred_learning_style")}</strong>: {PreferredLearningStyle || t("na")}</div>
             <div><strong>{t("learning_difficulties")}</strong>: {learning_difficulties || t("no")}</div>
-            <div><strong>{t("private_or_group")}</strong>: {private_or_group_lessons || t("na")}</div>
+            <div><strong>{t("private_or_group")}</strong>: {t(private_or_group_lessons) || t("na")}</div>
             <div><strong>{t("reading_accommodation")}</strong>: {reading_accommodation ? t("yes") : t("no")}</div>
             <div><strong>{t("oral_response")}</strong>: {oral_response_allowed ? t("yes") : t("no")}</div>
             <div><strong>{t("extra_time")}</strong>: {extra_time ? t("yes") : t("no")}</div>
@@ -497,8 +499,24 @@ const StudentProfile = () => {
       <LineChart data={progressData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="date" />
-        <YAxis domain={[1, 5]} ticks={[1, 2, 3, 4, 5]} />
-        <Tooltip />
+        <YAxis
+  domain={[1, 5]}
+  ticks={[1, 2, 3, 4, 5]}
+  label={{
+    value: t("progress"),
+    angle: -90,
+    position: "insideLeft",
+    offset: 10
+  }}
+/>
+
+<Tooltip
+  formatter={(value, name) => {
+    const translatedName = name === "progress" ? t("progress") : name;
+    return [value, translatedName];
+  }}
+/>
+
         <Line
           type="monotone"
           dataKey="progress"

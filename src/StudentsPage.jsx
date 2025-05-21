@@ -76,7 +76,7 @@ function StudentsPage() {
         <Search className="h-5 w-5 text-gray-500 mr-3" />
         <input
           type="text"
-          placeholder={t("studentsPage.search_placeholder")}
+          placeholder={t("search_placeholder")}
           className="flex-1 focus:outline-none bg-white text-black p-2 rounded-md"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -99,18 +99,18 @@ function StudentsPage() {
                   <User className="h-12 w-12 text-gray-500" />
                   <div>
                     <h3 className="text-lg font-medium">{student.name}</h3>
-                    <p className="text-gray-500 text-sm">{student.grade}</p>
+                    <p className="text-gray-500 text-sm">{t(student.grade)}</p>
                     <p className="text-gray-500 text-sm">
                       {Array.isArray(student.subjects)
-                        ? student.subjects.join(', ')
-                        : student.subjects}
+                        ? student.subjects.map((subj) => t(subj)).join(', ')
+                        : t(student.subjects)}
                     </p>
                   </div>
                 </div>
               </div>
             ))
           ) : (
-            <p className="text-center text-gray-500">{t("studentsPage.no_students")}</p>
+            <p className="text-center text-gray-500">{t("no_students")}</p>
           )}
         </div>
       )}
