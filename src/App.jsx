@@ -52,7 +52,7 @@ function App() {
           <Route path="/admin/schedule/new" element={<NewSchedule />} />
           <Route path="/admin/teachers" element={<AdminTeachers />} />
           <Route path="/admin/lessonlog" element={<AdminLessonLog />} />
-          <Route path="/add-teacher" element={<AddTeacherPage />} />
+          <Route path="/admin/teachers/add" element={<AddTeacherPage />} />
           <Route path="/admin/students/:studentId/edit" element={<EditStudentPage />} />
           <Route path="/admin/teachers/:teacherId/edit" element={<EditTeacherPage />} />
           <Route path="/admin/exams" element={<AdminExamsPage />} />

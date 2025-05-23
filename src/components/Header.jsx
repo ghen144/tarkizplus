@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Search } from 'lucide-react';
+import { Search, ChevronDown } from 'lucide-react';
 import DropdownMenu from './DropdownMenu.jsx';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { collection, getDocs, query, where } from 'firebase/firestore';
@@ -62,16 +62,26 @@ const Header = () => {
                     />
                 </div>
                 <div className="relative">
-                    <button
-                        onClick={toggleDropdown}
-                        className="flex items-center gap-2 text-gray-600 hover:text-blue-500 focus:outline-none"
-                    >
-                        <img
-                            src={`https://ui-avatars.com/api/?name=${userName || 'User'}&background=random`}
-                            alt="User"
-                            className="h-10 w-10 rounded-full"
-                        />
-                    </button>
+                    {role === 'admin' ? (
+                        <button
+                            onClick={toggleDropdown}
+                            className="flex items-center gap-2 text-gray-600 hover:text-blue-600 focus:outline-none bg-gray-100 px-4 py-2 rounded-full"
+                        >
+                            <span className="font-semibold">🛡️ {userName || 'Admin'}</span>
+                            <ChevronDown size={16} />
+                        </button>
+                    ) : (
+                        <button
+                            onClick={toggleDropdown}
+                            className="flex items-center gap-2 text-gray-600 hover:text-blue-500 focus:outline-none"
+                        >
+                            <img
+                                src={`https://ui-avatars.com/api/?name=${userName || 'User'}&background=random`}
+                                alt="User"
+                                className="h-10 w-10 rounded-full"
+                            />
+                        </button>
+                    )}
                     {isDropdownOpen && <DropdownMenu onClose={closeDropdown} />}
                 </div>
             </div>

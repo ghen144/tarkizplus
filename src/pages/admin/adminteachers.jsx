@@ -5,7 +5,6 @@ import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-
 function AdminTeachers() {
     const { t } = useTranslation();
     const [teachers, setTeachers] = useState([]);
@@ -46,24 +45,24 @@ function AdminTeachers() {
     const getTeacherHoursThisMonth = async (teacherId) => {
         const now = new Date();
         const fromDate = new Date(now.getFullYear(), now.getMonth(), 1);
-    
+
         const lessonsRef = collection(db, "lessons");
         const q = query(
             lessonsRef,
             where("teacher_id", "==", teacherId),
             where("lesson_date", ">=", Timestamp.fromDate(fromDate))
         );
-    
+
         const snapshot = await getDocs(q);
         let totalMinutes = 0;
-    
+
         snapshot.forEach(doc => {
             const data = doc.data();
             if (data.lesson_date && data.duration_minutes) {
                 const lessonDate = data.lesson_date.toDate();
                 const lessonMonth = lessonDate.getMonth();
                 const lessonYear = lessonDate.getFullYear();
-    
+
                 if (
                     lessonYear === now.getFullYear() &&
                     lessonMonth === now.getMonth()
@@ -72,12 +71,10 @@ function AdminTeachers() {
                 }
             }
         });
-    
+
         return (totalMinutes / 60).toFixed(1);
     };
-    
-    
-    
+
     const toggleSubject = (subject) => {
         setSelectedSubjects(prev =>
             prev.includes(subject)
@@ -122,7 +119,7 @@ function AdminTeachers() {
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-semibold">{t("all_teachers")}</h2>
                 <button
-                    onClick={() => navigate('/add-teacher')}
+                    onClick={() => navigate('/admin/teachers/add')}
                     className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded"
                 >
                     {t("add_teacher")}
@@ -213,8 +210,7 @@ function AdminTeachers() {
                                         {teacher.experience_years ? `${teacher.experience_years} ${t("years")}` : `0 ${t("years")}`}
                                     </td>
                                     <td className="px-6 py-4">
-                                    {hoursMap[teacher.teacher_id] || 0} {t("hours_unit")}
-
+                                        {hoursMap[teacher.teacher_id] || 0} {t("hours_unit")}
                                     </td>
                                     <td className="px-6 py-4">
                                         {teacher.active_status ? (

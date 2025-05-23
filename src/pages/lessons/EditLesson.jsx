@@ -8,6 +8,7 @@ import {
     getDocs,
     query,
     where,
+    Timestamp
 } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { db } from "@/firebase/firebase.jsx";
@@ -109,6 +110,7 @@ const EditLesson = () => {
                 lesson_notes: lessonData.lesson_notes,
                 progress_assessment: lessonData.progress_assessment,
                 duration_minutes: parseInt(lessonData.duration_minutes, 10) || 0,
+                lesson_date: Timestamp.fromDate(new Date(lessonData.lesson_date)),
             };
 
             const lessonRef = doc(db, "lessons", lessonId);

@@ -8,8 +8,11 @@ import {
   doc,
   updateDoc,
   arrayUnion,
+  query,
+  where
 } from "firebase/firestore";
-import { useNavigate, useParams, useLocation, Link } from "react-router-dom";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   BarChart,
@@ -38,8 +41,22 @@ const AdminHomePage = () => {
   const [examForm, setExamForm] = useState({ student_id: "", subject: "", exam_date: "", material: "" });
   const [students, setStudents] = useState([]);
   const [teachers, setTeachers] = useState([]);
+  const [adminName, setAdminName] = useState("");
 
   useEffect(() => {
+    const fetchAdminName = async () => {
+      const auth = getAuth();
+      onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          const q = query(collection(db, "admin"), where("email", "==", user.email));
+          const snap = await getDocs(q);
+          if (!snap.empty) {
+            setAdminName(snap.docs[0].data().name || "");
+          }
+        }
+      });
+    };
+
     const fetchData = async () => {
       try {
         const [tSnap, sSnap, lSnap, eSnap] = await Promise.all([
@@ -77,6 +94,7 @@ const AdminHomePage = () => {
       }
     };
 
+    fetchAdminName();
     fetchData();
   }, [t]);
 
@@ -129,7 +147,7 @@ const AdminHomePage = () => {
       <main className="flex-1 p-6 space-y-8">
         <div className="bg-white p-6 rounded shadow flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">{t('welcome_admin')}</h1>
+            <h1 className="text-3xl font-bold">{t('welcome')}, {adminName || t('admin')}</h1>
             <p className="text-gray-600">{t('dashboard_overview')}</p>
           </div>
           <p className="text-gray-500">{new Date().toLocaleDateString()}</p>
