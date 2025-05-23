@@ -1,7 +1,7 @@
 // GlobalSearchEnhanced.jsx
 import React, { useEffect, useState } from 'react';
 import { db } from '@/firebase/firebase.jsx';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, getDoc, doc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -36,17 +36,43 @@ const GlobalSearchEnhanced = ({ query }) => {
         .filter(t => t.name?.toLowerCase().includes(q) || t.email?.toLowerCase().includes(q))
         .slice(0, 5);
 
-      const lessons = lessonsSnap.docs
+      const rawLessons = lessonsSnap.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
         .filter(l => l.subject?.toLowerCase().includes(q))
         .slice(0, 5);
+
+      const enrichedLessons = await Promise.all(
+        rawLessons.map(async (lesson) => {
+          let teacherName = 'N/A';
+          if (lesson.teacher_id) {
+            try {
+              const teacherDoc = await getDoc(doc(db, 'teachers', lesson.teacher_id));
+              if (teacherDoc.exists()) {
+                teacherName = teacherDoc.data().name || 'N/A';
+              }
+            } catch (err) {
+              console.warn('Error fetching teacher:', err);
+            }
+          }
+
+          const studentsCount = Array.isArray(lesson.student_ids) ? lesson.student_ids.length : 0;
+          const lessonDateFormatted = lesson.lesson_date?.toDate ? lesson.lesson_date.toDate().toLocaleDateString() : 'N/A';
+
+          return {
+            ...lesson,
+            teacherName,
+            studentsCount,
+            lessonDateFormatted
+          };
+        })
+      );
 
       const exams = examsSnap.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
         .filter(e => e.subject?.toLowerCase().includes(q) || e.material?.toLowerCase().includes(q))
         .slice(0, 5);
 
-      setResults({ students, teachers, lessons, exams });
+      setResults({ students, teachers, lessons: enrichedLessons, exams });
     };
 
     fetchAll();
@@ -61,10 +87,10 @@ const GlobalSearchEnhanced = ({ query }) => {
         navigate(`/admin/teachers/${id}/edit`);
         break;
       case 'lesson':
-        navigate(`/lesson-log/${id}/details`);
+        navigate(`/admin/lessonlog/${id}`);
         break;
       case 'exam':
-        navigate(`/admin/exams`); // Modify if individual exam pages exist
+        navigate(`/admin/exams`);
         break;
       default:
         break;
@@ -82,7 +108,9 @@ const GlobalSearchEnhanced = ({ query }) => {
                 onClick={() => handleSelect(type, item.id)}
                 className="text-left w-full py-1 text-sm text-gray-800 hover:underline"
               >
-                {item.name || item.subject || item.material}
+                {type === 'lesson'
+                  ? `${item.lessonDateFormatted} - ${t(item.subject)}\n👥 ${item.studentsCount} | 🧑‍🏫 ${item.teacherName}`
+                  : item.name || item.subject || item.material}
               </button>
             </li>
           ))}

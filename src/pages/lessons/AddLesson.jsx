@@ -90,6 +90,7 @@ function AddLesson() {
           student_id: row.student_id,
           subject: row.subject || "",
           lesson_date: finalDate || serverTimestamp(),
+          start_time: lessonTime || "",
           duration_minutes: parseInt(row.duration, 10) || 0,
           lesson_notes: row.notes || "",
           progress_assessment: row.progress || "",

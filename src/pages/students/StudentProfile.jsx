@@ -43,6 +43,8 @@ const StudentProfile = () => {
   const [teachersMap, setTeachersMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [absentLessons, setAbsentLessons] = useState([]);
+
 
   // Filters
   const [selectedTeacherFilters, setSelectedTeacherFilters] = useState([]);
@@ -152,13 +154,24 @@ const StudentProfile = () => {
         setStudentData({ id: studentId, ...studentDocData });
 
         const lessonsQuery = query(
-          collection(db, "lessons"),
-          where("student_id", "==", studentId),
+          collection(db, "lessonlog"),
+
+where("student_ids", "array-contains", studentId),
           orderBy("lesson_date", "desc")
         );
         const lessonsSnapshot = await getDocs(lessonsQuery);
         const lessonsList = lessonsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
         setLessons(lessonsList);
+        // جلب الدروس التي غاب عنها الطالب
+const absentLessonsQuery = query(
+  collection(db, "lessonlog"),
+  where("absent_students", "array-contains", studentId),
+  orderBy("lesson_date", "desc")
+);
+const absentSnapshot = await getDocs(absentLessonsQuery);
+const absentList = absentSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+setAbsentLessons(absentList);
+
 
         const teachersSnap = await getDocs(collection(db, "teachers"));
         const tMap = {};
@@ -406,6 +419,42 @@ const StudentProfile = () => {
     : t("sort_oldest")}
 </button>
 </div>
+{/* جدول الدروس التي غاب عنها */}
+<div className="bg-white p-6 rounded-lg shadow mt-6">
+  <div className="flex items-center gap-2 mb-4">
+    <AlertCircle className="h-5 w-5 text-red-500" />
+    <h2 className="text-2xl font-bold">{t("absent_lessons")}</h2>
+  </div>
+
+  {absentLessons.length > 0 ? (
+    <table className="min-w-full bg-white">
+      <thead>
+        <tr>
+          <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100">{t("date")}</th>
+          <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100">{t("teacher")}</th>
+          <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100">{t("subject")}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {absentLessons.map((lesson) => {
+          const teacherName = teachersMap[lesson.teacher_id] || lesson.teacher_id;
+          return (
+            <tr key={lesson.id}>
+              <td className="px-6 py-4 border-b border-gray-200">
+                {lesson.lesson_date?.toDate().toLocaleDateString("en-GB")}
+              </td>
+              <td className="px-6 py-4 border-b border-gray-200">{teacherName}</td>
+              <td className="px-6 py-4 border-b border-gray-200">{t(lesson.subject)}</td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  ) : (
+    <p className="text-gray-500">{t("no_absent_lessons")}</p>
+  )}
+</div>
+
 
 <div className="overflow-x-auto">
   {lessons.length > 0 ? (

@@ -258,9 +258,27 @@ const LessonLog = () => {
                       <td className="p-2">
                         {teachersMap[lesson.teacher_id] || t("unknownTeacher")}
                       </td>
-                      <td className="p-2">
-                        {studentsMap[lesson.student_id] || t("unknownStudent")}
-                      </td>
+                      <td className="p-2 text-sm">
+  <div>
+    <strong>{t("present")}:</strong>
+    <ul className="list-disc list-inside">
+      {(lesson.student_ids || [])
+        .filter(id => !(lesson.absent_students || []).includes(id))
+        .map(id => (
+          <li key={id}>{studentsMap[id] || id}</li>
+        ))}
+    </ul>
+  </div>
+  <div className="mt-2">
+    <strong>{t("absent")}:</strong>
+    <ul className="list-disc list-inside text-red-600">
+      {(lesson.absent_students || []).map(id => (
+        <li key={id}>{studentsMap[id] || id}</li>
+      ))}
+    </ul>
+  </div>
+</td>
+
                       <td className="p-2">
                         <div className="flex items-center justify-between w-full">
                           <Link
