@@ -152,7 +152,7 @@ const AdminHomePage = () => {
               <div className="bg-white p-6 rounded-2xl shadow-sm">
                 <h2 className="text-lg font-semibold text-gray-800 mb-5 border-b pb-2">{t('quick_actions')}</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                  <QuickActionButton icon={<PlusCircle className="h-6 w-6 text-indigo-600" />} label={t('add_teacher')} to="/add-teacher" color="bg-indigo-50" />
+                  <QuickActionButton icon={<PlusCircle className="h-6 w-6 text-indigo-600" />} label={t('add_teacher')} to="/admin/teachers/add" color="bg-indigo-50" />
                   <QuickActionButton icon={<PlusCircle className="h-6 w-6 text-emerald-600" />} label={t('add_student')} to="/admin/students/add" color="bg-emerald-50" />
                   <QuickActionButton icon={<PlusCircle className="h-6 w-6 text-yellow-600" />} label={t('schedule_lesson')} to="/admin/schedule/new" color="bg-yellow-50" />
                   <QuickActionButton icon={<PlusCircle className="h-6 w-6 text-rose-600" />} label={t('log_exam')} onClick={() => setShowExamModal(true)} color="bg-rose-50" />
