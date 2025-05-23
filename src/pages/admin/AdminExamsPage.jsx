@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/firebase/firebase.jsx";
-import AdminSidebar from "@/components/AdminSidebar.jsx";
+import AdminSidebar from "@/components/admin/AdminSidebar.jsx";
 import { useTranslation } from "react-i18next";
 
 const AdminExamsPage = () => {

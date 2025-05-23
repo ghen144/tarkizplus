@@ -1,25 +1,42 @@
-import { Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import React, { useState, useRef } from 'react';
 
-const DropdownMenu = ({ onClose }) => {
-    const { t } = useTranslation();
+const DropdownMenu = ({ trigger, children, className = "" }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const timeoutRef = useRef(null);
+    const containerRef = useRef(null);
+
+    const handleMouseEnter = () => {
+        clearTimeout(timeoutRef.current);
+        setIsOpen(true);
+    };
+
+    const handleMouseLeave = () => {
+        timeoutRef.current = setTimeout(() => {
+            setIsOpen(false);
+        }, 200);
+    };
 
     return (
-        <div className="absolute right-0 mt-2 w-48 bg-white border rounded shadow-md z-10">
-            <Link
-                to="/profile"
-                onClick={onClose}
-                className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+        <div
+            ref={containerRef}
+            className="relative inline-block"
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+        >
+            <button
+                onClick={() => setIsOpen((prev) => !prev)}
+                className="flex items-center gap-2 bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm hover:bg-gray-50"
             >
-                {t('profile')}
-            </Link>
-            <Link
-                to="/settings"
-                onClick={onClose}
-                className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+                {trigger}
+            </button>
+
+            <div
+                className={`absolute top-full mt-1 right-0 z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-48 transition-all duration-150 ${
+                    isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+                } ${className}`}
             >
-                {t('settings')}
-            </Link>
+                {children}
+            </div>
         </div>
     );
 };

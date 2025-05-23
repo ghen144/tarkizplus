@@ -1,36 +1,23 @@
-// React & Hooks
 import React, { useState, useEffect } from "react";
 import { db } from "@/firebase/firebase.jsx";
-import {
-  collection,
-  getDocs,
-  addDoc,
-  doc,
-  updateDoc,
-  arrayUnion,
-} from "firebase/firestore";
-import { useNavigate, useParams, useLocation, Link } from "react-router-dom";
+import { collection, getDocs, addDoc, doc, updateDoc, arrayUnion } from "firebase/firestore";
 import { useTranslation } from "react-i18next";
+import AdminSidebar from "@/components/admin/AdminSidebar.jsx";
+import { Users, User, BookOpen, ClipboardList, PlusCircle, Calendar, Clock } from "lucide-react";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
-import AdminSidebar from "../../components/AdminSidebar.jsx";
-import {
-  Users,
-  User,
-  BookOpen,
-  ClipboardList,
-  PlusCircle,
-} from "lucide-react";
+  StatCard,
+  QuickActionButton,
+  SubjectChart,
+  ActivityItem,
+  ExamModal
+} from "@/components/admin";
+
+import { useUser } from "@/UserContext";
+
 
 const AdminHomePage = () => {
   const { t } = useTranslation();
+  const { userName } = useUser();
   const [counts, setCounts] = useState({ teachers: 0, students: 0, lessons: 0, exams: 0 });
   const [recentActivity, setRecentActivity] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -60,14 +47,14 @@ const AdminHomePage = () => {
         });
 
         const recentLessons = lSnap.docs
-          .sort((a, b) => b.data().lesson_date.toDate() - a.data().lesson_date.toDate())
-          .slice(0, 3)
-          .map(d => `📝 ${t(d.data().subject)} ${t('lesson_on')} ${d.data().lesson_date.toDate().toLocaleDateString()}`);
+            .sort((a, b) => b.data().lesson_date.toDate() - a.data().lesson_date.toDate())
+            .slice(0, 3)
+            .map(d => `${t(d.data().subject)} ${t('lesson_on')} ${d.data().lesson_date.toDate().toLocaleDateString()}`);
 
         const recentExams = eSnap.docs
-          .sort((a, b) => b.data().exam_date.toDate() - a.data().exam_date.toDate())
-          .slice(0, 2)
-          .map(d => `📅 ${t('exam')}: ${t(d.data().subject)} ${t('on_date')} ${d.data().exam_date.toDate().toLocaleDateString()}`);
+            .sort((a, b) => b.data().exam_date.toDate() - a.data().exam_date.toDate())
+            .slice(0, 2)
+            .map(d => `${t('exam')}: ${t(d.data().subject)} ${t('on_date')} ${d.data().exam_date.toDate().toLocaleDateString()}`);
 
         setRecentActivity([...recentLessons, ...recentExams]);
       } catch (err) {
@@ -114,147 +101,142 @@ const AdminHomePage = () => {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen bg-gray-100">
-        <AdminSidebar active="home" />
-        <main className="flex-1 p-6 flex items-center justify-center">
-          <p>{t('loading_dashboard')}</p>
-        </main>
-      </div>
+        <div className="flex min-h-screen bg-gray-50">
+          <AdminSidebar active="home" />
+          <main className="flex-1 p-6 flex items-center justify-center">
+            <div className="animate-pulse text-gray-400">Loading dashboard...</div>
+          </main>
+        </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
-      <AdminSidebar active="home" />
-      <main className="flex-1 p-6 space-y-8">
-        <div className="bg-white p-6 rounded shadow flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">{t('welcome_admin')}</h1>
-            <p className="text-gray-600">{t('dashboard_overview')}</p>
-          </div>
-          <p className="text-gray-500">{new Date().toLocaleDateString()}</p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Link to="/admin/teachers" className="bg-white p-4 rounded shadow flex items-center">
-            <Users className="h-8 w-8 text-blue-500 mr-3" />
+      <div className="flex min-h-screen bg-gray-50">
+        <AdminSidebar active="home" />
+        <main className="flex-1 p-6 space-y-6">
+          {/* Header */}
+          <div className="flex justify-between items-center">
             <div>
-              <p className="text-2xl font-semibold">{counts.teachers}</p>
-              <p className="text-gray-600">{t('teachers')}</p>
-            </div>
-          </Link>
-          <Link to="/admin/students" className="bg-white p-4 rounded shadow flex items-center">
-            <User className="h-8 w-8 text-green-500 mr-3" />
-            <div>
-              <p className="text-2xl font-semibold">{counts.students}</p>
-              <p className="text-gray-600">{t('students')}</p>
-            </div>
-          </Link>
-          <Link to="/admin/lessonlog" className="bg-white p-4 rounded shadow flex items-center">
-            <BookOpen className="h-8 w-8 text-orange-500 mr-3" />
-            <div>
-              <p className="text-2xl font-semibold">{counts.lessons}</p>
-              <p className="text-gray-600">{t('lessons')}</p>
-            </div>
-          </Link>
-          <Link to="/admin/exams" className="bg-white p-4 rounded shadow flex items-center">
-            <ClipboardList className="h-8 w-8 text-purple-500 mr-3" />
-            <div>
-              <p className="text-2xl font-semibold">{counts.exams}</p>
-              <p className="text-gray-600">{t('exams')}</p>
-            </div>
-          </Link>
-        </div>
-
-        <div className="bg-white p-6 rounded shadow space-y-4">
-          <h2 className="text-xl font-semibold">{t('quick_actions')}</h2>
-          <div className="flex flex-wrap gap-4">
-            <Link to="/add-teacher" className="inline-flex items-center bg-blue-500 text-white px-4 py-2 rounded">
-              <PlusCircle className="mr-2" /> {t('add_teacher')}
-            </Link>
-            <Link to="/admin/students/add" className="inline-flex items-center bg-green-500 text-white px-4 py-2 rounded">
-              <PlusCircle className="mr-2" /> {t('add_student')}
-            </Link>
-            <Link to="/admin/schedule/new" className="inline-flex items-center bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600">
-              <PlusCircle className="mr-2" /> {t('schedule_lesson')}
-            </Link>
-            <button onClick={() => setShowExamModal(true)} className="inline-flex items-center bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600">
-              <PlusCircle className="mr-2" /> {t('log_exam')}
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="bg-white p-6 rounded shadow">
-            <h2 className="text-xl font-semibold mb-4">{t('students_by_subject')}</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={studentSubjectCounts}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="subject" />
-                <YAxis allowDecimals={false} />
-                <Tooltip formatter={(value) => [`${t("count")}: ${value}`, '']} />
-                <Bar dataKey="count" fill="#60A5FA" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="bg-white p-6 rounded shadow">
-            <h2 className="text-xl font-semibold mb-4">{t('teachers_by_subject')}</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={teacherSubjectCounts}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="subject" />
-                <YAxis allowDecimals={false} />
-                <Tooltip formatter={(value) => [`${t("count")}: ${value}`, '']} />
-                <Bar dataKey="count" fill="#34D399" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded shadow">
-          <h2 className="text-xl font-semibold mb-4">{t('recent_activity')}</h2>
-          <ul className="list-disc list-inside text-sm space-y-2">
-            {recentActivity.map((act, i) => <li key={i}>{act}</li>)}
-          </ul>
-        </div>
-
-        {showExamModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded shadow-lg w-full max-w-md">
-              <h2 className="text-xl font-semibold mb-4">{t('log_new_exam')}</h2>
-              <form onSubmit={handleAddExam} className="space-y-4">
-                <div>
-                  <label className="block mb-1 font-medium">{t('student_id')}</label>
-                  <input type="text" className="w-full border px-4 py-2 rounded" value={examForm.student_id} onChange={(e) => setExamForm({ ...examForm, student_id: e.target.value })} required />
-                </div>
-                <div>
-                  <label className="block mb-1 font-medium">{t('subject')}</label>
-                  <select className="w-full border px-4 py-2 rounded" value={examForm.subject} onChange={(e) => setExamForm({ ...examForm, subject: e.target.value })} required>
-                    <option value="">{t('select_subject')}</option>
-                    <option value="Math">{t('Math')}</option>
-                    <option value="English">{t('English')}</option>
-                    <option value="Hebrew">{t('Hebrew')}</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block mb-1 font-medium">{t('exam_date')}</label>
-                  <input type="date" className="w-full border px-4 py-2 rounded" value={examForm.exam_date} onChange={(e) => setExamForm({ ...examForm, exam_date: e.target.value })} required />
-                </div>
-                <div>
-                  <label className="block mb-1 font-medium">{t('material')}</label>
-                  <textarea className="w-full border px-4 py-2 rounded" value={examForm.material} onChange={(e) => setExamForm({ ...examForm, material: e.target.value })}></textarea>
-                </div>
-                <div className="flex justify-end gap-2">
-                  <button type="button" onClick={() => setShowExamModal(false)} className="px-4 py-2 rounded border hover:bg-gray-100">{t('cancel')}</button>
-                  <button type="submit" className="px-4 py-2 rounded bg-purple-500 text-white hover:bg-purple-600">{t('save')}</button>
-                </div>
-              </form>
+              <h1 className="text-2xl font-semibold text-gray-800">
+                {t("welcome")}, {userName?.split(" ")[0] || t("admin")}
+              </h1>
+              <p className="text-gray-500">{new Date().toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })}</p>
             </div>
           </div>
-        )}
-      </main>
-    </div>
+
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <StatCard
+                icon={<Users className="h-6 w-6 text-blue-500" />}
+                value={counts.teachers}
+                label={t('teachers')}
+                link="/admin/teachers"
+                color="bg-blue-50"
+            />
+            <StatCard
+                icon={<User className="h-6 w-6 text-green-500" />}
+                value={counts.students}
+                label={t('students')}
+                link="/admin/students"
+                color="bg-green-50"
+            />
+            <StatCard
+                icon={<BookOpen className="h-6 w-6 text-orange-500" />}
+                value={counts.lessons}
+                label={t('lessons')}
+                link="/admin/lessonlog"
+                color="bg-orange-50"
+            />
+            <StatCard
+                icon={<ClipboardList className="h-6 w-6 text-purple-500" />}
+                value={counts.exams}
+                label={t('exams')}
+                link="/admin/exams"
+                color="bg-purple-50"
+            />
+          </div>
+
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            {/* Charts Section */}
+            <div className="lg:col-span-2 space-y-5">
+              {/* Quick Actions */}
+              <div className="bg-white p-6 rounded-2xl shadow-sm">
+                <h2 className="text-lg font-semibold text-gray-800 mb-5 border-b pb-2">{t('quick_actions')}</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                  <QuickActionButton
+                      icon={<PlusCircle className="h-6 w-6 text-indigo-600"/>}
+                      label={t('add_teacher')}
+                      to="/add-teacher"
+                      color="bg-indigo-50"
+                  />
+                  <QuickActionButton
+                      icon={<PlusCircle className="h-6 w-6 text-emerald-600"/>}
+                      label={t('add_student')}
+                      to="/admin/students/add"
+                      color="bg-emerald-50"
+                  />
+                  <QuickActionButton
+                      icon={<PlusCircle className="h-6 w-6 text-yellow-600"/>}
+                      label={t('schedule_lesson')}
+                      to="/admin/schedule/new"
+                      color="bg-yellow-50"
+                  />
+                  <QuickActionButton
+                      icon={<PlusCircle className="h-6 w-6 text-rose-600"/>}
+                      label={t('log_exam')}
+                      onClick={() => setShowExamModal(true)}
+                      color="bg-rose-50"
+                  />
+                </div>
+              </div>
+
+
+              {/* Subject Distribution Charts */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <SubjectChart
+                    data={studentSubjectCounts}
+                    title={t('students_by_subject')}
+                    color="#3B82F6"
+                />
+                <SubjectChart
+                    data={teacherSubjectCounts}
+                    title={t('teachers_by_subject')}
+                    color="#10B981"
+                />
+              </div>
+            </div>
+
+            {/* Recent Activity */}
+            <div className="bg-white p-5 rounded-xl shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-medium text-gray-800">{t('recent_activity')}</h2>
+
+              </div>
+              <div className="space-y-4">
+                {recentActivity.map((act, i) => (
+                    <ActivityItem key={i} activity={act}/>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Exam Modal */}
+          <ExamModal
+              show={showExamModal}
+              onClose={() => setShowExamModal(false)}
+              form={examForm}
+              onSubmit={handleAddExam}
+              onFormChange={setExamForm}
+              t={t}
+          />
+        </main>
+      </div>
   );
 };
 
