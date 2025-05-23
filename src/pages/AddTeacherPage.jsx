@@ -1,4 +1,4 @@
-// AddTeacherPage.jsx - مع دعم الترجمة
+// AddTeacherPage.jsx - مع دعم الترجمة الكامل
 
 import React, { useState } from 'react';
 import { collection, setDoc, doc, serverTimestamp, Timestamp } from 'firebase/firestore';
@@ -49,10 +49,13 @@ function AddTeacherPage() {
       });
       alert(t('teacher_added'));
       navigate('/admin/teachers');
-      window.location.reload();
     } catch (error) {
       console.error("Error adding teacher:", error);
     }
+  };
+
+  const handleCancel = () => {
+    navigate('/admin/teachers');
   };
 
   return (
@@ -146,7 +149,7 @@ function AddTeacherPage() {
           <button type="submit" className="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600">
             {t('save')}
           </button>
-          <button type="button" onClick={() => navigate('/admin-teachers')} className="bg-gray-300 px-6 py-2 rounded hover:bg-gray-400">
+          <button type="button" onClick={handleCancel} className="bg-gray-300 px-6 py-2 rounded hover:bg-gray-400">
             {t('cancel')}
           </button>
         </div>

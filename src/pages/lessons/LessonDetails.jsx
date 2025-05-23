@@ -67,7 +67,7 @@ const LessonDetails = () => {
         <p><strong>{t("date")}:</strong> {formattedDate || 'N/A'}</p>
         <p><strong>{t("teacher")}:</strong> {teacherName}</p>
         <p><strong>{t("student")}:</strong> {studentName}</p>
-        <p><strong>{t("subject")}:</strong> {lesson.subject || 'N/A'}</p>
+        <p><strong>{t("subject")}:</strong> {t(lesson.subject) || lesson.subject || 'N/A'}</p>
         <p><strong>{t("duration")}:</strong> {lesson.duration_minutes} {t("minutes")}</p>
         <p><strong>{t("lessonNotes")}:</strong> {lesson.lesson_notes || 'N/A'}</p>
         <p><strong>{t("progressAssessment")}:</strong> {lesson.progress_assessment || 'N/A'}</p>
