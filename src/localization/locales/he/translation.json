@@ -633,7 +633,18 @@
   "progress_evaluation": "הערכת התקדמות",
   "progress_placeholder": "לדוגמה: טוב, צריך שיפור...",
   "cancel": "ביטול",
-  "date": "תאריך"
+  "date": "תאריך",
+  "mark_present_students": "סמן תלמידים נוכחים",
+  "absent_lessons_count": "מספר ההיעדרויות",
+  "weekly_attendance": "נוכחות שבועית",
+  "total_absences": "סה״כ היעדרויות",
+  "missed_lessons": "שיעורים שהוחמצו",
+  "no_absent_lessons": "אין שיעורים שהוחמצו",
+  "Absent from the lesson": "נעדר מהשיעור"
+
+
+
+
 
 
 

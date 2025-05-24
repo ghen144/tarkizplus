@@ -1,3 +1,4 @@
+// LessonLog.jsx - يشمل نوع الدرس، الحضور، التعديل، التفاصيل، الفلترة، البحث، الترتيب
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { db } from "@/firebase/firebase.jsx";
@@ -26,26 +27,18 @@ const LessonLog = () => {
   const [lessonsLimit, setLessonsLimit] = useState(10);
   const [selectedTeacherFilters, setSelectedTeacherFilters] = useState([]);
   const [selectedSubjectFilters, setSelectedSubjectFilters] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortAsc, setSortAsc] = useState(false);
 
   useEffect(() => {
     const fetchStaticData = async () => {
       try {
         const user = auth.currentUser;
-        if (!user) {
-          console.error("No authenticated user found.");
-          setLoading(false);
-          return;
-        }
+        if (!user) return;
 
         const teacherQuerySnapshot = await getDocs(
           query(collection(db, "teachers"), where("email", "==", user.email))
         );
-        if (teacherQuerySnapshot.empty) {
-          console.error("No teacher found with this email.");
-          setLoading(false);
-          return;
-        }
-
         const teacherDoc = teacherQuerySnapshot.docs[0];
         setTeacherDocId(teacherDoc.id);
         const teacherData = teacherDoc.data();
@@ -83,7 +76,7 @@ const LessonLog = () => {
         setLoading(true);
         const lessonsQuery = query(
           collection(db, "lessons"),
-          orderBy("lesson_date", "desc"),
+          orderBy("lesson_date", sortAsc ? "asc" : "desc"),
           limit(lessonsLimit)
         );
         const lessonsSnapshot = await getDocs(lessonsQuery);
@@ -100,7 +93,7 @@ const LessonLog = () => {
     };
 
     fetchLessons();
-  }, [assignedStudentIds, lessonsLimit, auth]);
+  }, [assignedStudentIds, lessonsLimit, sortAsc]);
 
   const filteredLessons = lessons.filter((lesson) => {
     const teacherOk =
@@ -109,205 +102,133 @@ const LessonLog = () => {
     const subjectOk =
       selectedSubjectFilters.length === 0 ||
       selectedSubjectFilters.includes(lesson.subject);
-    return teacherOk && subjectOk;
+    const keywordOk =
+      !searchTerm ||
+      lesson.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (studentsMap[lesson.student_id]?.toLowerCase() || "").includes(searchTerm.toLowerCase());
+    return teacherOk && subjectOk && keywordOk;
   });
 
-  const handleAddTeacherFilter = (e) => {
-    const teacherId = e.target.value;
-    if (teacherId && !selectedTeacherFilters.includes(teacherId)) {
-      setSelectedTeacherFilters((prev) => [...prev, teacherId]);
-    }
-    e.target.value = "";
-  };
-
-  const handleAddSubjectFilter = (e) => {
-    const subject = e.target.value;
-    if (subject && !selectedSubjectFilters.includes(subject)) {
-      setSelectedSubjectFilters((prev) => [...prev, subject]);
-    }
-    e.target.value = "";
-  };
-
-  const removeTeacherFilter = (teacherId) => {
-    setSelectedTeacherFilters((prev) => prev.filter((id) => id !== teacherId));
-  };
-
-  const removeSubjectFilter = (subject) => {
-    setSelectedSubjectFilters((prev) => prev.filter((s) => s !== subject));
-  };
-
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold">{t("recentLessons")}</h2>
-        <div className="flex items-center gap-4">
+    <div className="p-6 space-y-6">
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+        <h2 className="text-2xl font-bold text-blue-900">{t("recentLessons")}</h2>
+        <div className="flex items-center gap-4 flex-wrap">
           <Link
             to="/lesson-log/add"
-            className="text-blue-500 hover:underline flex items-center gap-1"
+            className="bg-blue-500 text-white px-3 py-2 rounded hover:bg-blue-600"
           >
-            ➕ <span>{t("add")}</span>
+            ➕ {t("add")}
           </Link>
-          <div className="flex items-center">
-            <label htmlFor="lessonsLimit" className="mr-2 text-sm">
-              {t("show")}
-            </label>
-            <select
-              id="lessonsLimit"
-              value={lessonsLimit}
-              onChange={(e) => setLessonsLimit(parseInt(e.target.value, 10))}
-              className="border rounded p-1 text-sm"
-            >
-              <option value={10}>10</option>
-              <option value={20}>20</option>
-              <option value={30}>30</option>
-              <option value={50}>50</option>
-            </select>
-            <span className="ml-2 text-sm">{t("lessons")}</span>
-          </div>
+          <input
+            type="text"
+            placeholder={t("search")}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="border p-2 rounded text-sm"
+          />
+          <select
+            value={lessonsLimit}
+            onChange={(e) => setLessonsLimit(Number(e.target.value))}
+            className="border p-2 rounded text-sm"
+          >
+            {[10, 20, 30, 50].map(n => (
+              <option key={n} value={n}>{t("show")} {n}</option>
+            ))}
+          </select>
+          <button
+            onClick={() => setSortAsc(!sortAsc)}
+            className="text-sm underline text-blue-600"
+          >
+            {sortAsc ? t("oldest") : t("newest")}
+          </button>
         </div>
       </div>
 
-      <div className="mb-4 flex flex-col sm:flex-row gap-6">
+      <div className="flex gap-6 flex-wrap">
         <div>
           <p className="font-medium mb-1">{t("teacher")}</p>
           <select
-            onChange={handleAddTeacherFilter}
-            className="border rounded p-1 text-sm"
+            onChange={(e) => setSelectedTeacherFilters([e.target.value])}
+            className="border p-2 rounded text-sm"
           >
             <option value="">{t("select")}</option>
             {Object.entries(teachersMap).map(([id, name]) => (
-              <option key={id} value={id}>
-                {name}
-              </option>
+              <option key={id} value={id}>{name}</option>
             ))}
           </select>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {selectedTeacherFilters.map((id) => (
-              <span
-                key={id}
-                className="bg-blue-200 text-blue-800 rounded px-2 py-1 text-sm flex items-center"
-              >
-                {teachersMap[id]}
-                <button
-                  onClick={() => removeTeacherFilter(id)}
-                  className="ml-1 text-blue-600 font-bold"
-                >
-                  &times;
-                </button>
-              </span>
-            ))}
-          </div>
         </div>
-
         <div>
           <p className="font-medium mb-1">{t("subject")}</p>
           <select
-            onChange={handleAddSubjectFilter}
-            className="border rounded p-1 text-sm"
+            onChange={(e) => setSelectedSubjectFilters([e.target.value])}
+            className="border p-2 rounded text-sm"
           >
             <option value="">{t("select")}</option>
-            {SUBJECT_OPTIONS.map((subj) => (
-              <option key={subj} value={subj}>
-                {t(subj.toLowerCase())}
-              </option>
+            {SUBJECT_OPTIONS.map(subj => (
+              <option key={subj} value={subj}>{t(subj.toLowerCase())}</option>
             ))}
           </select>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {selectedSubjectFilters.map((subj) => (
-              <span
-                key={subj}
-                className="bg-green-200 text-green-800 rounded px-2 py-1 text-sm flex items-center"
-              >
-                {t(subj.toLowerCase())}
-                <button
-                  onClick={() => removeSubjectFilter(subj)}
-                  className="ml-1 text-green-600 font-bold"
-                >
-                  &times;
-                </button>
-              </span>
-            ))}
-          </div>
         </div>
       </div>
 
-      <div className="bg-gray-100 p-4 rounded-lg shadow-md">
+      <div className="bg-white p-4 rounded shadow">
         {loading ? (
           <p>{t("loading")}</p>
         ) : (
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left p-2">{t("date")}</th>
-                <th className="text-left p-2">{t("subject")}</th>
-                <th className="text-left p-2">{t("teacher")}</th>
-                <th className="text-left p-2">{t("student")}</th>
-                <th className="p-2"></th>
+          <table className="w-full text-sm">
+            <thead className="bg-gray-100 text-left">
+              <tr>
+                <th className="p-2">{t("date")}</th>
+                <th className="p-2">{t("subject")}</th>
+                <th className="p-2">{t("class_type")}</th>
+                <th className="p-2">{t("teacher")}</th>
+                <th className="p-2">{t("attendance")}</th>
+                <th className="p-2 text-center">{t("actions")}</th>
               </tr>
             </thead>
             <tbody>
-              {filteredLessons.length > 0 ? (
-                filteredLessons.map((lesson) => {
-                  const canEdit = lesson.teacher_id === teacherDocId;
-                  return (
-                    <tr key={lesson.id} className="border-b">
-                      <td className="p-2">
-                        {lesson.lesson_date.toDate().toLocaleDateString("en-GB")}
-                      </td>
-                      <td className="p-2">{t(lesson.subject.toLowerCase())}</td>
-                      <td className="p-2">
-                        {teachersMap[lesson.teacher_id] || t("unknownTeacher")}
-                      </td>
-                      <td className="p-2 text-sm">
-  <div>
-    <strong>{t("present")}:</strong>
-    <ul className="list-disc list-inside">
-      {(lesson.student_ids || [])
-        .filter(id => !(lesson.absent_students || []).includes(id))
-        .map(id => (
-          <li key={id}>{studentsMap[id] || id}</li>
-        ))}
-    </ul>
-  </div>
-  <div className="mt-2">
-    <strong>{t("absent")}:</strong>
-    <ul className="list-disc list-inside text-red-600">
-      {(lesson.absent_students || []).map(id => (
-        <li key={id}>{studentsMap[id] || id}</li>
-      ))}
-    </ul>
-  </div>
-</td>
-
-                      <td className="p-2">
-                        <div className="flex items-center justify-between w-full">
-                          <Link
-                            to={`/lesson-log/${lesson.id}/details`}
-                            className="text-blue-500 hover:underline cursor-pointer"
-                          >
-                            {t("showMore")}
-                          </Link>
-                          {canEdit && (
-                            <Link
-                              to={`/lesson-log/${lesson.id}/edit`}
-                              className="text-blue-500 hover:text-blue-700"
-                              title={t("editLesson")}
-                            >
-                              📝
-                            </Link>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan="5" className="p-4 text-center">
-                    {t("noLessons")}
-                  </td>
-                </tr>
-              )}
+              {filteredLessons.map((lesson) => {
+                const canEdit = lesson.teacher_id === teacherDocId;
+                const presentCount = typeof lesson.present_count === "number"
+                  ? lesson.present_count
+                  : Array.isArray(lesson.students)
+                  ? lesson.students.filter((s) => s.status === "present").length
+                  : Array.isArray(lesson.student_ids)
+                  ? lesson.student_ids.length
+                  : typeof lesson.student_num === "number"
+                  ? lesson.student_num
+                  : lesson.student_id
+                  ? 1
+                  : 0;
+                const absentCount = typeof lesson.absent_count === "number"
+                  ? lesson.absent_count
+                  : Array.isArray(lesson.students)
+                  ? lesson.students.filter((s) => s.status === "absent").length
+                  : 0;
+                return (
+                  <tr key={lesson.id} className="border-t">
+                    <td className="p-2">{lesson.lesson_date.toDate().toLocaleDateString("en-GB")}</td>
+                    <td className="p-2">{t(lesson.subject.toLowerCase())}</td>
+                    <td className="p-2">{t(lesson.class_type === "individual" ? "individual" : "group")}</td>
+                    <td className="p-2">{teachersMap[lesson.teacher_id] || t("unknownTeacher")}</td>
+                    <td className="p-2">
+                      <p className="text-green-700">{t("present")}: <strong>{presentCount}</strong></p>
+                      <p className="text-red-600">{t("absent")}: <strong>{absentCount}</strong></p>
+                    </td>
+                    <td className="p-2 text-center space-x-2">
+                      <Link to={`/lesson-log/${lesson.id}/details`} className="text-blue-500 underline">
+                        {t("showMore")}
+                      </Link>
+                      {canEdit && (
+                        <Link to={`/lesson-log/${lesson.id}/edit`} className="text-yellow-500" title={t("editLesson")}>
+                          📝
+                        </Link>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

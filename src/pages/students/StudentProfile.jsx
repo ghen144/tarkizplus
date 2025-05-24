@@ -43,8 +43,6 @@ const StudentProfile = () => {
   const [teachersMap, setTeachersMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [absentLessons, setAbsentLessons] = useState([]);
-
 
   // Filters
   const [selectedTeacherFilters, setSelectedTeacherFilters] = useState([]);
@@ -61,6 +59,58 @@ const StudentProfile = () => {
     material: "",
   });
   const [isAdmin, setIsAdmin] = useState(false);
+const currentStudentId = studentData?.student_id || "";
+
+  // نحسب حضور وغياب الطالب
+const studentLessons = lessons.filter((lesson) => {
+  if (Array.isArray(lesson.students)) {
+    // درس جماعي: لازم يكون الطالب موجود وstatus = "present"
+    return lesson.students.some(
+      (s) => s.student_id === currentStudentId && s.status === "present"
+    );
+  } else {
+    // درس قديم: نعرضه فقط إذا الطالب نفسه (وما فيه حالة absent لأنه ما في status أصلاً)
+    return lesson.student_id === currentStudentId;
+  }
+});
+
+
+
+
+
+
+
+
+
+
+const attendedCount = studentLessons.filter(
+  (lesson) =>
+    Array.isArray(lesson.students) &&
+    lesson.students.some(
+      (s) => s.student_id === currentStudentId && s.status === "present"
+    )
+).length;
+
+const missedCount = lessons.filter((lesson) => {
+  if (Array.isArray(lesson.students)) {
+    const studentEntry = lesson.students.find((s) => s.student_id === currentStudentId);
+    return studentEntry && studentEntry.status === "absent";
+  }
+  return false; // لا نحسب الغياب للدروس القديمة
+}).length;
+
+
+
+const untrackedLessons = studentLessons.filter(
+  (lesson) =>
+    Array.isArray(lesson.students) &&
+    !lesson.students.some((s) => s.student_id === currentStudentId)
+).length;
+
+const totalAttendance = attendedCount + untrackedLessons;
+const weeklyAttendance = studentData?.attendance_count_weekly || 0;
+
+
 
   useEffect(() => {
     const auth = getAuth();
@@ -154,23 +204,15 @@ const StudentProfile = () => {
         setStudentData({ id: studentId, ...studentDocData });
 
         const lessonsQuery = query(
-          collection(db, "lessonlog"),
+  collection(db, "lessons"),
+  orderBy("lesson_date", "desc")
+);
 
-where("student_ids", "array-contains", studentId),
-          orderBy("lesson_date", "desc")
-        );
         const lessonsSnapshot = await getDocs(lessonsQuery);
         const lessonsList = lessonsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
         setLessons(lessonsList);
-        // جلب الدروس التي غاب عنها الطالب
-const absentLessonsQuery = query(
-  collection(db, "lessonlog"),
-  where("absent_students", "array-contains", studentId),
-  orderBy("lesson_date", "desc")
-);
-const absentSnapshot = await getDocs(absentLessonsQuery);
-const absentList = absentSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-setAbsentLessons(absentList);
+
+
 
 
         const teachersSnap = await getDocs(collection(db, "teachers"));
@@ -259,20 +301,55 @@ setAbsentLessons(absentList);
   const formatDate = (ts) =>
     ts ? ts.toDate().toLocaleDateString() : t("no_date");
 
-  const progressData = lessons
-    .filter((lesson) => lesson.lesson_date && lesson.progress_assessment)
-    .sort((a, b) => a.lesson_date.toDate() - b.lesson_date.toDate())
-    .map((lesson) => ({
-      date: lesson.lesson_date.toDate().toLocaleDateString("en-GB"),
-      progress: Number(lesson.progress_assessment),
-    }));
+ const filteredAndSortedLessons = [...studentLessons]
+  .filter((lesson) => {
+    // فلترة حسب المعلم
+    const teacherName = teachersMap[lesson.teacher_id] || "";
+    const matchesTeacher =
+      selectedTeacherFilters.length === 0 ||
+      selectedTeacherFilters.includes(teacherName);
 
-  const sortedLessons = [...lessons].sort((a, b) => {
+    // فلترة حسب الموضوع
+    const matchesSubject =
+      selectedSubjectFilters.length === 0 ||
+      selectedSubjectFilters.includes(lesson.subject);
+
+    // فلترة حسب التاريخ
+    const matchesDate =
+      !selectedDate ||
+      (lesson.lesson_date &&
+ lesson.lesson_date.toDate().toLocaleDateString("en-CA") === selectedDate);
+
+
+    return matchesTeacher && matchesSubject && matchesDate;
+  })
+  .sort((a, b) => {
     const dateA = a.lesson_date?.toDate();
     const dateB = b.lesson_date?.toDate();
     if (!dateA || !dateB) return 0;
     return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
   });
+
+  const progressData = filteredAndSortedLessons
+  .map((lesson) => {
+    let progress = null;
+    if (Array.isArray(lesson.students)) {
+      const studentEntry = lesson.students.find(s => s.student_id === currentStudentId);
+      progress = studentEntry?.progress_evaluation;
+    } else {
+      progress = lesson.progress_assessment;
+    }
+
+    return {
+      date: lesson.lesson_date?.toDate().toLocaleDateString("en-GB"),
+      progress: Number(progress)
+    };
+  })
+  .filter(item => !isNaN(item.progress));
+
+
+ 
+
 
   return (
     <div className="flex min-h-screen bg-gray-200">
@@ -322,17 +399,19 @@ setAbsentLessons(absentList);
         </div>
 
         {/* Performance & Progress Card */}
-        <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
-          <div className="flex items-center gap-2 mb-4">
-            <CheckCircle className="h-5 w-5 text-blue-600" />
-            <h2 className="text-2xl font-bold">{t("performance_progress")}</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div><strong>{t("engagement_level")}</strong>: {engagement_level || t("na")}</div>
-            <div><strong>{t("recent_performance")}</strong>: {recent_performance || t("na")}</div>
-            <div><strong>{t("attendance_count")}</strong>: {attendance_count_weekly || t("na")}</div>
-          </div>
-        </div>
+<div className="bg-white p-6 rounded-lg shadow-md space-y-4">
+  <div className="flex items-center gap-2 mb-4">
+    <CheckCircle className="h-5 w-5 text-blue-600" />
+    <h2 className="text-2xl font-bold">{t("performance_progress")}</h2>
+  </div>
+  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+    <div><strong>{t("engagement_level")}</strong>: {engagement_level || t("na")}</div>
+    <div><strong>{t("recent_performance")}</strong>: {recent_performance || t("na")}</div>
+    <div><strong>{t("weekly_attendance")}</strong>: {weeklyAttendance}</div>
+    <div><strong>{t("total_absences")}</strong>: {missedCount}</div>
+  </div>
+</div>
+
 
         {/* Lesson History */}
         <div className="bg-white p-6 rounded-lg shadow mt-6">
@@ -419,42 +498,6 @@ setAbsentLessons(absentList);
     : t("sort_oldest")}
 </button>
 </div>
-{/* جدول الدروس التي غاب عنها */}
-<div className="bg-white p-6 rounded-lg shadow mt-6">
-  <div className="flex items-center gap-2 mb-4">
-    <AlertCircle className="h-5 w-5 text-red-500" />
-    <h2 className="text-2xl font-bold">{t("absent_lessons")}</h2>
-  </div>
-
-  {absentLessons.length > 0 ? (
-    <table className="min-w-full bg-white">
-      <thead>
-        <tr>
-          <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100">{t("date")}</th>
-          <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100">{t("teacher")}</th>
-          <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100">{t("subject")}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {absentLessons.map((lesson) => {
-          const teacherName = teachersMap[lesson.teacher_id] || lesson.teacher_id;
-          return (
-            <tr key={lesson.id}>
-              <td className="px-6 py-4 border-b border-gray-200">
-                {lesson.lesson_date?.toDate().toLocaleDateString("en-GB")}
-              </td>
-              <td className="px-6 py-4 border-b border-gray-200">{teacherName}</td>
-              <td className="px-6 py-4 border-b border-gray-200">{t(lesson.subject)}</td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
-  ) : (
-    <p className="text-gray-500">{t("no_absent_lessons")}</p>
-  )}
-</div>
-
 
 <div className="overflow-x-auto">
   {lessons.length > 0 ? (
@@ -479,44 +522,44 @@ setAbsentLessons(absentList);
         </tr>
       </thead>
       <tbody>
-        {sortedLessons
-          .filter((lesson) => {
-            const teacherName =
-              teachersMap[lesson.teacher_id] || lesson.teacher_id;
-            const dateString =
-              lesson.lesson_date?.toDate().toISOString().split("T")[0];
-            return (
-              (selectedTeacherFilters.length === 0 ||
-                selectedTeacherFilters.includes(teacherName)) &&
-              (selectedSubjectFilters.length === 0 ||
-                selectedSubjectFilters.includes(t(lesson.subject))) &&
-              (!selectedDate || selectedDate === dateString)
-            );
-          })
-          .map((lesson) => {
-            const teacherName =
-              teachersMap[lesson.teacher_id] || lesson.teacher_id || t("no_teacher");
-            return (
-              <tr key={lesson.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 border-b border-gray-200">
-                  {formatDate(lesson.lesson_date)}
-                </td>
-                <td className="px-6 py-4 border-b border-gray-200">
-                  {teacherName}
-                </td>
-                <td className="px-6 py-4 border-b border-gray-200">
-                  {t(lesson.subject) || t("no_subject")}
-                </td>
-                <td className="px-6 py-4 border-b border-gray-200">
-                  {lesson.lesson_notes || t("no_notes")}
-                </td>
-                <td className="px-6 py-4 border-b border-gray-200">
-                  {lesson.progress_assessment || t("no_progress")}
-                </td>
-              </tr>
-            );
-          })}
-      </tbody>
+  {filteredAndSortedLessons.map((lesson) => {
+      const teacherName = teachersMap[lesson.teacher_id] || lesson.teacher_id || t("no_teacher");
+
+      let studentNote = "";
+      let studentProgress = "";
+
+      if (Array.isArray(lesson.students)) {
+        const match = lesson.students.find(s => s.student_id === currentStudentId);
+        studentNote = match?.student_note || "";
+        studentProgress = match?.progress_evaluation || "";
+      } else {
+        studentNote = lesson.lesson_notes || "";
+        studentProgress = lesson.progress_assessment || "";
+      }
+
+      return (
+        <tr key={lesson.id} className="hover:bg-gray-50">
+          <td className="px-6 py-4 border-b border-gray-200">
+            {formatDate(lesson.lesson_date)}
+          </td>
+          <td className="px-6 py-4 border-b border-gray-200">
+            {teacherName}
+          </td>
+          <td className="px-6 py-4 border-b border-gray-200">
+            {t(lesson.subject) || t("no_subject")}
+          </td>
+          <td className="px-6 py-4 border-b border-gray-200">
+            {studentNote || t("no_notes")}
+          </td>
+          <td className="px-6 py-4 border-b border-gray-200">
+            {studentProgress || t("no_progress")}
+          </td>
+        </tr>
+      );
+    })}
+    
+</tbody>
+
     </table>
   ) : (
     <p className="text-gray-500">{t("no_lessons")}</p>
@@ -524,18 +567,62 @@ setAbsentLessons(absentList);
 </div>
 </div>
 
-{/* Performance & Progress Card */}
-<div className="bg-white p-6 rounded-lg shadow-md space-y-4">
+{/* Missed Lessons Table */}
+<div className="bg-white p-6 rounded-lg shadow mt-6">
   <div className="flex items-center gap-2 mb-4">
-    <CheckCircle className="h-5 w-5 text-blue-600" />
-    <h2 className="text-2xl font-bold">{t("performance_progress")}</h2>
+    <AlertCircle className="h-5 w-5 text-red-500" />
+    <h2 className="text-2xl font-bold">{t("missed_lessons")}</h2>
   </div>
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-    <div><strong>{t("engagement_level")}:</strong> {engagement_level || t("na")}</div>
-    <div><strong>{t("recent_performance")}:</strong> {recent_performance || t("na")}</div>
-    <div><strong>{t("attendance_count")}:</strong> {attendance_count_weekly || t("na")}</div>
+  <div className="overflow-x-auto">
+    {lessons.some(lesson =>
+      Array.isArray(lesson.students) &&
+      lesson.students.find(s => s.student_id === currentStudentId && s.status === "absent")
+    ) ? (
+      <table className="min-w-full bg-white">
+        <thead>
+          <tr>
+            <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              {t("date")}
+            </th>
+            <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              {t("teacher")}
+            </th>
+            <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              {t("subject")}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {lessons
+            .filter(
+              lesson =>
+                Array.isArray(lesson.students) &&
+                lesson.students.some(s => s.student_id === currentStudentId && s.status === "absent")
+            )
+            .map(lesson => {
+              const teacherName =
+                teachersMap[lesson.teacher_id] || lesson.teacher_id || t("no_teacher");
+              return (
+                <tr key={lesson.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 border-b border-gray-200">
+                    {formatDate(lesson.lesson_date)}
+                  </td>
+                  <td className="px-6 py-4 border-b border-gray-200">{teacherName}</td>
+                  <td className="px-6 py-4 border-b border-gray-200">
+                    {t(lesson.subject) || t("no_subject")}
+                  </td>
+                </tr>
+              );
+            })}
+        </tbody>
+      </table>
+    ) : (
+      <p className="text-gray-500">{t("no_absent_lessons")}</p>
+    )}
   </div>
 </div>
+
+
 
 {/* Progress Chart */}
 <div className="bg-white p-6 rounded-lg shadow-md space-y-4">

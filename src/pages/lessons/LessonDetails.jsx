@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { db } from '@/firebase/firebase.jsx';
 import { doc, getDoc } from 'firebase/firestore';
 import { useTranslation } from 'react-i18next';
+import { Calendar, User, BookOpen, StickyNote, Clock } from 'lucide-react';
 
 const LessonDetails = () => {
   const { lessonId } = useParams();
@@ -10,7 +11,7 @@ const LessonDetails = () => {
 
   const [lesson, setLesson] = useState(null);
   const [teacherName, setTeacherName] = useState('');
-  const [studentName, setStudentName] = useState('');
+  const [studentsInfo, setStudentsInfo] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -34,10 +35,31 @@ const LessonDetails = () => {
           setTeacherName(teacherSnap.exists() ? teacherSnap.data().name || t("unknownTeacher") : t("unknownTeacher"));
         }
 
-        if (lessonData.student_id) {
+        if (lessonData.students && Array.isArray(lessonData.students)) {
+          const studentsWithNames = await Promise.all(
+            lessonData.students.map(async (student) => {
+              const studentRef = doc(db, 'students', student.student_id);
+              const studentSnap = await getDoc(studentRef);
+              const studentName = studentSnap.exists() ? studentSnap.data().name : t("unknownStudent");
+              return {
+                name: studentName,
+                note: student.student_note || "",
+                progress: student.progress_evaluation || "",
+                status: student.status
+              };
+            })
+          );
+          setStudentsInfo(studentsWithNames);
+        } else if (lessonData.student_id) {
           const studentRef = doc(db, 'students', lessonData.student_id);
           const studentSnap = await getDoc(studentRef);
-          setStudentName(studentSnap.exists() ? studentSnap.data().name || t("unknownStudent") : t("unknownStudent"));
+          const studentName = studentSnap.exists() ? studentSnap.data().name : t("unknownStudent");
+          setStudentsInfo([{
+            name: studentName,
+            note: lessonData.lesson_notes || "",
+            progress: lessonData.progress_assessment || "",
+            status: "present"
+          }]);
         }
 
       } catch (err) {
@@ -57,25 +79,70 @@ const LessonDetails = () => {
 
   let formattedDate = '';
   if (lesson.lesson_date && lesson.lesson_date.toDate) {
-    formattedDate = lesson.lesson_date.toDate().toLocaleString();
+    const d = lesson.lesson_date.toDate();
+    formattedDate = d.toLocaleDateString("en-GB");
   }
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">{t("lessonDetails")}</h1>
-      <div className="bg-white p-6 rounded shadow max-w-md">
-        <p><strong>{t("date")}:</strong> {formattedDate || 'N/A'}</p>
-        <p><strong>{t("teacher")}:</strong> {teacherName}</p>
-        <p><strong>{t("student")}:</strong> {studentName}</p>
-        <p><strong>{t("subject")}:</strong> {t(lesson.subject) || lesson.subject || 'N/A'}</p>
-        <p><strong>{t("duration")}:</strong> {lesson.duration_minutes} {t("minutes")}</p>
-        <p><strong>{t("lessonNotes")}:</strong> {lesson.lesson_notes || 'N/A'}</p>
-        <p><strong>{t("progressAssessment")}:</strong> {lesson.progress_assessment || 'N/A'}</p>
-        <p><strong>{t("studentNum")}:</strong> {lesson.student_num || 'N/A'}</p>
+    <div className="p-6 max-w-3xl mx-auto">
+      <h1 className="text-3xl font-bold mb-6">{t("lessonDetails")}</h1>
+
+      <div className="bg-white p-6 rounded-xl shadow space-y-4">
+        <div className="flex items-center gap-2">
+          <Calendar className="text-blue-600" />
+          <p><strong>{t("date")}:</strong> {formattedDate}</p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <User className="text-blue-600" />
+          <p><strong>{t("teacher")}:</strong> {teacherName}</p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <BookOpen className="text-blue-600" />
+          <p><strong>{t("subject")}:</strong> {t(lesson.subject)}</p>
+        </div>
+
+        {(lesson.duration_minutes || lesson.start_time || lesson.end_time) && (
+          <div className="flex items-center gap-2">
+            <Clock className="text-blue-600" />
+            <p>
+              <strong>{t("duration")}:</strong>{' '}
+              {lesson.duration_minutes ? `${lesson.duration_minutes} ${t("minutes")}` : `${lesson.start_time || '?'} - ${lesson.end_time || '?'}`}
+            </p>
+          </div>
+        )}
+
+        {lesson.lesson_notes && (
+          <div className="flex items-center gap-2">
+            <StickyNote className="text-yellow-600" />
+            <p><strong>{t("lessonNotes")}</strong>: {lesson.lesson_notes}</p>
+          </div>
+        )}
+
+        <hr />
+
+        <h2 className="text-xl font-semibold mt-4">{t("students")}</h2>
+        <div className="space-y-4 mt-2">
+          {studentsInfo.map((student, index) => (
+            <div key={index} className="bg-gray-50 p-4 rounded shadow">
+              <p className="font-medium">{student.name}</p>
+              {student.status === "absent" ? (
+<p className="text-red-600">{t("Absent from the lesson")}</p>
+              ) : (
+                <>
+                  <p><strong>{t("progressAssessment")}</strong>: {student.progress || t("no_progress")}</p>
+                  <p><strong>{t("lessonNotes")}</strong>: {student.note || t("no_notes")}</p>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
-      <div className="mt-4">
+
+      <div className="mt-6">
         <Link to="/admin/lessonlog" className="text-blue-500 hover:underline">
-          {t("backToLessonLog")}
+          ← {t("backToLessonLog")}
         </Link>
       </div>
     </div>

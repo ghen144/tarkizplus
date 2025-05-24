@@ -623,7 +623,18 @@
   "progress_evaluation": "تقييم التقدّم",
   "progress_placeholder": "مثلاً: جيد، بحاجة لتحسين...",
   "cancel": "إلغاء",
-  "date": "التاريخ"
+  "date": "التاريخ",
+  "mark_present_students": "علِّم الطلاب الحاضرين",
+  "absent_lessons_count": "عدد الغيابات",
+   "weekly_attendance": "الحضور الأسبوعي",
+  "total_absences": "إجمالي الغيابات",
+  "missed_lessons": "الدروس التي تم التغيب عنها",
+  "no_absent_lessons": "لا يوجد دروس غاب عنها",
+  "Absent from the lesson": "تغيب عن الدرس"
+
+
+
+
 
 
 

@@ -629,7 +629,18 @@
   "progress_evaluation": "Progress Evaluation",
   "progress_placeholder": "e.g., Good, needs improvement...",
   "cancel": "Cancel",
-  "date": "Date"
+  "date": "Date",
+  "mark_present_students": "Mark Present Students",
+  "absent_lessons_count": "Number of Absences",
+   "weekly_attendance": "Weekly attendance",
+  "total_absences": "Total absences",
+  "missed_lessons": "Missed lessons",
+  "no_absent_lessons": "No missed lessons",
+  "Absent from the lesson": "Absent from the lesson"
+
+
+
+
 
 
 
