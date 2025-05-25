@@ -42,11 +42,11 @@ const LessonDetails = () => {
               const studentSnap = await getDoc(studentRef);
               const studentName = studentSnap.exists() ? studentSnap.data().name : t("unknownStudent");
               return {
-  name: studentName,
-  student_notes: student.student_notes || "",
-  progress: student.progress_assessment || "",
-  status: student.status
-};
+                name: studentName,
+                student_notes: student.student_notes || "",
+                progress: student.progress_assessment || "",
+                status: student.status
+                    };
 
             })
           );
@@ -129,7 +129,7 @@ const LessonDetails = () => {
             <div key={index} className="bg-gray-50 p-4 rounded shadow">
               <p className="font-medium">{student.name}</p>
               {student.status === "absent" ? (
-<p className="text-red-600">{t("Absent from the lesson")}</p>
+              <p className="text-red-600">{t("Absent from the lesson")}</p>
               ) : (
                 <>
                   <p><strong>{t("progressAssessment")}</strong>: {student.progress || t("no_progress")}</p>
@@ -143,7 +143,7 @@ const LessonDetails = () => {
       </div>
 
       <div className="mt-6">
-<Link to="/lesson-log" className="text-blue-500 hover:underline">
+      <Link to="/lesson-log" className="text-blue-500 hover:underline">
 
           ← {t("backToLessonLog")}
         </Link>

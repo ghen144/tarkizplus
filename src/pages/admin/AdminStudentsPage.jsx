@@ -50,7 +50,7 @@ function AdminStudentsPage() {
     };
 
     const handleStudentClick = (studentId) => {
-        navigate(`/students/${studentId}`);
+        navigate(`/student-profile/${studentId}`);
     };
 
     const toggleSelection = (value, selectedList, setSelectedList) => {
@@ -83,7 +83,7 @@ function AdminStudentsPage() {
     const allGrades = Array.from(new Set(students.map(s => s.grade)))
         .filter(Boolean)
         .map(grade => ({
-            key: grade.replace(/\D/g, ""), // "5th Grade" -> "5"
+            key: grade.replace(/\D/g, ""),
             value: grade
         }));
 

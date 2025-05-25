@@ -95,15 +95,7 @@ function EditStudentPage() {
         }
       }} className="space-y-4">
 
-        <div>
-          <label className="block font-semibold mb-1">{t("studentId")}</label>
-          <input
-            type="text"
-            value={studentId}
-            readOnly
-            className="w-full border px-4 py-2 rounded bg-gray-100 text-gray-700"
-          />
-        </div>
+       
 
         <div>
           <label className="block font-semibold mb-1">{t("fullName")}</label>

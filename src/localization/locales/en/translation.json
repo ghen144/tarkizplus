@@ -638,9 +638,12 @@
   "student_notes_placeholder": "Add any additional note about the student...",
   "studentNotes": "Student Notes",
   "individual": "Individual",
-"newest": "Newest",
-"oldest": "Oldest",
-"attendance": "Attendance"
+  "newest": "Newest",
+  "oldest": "Oldest",
+  "attendance": "Attendance",
+  "hours_unit": "hr",
+  "no_lessons_this_month": "No lessons recorded for this month",
+  "lessons_counted_this_month": "Lessons counted this month"
 
 
 

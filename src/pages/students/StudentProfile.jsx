@@ -70,19 +70,9 @@ const studentLessons = lessons.filter((lesson) => {
       (s) => s.student_id === currentStudentId && s.status === "present"
     );
   } else {
-    // درس قديم: نعرضه فقط إذا الطالب نفسه (وما فيه حالة absent لأنه ما في status أصلاً)
     return lesson.student_id === currentStudentId;
   }
 });
-
-
-
-
-
-
-
-
-
 
 const attendedCount = studentLessons.filter(
   (lesson) =>
@@ -97,7 +87,7 @@ const missedCount = lessons.filter((lesson) => {
     const studentEntry = lesson.students.find((s) => s.student_id === currentStudentId);
     return studentEntry && studentEntry.status === "absent";
   }
-  return false; // لا نحسب الغياب للدروس القديمة
+  return false; 
 }).length;
 
 
@@ -304,18 +294,15 @@ const weeklyAttendance = studentData?.attendance_count_weekly || 0;
 
  const filteredAndSortedLessons = [...studentLessons]
   .filter((lesson) => {
-    // فلترة حسب المعلم
     const teacherName = teachersMap[lesson.teacher_id] || "";
     const matchesTeacher =
       selectedTeacherFilters.length === 0 ||
       selectedTeacherFilters.includes(teacherName);
 
-    // فلترة حسب الموضوع
     const matchesSubject =
       selectedSubjectFilters.length === 0 ||
       selectedSubjectFilters.includes(lesson.subject);
 
-    // فلترة حسب التاريخ
     const matchesDate =
       !selectedDate ||
       (lesson.lesson_date &&
@@ -380,7 +367,6 @@ const weeklyAttendance = studentData?.attendance_count_weekly || 0;
           </div>
         </div>
 
-        {/* Learning Accommodations Card */}
         <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
           <div className="flex items-center gap-2 mb-4">
             <BookOpen className="h-5 w-5 text-blue-600" />
@@ -399,22 +385,19 @@ const weeklyAttendance = studentData?.attendance_count_weekly || 0;
           </div>
         </div>
 
-        {/* Performance & Progress Card */}
-<div className="bg-white p-6 rounded-lg shadow-md space-y-4">
-  <div className="flex items-center gap-2 mb-4">
-    <CheckCircle className="h-5 w-5 text-blue-600" />
-    <h2 className="text-2xl font-bold">{t("performance_progress")}</h2>
-  </div>
-  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-    <div><strong>{t("engagement_level")}</strong>: {engagement_level || t("na")}</div>
-    <div><strong>{t("recent_performance")}</strong>: {recent_performance || t("na")}</div>
-    <div><strong>{t("weekly_attendance")}</strong>: {weeklyAttendance}</div>
-    <div><strong>{t("total_absences")}</strong>: {missedCount}</div>
-  </div>
-</div>
+        <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
+        <div className="flex items-center gap-2 mb-4">
+            <CheckCircle className="h-5 w-5 text-blue-600" />
+            <h2 className="text-2xl font-bold">{t("performance_progress")}</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div><strong>{t("engagement_level")}</strong>: {engagement_level || t("na")}</div>
+        <div><strong>{t("recent_performance")}</strong>: {recent_performance || t("na")}</div>
+        <div><strong>{t("weekly_attendance")}</strong>: {weeklyAttendance}</div>
+        <div><strong>{t("total_absences")}</strong>: {missedCount}</div>
+        </div>
+        </div>
 
-
-        {/* Lesson History */}
         <div className="bg-white p-6 rounded-lg shadow mt-6">
           <div className="flex items-center gap-2 mb-4">
             <Calendar className="h-5 w-5 text-blue-500" />
@@ -453,7 +436,6 @@ const weeklyAttendance = studentData?.attendance_count_weekly || 0;
               </div>
             </div>
 
-    {/* Subject Filter */}
     <div>
       <p className="font-medium mb-1">{t("subject")}</p>
       <select onChange={handleAddSubjectFilter} className="p-2 border rounded text-sm">
@@ -481,24 +463,19 @@ const weeklyAttendance = studentData?.attendance_count_weekly || 0;
     </div>
 
 
-                        {/* Date Filter */}
-<input
-  type="date"
-  value={selectedDate}
-  onChange={(e) => setSelectedDate(e.target.value)}
-  className="p-2 border rounded"
-/>
-
-{/* Sort Button */}
-<button
-  onClick={() => setSortOrder((prev) => (prev === "desc" ? "asc" : "desc"))}
-  className="p-2 border rounded bg-white text-gray-700 hover:bg-gray-100"
->
-  {sortOrder === "desc"
-    ? t("sort_newest")
-    : t("sort_oldest")}
-</button>
-</div>
+    <input
+          type="date"
+          value={selectedDate}
+          onChange={(e) => setSelectedDate(e.target.value)}
+          className="p-2 border rounded"
+    />
+    <button
+          onClick={() => setSortOrder((prev) => (prev === "desc" ? "asc" : "desc"))}
+          className="p-2 border rounded bg-white text-gray-700 hover:bg-gray-100"
+    >
+    {sortOrder === "desc"? t("sort_newest"): t("sort_oldest")}
+    </button>
+    </div>
 
 <div className="overflow-x-auto">
   {lessons.length > 0 ? (

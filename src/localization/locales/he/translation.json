@@ -642,9 +642,12 @@
   "student_notes_placeholder": "הוסף הערה נוספת על התלמיד...",
   "studentNotes": "הערות תלמיד",
   "individual": "אישי",
-"newest": "החדשים תחילה",
-"oldest": "הישנים תחילה",
-"attendance": "נוכחות"
+  "newest": "החדשים תחילה",
+  "oldest": "הישנים תחילה",
+  "attendance": "נוכחות",
+  "hours_unit": "ש׳",
+  "no_lessons_this_month": "לא נרשמו שיעורים עבור חודש זה",
+  "lessons_counted_this_month": "שיעורים שנרשמו בחודש זה"
 
 
 

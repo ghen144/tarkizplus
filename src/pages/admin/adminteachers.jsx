@@ -42,38 +42,62 @@ function AdminTeachers() {
         fetchTeachers();
     }, []);
 
+    
     const getTeacherHoursThisMonth = async (teacherId) => {
-        const now = new Date();
-        const fromDate = new Date(now.getFullYear(), now.getMonth(), 1);
+  const now = new Date();
+  const fromDate = new Date(now.getFullYear(), now.getMonth(), 1); // أول يوم بالشهر
 
-        const lessonsRef = collection(db, "lessons");
-        const q = query(
-            lessonsRef,
-            where("teacher_id", "==", teacherId),
-            where("lesson_date", ">=", Timestamp.fromDate(fromDate))
-        );
+  const lessonsRef = collection(db, "lessons");
+  const q = query(
+    lessonsRef,
+    where("teacher_id", "==", teacherId),
+    where("lesson_date", ">=", Timestamp.fromDate(fromDate))
+  );
 
-        const snapshot = await getDocs(q);
-        let totalMinutes = 0;
+  const snapshot = await getDocs(q);
+  let totalMinutes = 0;
 
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            if (data.lesson_date && data.duration_minutes) {
-                const lessonDate = data.lesson_date.toDate();
-                const lessonMonth = lessonDate.getMonth();
-                const lessonYear = lessonDate.getFullYear();
+  snapshot.forEach((doc) => {
+    const data = doc.data();
+    const lessonDate = data.lesson_date?.toDate?.();
+    if (!lessonDate) return;
 
-                if (
-                    lessonYear === now.getFullYear() &&
-                    lessonMonth === now.getMonth()
-                ) {
-                    totalMinutes += Number(data.duration_minutes);
-                }
-            }
-        });
+    if (
+      lessonDate.getFullYear() !== now.getFullYear() ||
+      lessonDate.getMonth() !== now.getMonth()
+    ) {
+      return;
+    }
 
-        return (totalMinutes / 60).toFixed(1);
-    };
+    if (data.duration_minutes) {
+      totalMinutes += Number(data.duration_minutes);
+    }
+
+    else if (data.start_time && data.end_time) {
+      try {
+        const [startHour, startMin] = data.start_time.split(":").map(Number);
+        const [endHour, endMin] = data.end_time.split(":").map(Number);
+
+        const start = new Date(lessonDate);
+        start.setHours(startHour, startMin || 0, 0);
+
+        const end = new Date(lessonDate);
+        end.setHours(endHour, endMin || 0, 0);
+
+        const diffMs = end - start;
+        const diffMin = diffMs / (1000 * 60);
+        if (diffMin > 0 && diffMin < 300) {
+          totalMinutes += diffMin;
+        }
+      } catch (e) {
+        console.warn("Failed to parse time for lesson", doc.id, e);
+      }
+    }
+  });
+
+  return (totalMinutes / 60).toFixed(1); 
+};
+
 
     const toggleSubject = (subject) => {
         setSelectedSubjects(prev =>
@@ -209,9 +233,20 @@ function AdminTeachers() {
                                     <td className="px-6 py-4">
                                         {teacher.experience_years ? `${teacher.experience_years} ${t("years")}` : `0 ${t("years")}`}
                                     </td>
-                                    <td className="px-6 py-4">
-                                        {hoursMap[teacher.teacher_id] || 0} {t("hours_unit")}
+                                    <td className="px-6 py-4 relative group w-max">
+                                        <span className=
+                                                {
+                                                (hoursMap[teacher.teacher_id] === "0.0" || hoursMap[teacher.teacher_id] === 0)? "text-red-600 font-semibold" : "font-medium"
+                                                }>{hoursMap[teacher.teacher_id] || "0.0"} {t("hours_unit")}
+                                        </span>
+
+                                        <div className="absolute z-10 hidden group-hover:block bg-gray-200 text-gray-800 text-xs rounded-md py-1 px-2 shadow-md bottom-full mb-1 w-max max-w-[180px] text-center whitespace-pre-line">
+                                            {(hoursMap[teacher.teacher_id] === "0.0" || hoursMap[teacher.teacher_id] === 0)? t("no_lessons_this_month")
+                                            : t("lessons_counted_this_month")}
+                                        </div>
                                     </td>
+
+
                                     <td className="px-6 py-4">
                                         {teacher.active_status ? (
                                             <span className="text-green-600 font-semibold">{t("active")}</span>

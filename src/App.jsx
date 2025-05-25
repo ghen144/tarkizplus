@@ -17,11 +17,11 @@ import EditTeacherSchedule from './pages/schedules/EditTeacherSchedule.jsx';
 import AdminTeacherSchedules from './pages/admin/AdminTeacherSchedules.jsx';
 import NewSchedule from './pages/NewSchedule.jsx';
 import AdminTeachers from './pages/admin/adminteachers.jsx';
-import AdminLessonLog from './pages/admin/AdminLessonLog.jsx';
 import AddTeacherPage from './pages/AddTeacherPage.jsx';
 import EditStudentPage from './pages/EditStudentPage.jsx';
 import EditTeacherPage from './pages/EditTeacherPage.jsx';
 import AdminExamsPage from "./pages/admin/AdminExamsPage.jsx";
+
 import { useTranslation } from 'react-i18next';
 
 
@@ -53,11 +53,14 @@ function App() {
           <Route path="/admin/schedule" element={<AdminTeacherSchedules />} />
           <Route path="/admin/schedule/new" element={<NewSchedule />} />
           <Route path="/admin/teachers" element={<AdminTeachers />} />
-          <Route path="/admin/lessonlog" element={<AdminLessonLog />} />
           <Route path="/admin/teachers/add" element={<AddTeacherPage />} />
           <Route path="/admin/students/:studentId/edit" element={<EditStudentPage />} />
           <Route path="/admin/teachers/:teacherId/edit" element={<EditTeacherPage />} />
           <Route path="/admin/exams" element={<AdminExamsPage />} />
+          <Route path="/student-profile/:studentId" element={<StudentProfile />} />
+          <Route path="/admin/lesson-log" element={<LessonLog />} />
+
+
 
 
         </Route>

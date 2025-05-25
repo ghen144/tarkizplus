@@ -632,9 +632,12 @@
   "student_notes_placeholder": "أضف أي ملاحظة إضافية عن الطالب...",
   "studentNotes": "ملاحظات الطالب",
   "individual": "فردي",
-"newest": "الأحدث",
-"oldest": "الأقدم",
-"attendance": "الحضور"
+  "newest": "الأحدث",
+  "oldest": "الأقدم",
+  "attendance": "الحضور",
+  "hours_unit": "س",
+  "no_lessons_this_month": "لا يوجد دروس لهذا الشهر",
+  "lessons_counted_this_month": "عدد الدروس لهذا الشهر"
 
 
 
