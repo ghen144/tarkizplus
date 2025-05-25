@@ -1,4 +1,3 @@
-// LessonLog.jsx - يشمل نوع الدرس، الحضور، التعديل، التفاصيل، الفلترة، البحث، الترتيب
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { db } from "@/firebase/firebase.jsx";
@@ -32,146 +31,175 @@ const LessonLog = () => {
 
   useEffect(() => {
     const fetchStaticData = async () => {
-      try {
-        const user = auth.currentUser;
-        if (!user) return;
+      const user = auth.currentUser;
+      if (!user) return;
 
-        const teacherQuerySnapshot = await getDocs(
-          query(collection(db, "teachers"), where("email", "==", user.email))
-        );
-        const teacherDoc = teacherQuerySnapshot.docs[0];
-        setTeacherDocId(teacherDoc.id);
-        const teacherData = teacherDoc.data();
-        setAssignedStudentIds(teacherData.assigned_students || []);
+      const teacherQuerySnapshot = await getDocs(
+        query(collection(db, "teachers"), where("email", "==", user.email))
+      );
+      const teacherDoc = teacherQuerySnapshot.docs[0];
+      setTeacherDocId(teacherDoc.id);
+      setAssignedStudentIds(teacherDoc.data().assigned_students || []);
 
-        const allTeachersSnapshot = await getDocs(collection(db, "teachers"));
-        const tMap = {};
-        allTeachersSnapshot.docs.forEach((doc) => {
-          tMap[doc.id] = doc.data().name;
-        });
-        setTeachersMap(tMap);
+      const teachersSnap = await getDocs(collection(db, "teachers"));
+      const tMap = {};
+      teachersSnap.forEach((doc) => {
+        tMap[doc.id] = doc.data().name;
+      });
+      setTeachersMap(tMap);
 
-        const allStudentsSnapshot = await getDocs(collection(db, "students"));
-        const sMap = {};
-        allStudentsSnapshot.docs.forEach((doc) => {
-          sMap[doc.id] = doc.data().name;
-        });
-        setStudentsMap(sMap);
-      } catch (error) {
-        console.error("Error fetching static data:", error);
-      }
+      const studentsSnap = await getDocs(collection(db, "students"));
+      const sMap = {};
+      studentsSnap.forEach((doc) => {
+        sMap[doc.id] = doc.data().name;
+      });
+      setStudentsMap(sMap);
     };
-
     fetchStaticData();
   }, [auth]);
 
   useEffect(() => {
     const fetchLessons = async () => {
-      try {
-        if (assignedStudentIds.length === 0) {
-          setLessons([]);
-          setLoading(false);
-          return;
-        }
-        setLoading(true);
-        const lessonsQuery = query(
-          collection(db, "lessons"),
-          orderBy("lesson_date", sortAsc ? "asc" : "desc"),
-          limit(lessonsLimit)
-        );
-        const lessonsSnapshot = await getDocs(lessonsQuery);
-        const lessonsList = lessonsSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setLessons(lessonsList);
-      } catch (error) {
-        console.error("Error fetching lessons:", error);
-      } finally {
+      if (assignedStudentIds.length === 0) {
+        setLessons([]);
         setLoading(false);
+        return;
       }
+
+      setLoading(true);
+      const q = query(
+        collection(db, "lessons"),
+        orderBy("lesson_date", sortAsc ? "asc" : "desc"),
+        limit(lessonsLimit)
+      );
+      const snapshot = await getDocs(q);
+      setLessons(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+      setLoading(false);
     };
 
     fetchLessons();
   }, [assignedStudentIds, lessonsLimit, sortAsc]);
 
   const filteredLessons = lessons.filter((lesson) => {
-    const teacherOk =
+    const teacherMatch =
       selectedTeacherFilters.length === 0 ||
       selectedTeacherFilters.includes(lesson.teacher_id);
-    const subjectOk =
+    const subjectMatch =
       selectedSubjectFilters.length === 0 ||
       selectedSubjectFilters.includes(lesson.subject);
-    const keywordOk =
+    const keywordMatch =
       !searchTerm ||
-      lesson.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lesson.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (studentsMap[lesson.student_id]?.toLowerCase() || "").includes(searchTerm.toLowerCase());
-    return teacherOk && subjectOk && keywordOk;
+
+    return teacherMatch && subjectMatch && keywordMatch;
   });
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-        <h2 className="text-2xl font-bold text-blue-900">{t("recentLessons")}</h2>
-        <div className="flex items-center gap-4 flex-wrap">
-          <Link
-            to="/lesson-log/add"
-            className="bg-blue-500 text-white px-3 py-2 rounded hover:bg-blue-600"
-          >
-            ➕ {t("add")}
-          </Link>
-          <input
-            type="text"
-            placeholder={t("search")}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="border p-2 rounded text-sm"
-          />
-          <select
-            value={lessonsLimit}
-            onChange={(e) => setLessonsLimit(Number(e.target.value))}
-            className="border p-2 rounded text-sm"
-          >
-            {[10, 20, 30, 50].map(n => (
-              <option key={n} value={n}>{t("show")} {n}</option>
-            ))}
-          </select>
-          <button
-            onClick={() => setSortAsc(!sortAsc)}
-            className="text-sm underline text-blue-600"
-          >
-            {sortAsc ? t("oldest") : t("newest")}
-          </button>
-        </div>
-      </div>
+   <div className="p-6 space-y-6">
+  {/* العنوان */}
+<h2 className="text-2xl font-bold text-blue-900 mb-4">{t("recentLessons")}</h2>
 
-      <div className="flex gap-6 flex-wrap">
-        <div>
-          <p className="font-medium mb-1">{t("teacher")}</p>
-          <select
-            onChange={(e) => setSelectedTeacherFilters([e.target.value])}
-            className="border p-2 rounded text-sm"
-          >
-            <option value="">{t("select")}</option>
-            {Object.entries(teachersMap).map(([id, name]) => (
-              <option key={id} value={id}>{name}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <p className="font-medium mb-1">{t("subject")}</p>
-          <select
-            onChange={(e) => setSelectedSubjectFilters([e.target.value])}
-            className="border p-2 rounded text-sm"
-          >
-            <option value="">{t("select")}</option>
-            {SUBJECT_OPTIONS.map(subj => (
-              <option key={subj} value={subj}>{t(subj.toLowerCase())}</option>
-            ))}
-          </select>
-        </div>
-      </div>
+{/* شريط الأدوات الموحد */}
+<div className="flex flex-wrap items-center gap-4 mb-6 bg-white p-4 rounded-lg shadow-sm">
+  {/* زر الإضافة */}
+  <Link
+    to="/lesson-log/add"
+    className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 font-semibold shadow-sm"
+  >
+    ➕ {t("add")}
+  </Link>
 
+  {/* بحث */}
+  <input
+    type="text"
+    placeholder={t("search")}
+    value={searchTerm}
+    onChange={(e) => setSearchTerm(e.target.value)}
+    className="border p-2 rounded-lg text-sm w-40 shadow-sm"
+  />
+
+  {/* عدد الدروس */}
+  <select
+    value={lessonsLimit}
+    onChange={(e) => setLessonsLimit(Number(e.target.value))}
+    className="border p-2 rounded-lg text-sm shadow-sm"
+  >
+    {[10, 20, 30, 50].map(n => (
+      <option key={n} value={n}>{t("show")} {n}</option>
+    ))}
+  </select>
+
+  {/* ترتيب */}
+  <select
+    value={sortAsc ? "asc" : "desc"}
+    onChange={(e) => setSortAsc(e.target.value === "asc")}
+    className="border p-2 rounded-lg text-sm shadow-sm"
+  >
+    <option value="desc">{t("newest")}</option>
+    <option value="asc">{t("oldest")}</option>
+  </select>
+
+  {/* فلترة معلمين */}
+  <select
+    onChange={(e) => {
+      const selected = e.target.value;
+      if (selected && !selectedTeacherFilters.includes(selected)) {
+        setSelectedTeacherFilters([...selectedTeacherFilters, selected]);
+      }
+    }}
+    className="border p-2 rounded-lg text-sm shadow-sm"
+  >
+    <option value="">{t("select")} {t("teacher")}</option>
+    {Object.entries(teachersMap).map(([id, name]) => (
+      <option key={id} value={id}>{name}</option>
+    ))}
+  </select>
+
+  {/* فلترة مواضيع */}
+  <select
+    onChange={(e) => {
+      const selected = e.target.value;
+      if (selected && !selectedSubjectFilters.includes(selected)) {
+        setSelectedSubjectFilters([...selectedSubjectFilters, selected]);
+      }
+    }}
+    className="border p-2 rounded-lg text-sm shadow-sm"
+  >
+    <option value="">{t("select")} {t("subject")}</option>
+    {SUBJECT_OPTIONS.map(subj => (
+      <option key={subj} value={subj}>{t(subj.toLowerCase())}</option>
+    ))}
+  </select>
+</div>
+{/* شارات الفلاتر (فلترة معلمين ومواضيع) */}
+<div className="flex flex-wrap gap-2 mb-4">
+  {selectedTeacherFilters.map((id) => (
+    <span key={id} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2 shadow-sm">
+      {teachersMap[id] || id}
+      <button
+        onClick={() => setSelectedTeacherFilters(selectedTeacherFilters.filter(t => t !== id))}
+        className="text-blue-600 font-bold"
+      >
+        ×
+      </button>
+    </span>
+  ))}
+  {selectedSubjectFilters.map((subj) => (
+    <span key={subj} className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center gap-2 shadow-sm">
+      {t(subj.toLowerCase())}
+      <button
+        onClick={() => setSelectedSubjectFilters(selectedSubjectFilters.filter(s => s !== subj))}
+        className="text-green-600 font-bold"
+      >
+        ×
+      </button>
+    </span>
+  ))}
+</div>
+
+
+      {/* جدول الدروس */}
       <div className="bg-white p-4 rounded shadow">
         {loading ? (
           <p>{t("loading")}</p>
@@ -189,46 +217,42 @@ const LessonLog = () => {
             </thead>
             <tbody>
               {filteredLessons.map((lesson) => {
-                const canEdit = lesson.teacher_id === teacherDocId;
-                const presentCount = typeof lesson.present_count === "number"
-                  ? lesson.present_count
-                  : Array.isArray(lesson.students)
-                  ? lesson.students.filter((s) => s.status === "present").length
-                  : Array.isArray(lesson.student_ids)
-                  ? lesson.student_ids.length
-                  : typeof lesson.student_num === "number"
-                  ? lesson.student_num
-                  : lesson.student_id
-                  ? 1
-                  : 0;
-                const absentCount = typeof lesson.absent_count === "number"
-                  ? lesson.absent_count
-                  : Array.isArray(lesson.students)
-                  ? lesson.students.filter((s) => s.status === "absent").length
-                  : 0;
-                return (
-                  <tr key={lesson.id} className="border-t">
-                    <td className="p-2">{lesson.lesson_date.toDate().toLocaleDateString("en-GB")}</td>
-                    <td className="p-2">{t(lesson.subject.toLowerCase())}</td>
-                    <td className="p-2">{t(lesson.class_type === "individual" ? "individual" : "group")}</td>
-                    <td className="p-2">{teachersMap[lesson.teacher_id] || t("unknownTeacher")}</td>
-                    <td className="p-2">
-                      <p className="text-green-700">{t("present")}: <strong>{presentCount}</strong></p>
-                      <p className="text-red-600">{t("absent")}: <strong>{absentCount}</strong></p>
-                    </td>
-                    <td className="p-2 text-center space-x-2">
-                      <Link to={`/lesson-log/${lesson.id}/details`} className="text-blue-500 underline">
-                        {t("showMore")}
-                      </Link>
-                      {canEdit && (
-                        <Link to={`/lesson-log/${lesson.id}/edit`} className="text-yellow-500" title={t("editLesson")}>
-                          📝
-                        </Link>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
+  const presentCount = typeof lesson.present_count === "number"
+    ? lesson.present_count
+    : Array.isArray(lesson.students)
+      ? lesson.students.filter((s) => s.status === "present").length
+      : lesson.student_id
+        ? 1
+        : 0;
+
+  const absentCount = typeof lesson.absent_count === "number"
+    ? lesson.absent_count
+    : Array.isArray(lesson.students)
+      ? lesson.students.filter((s) => s.status === "absent").length
+      : 0;
+
+  return (
+    <tr key={lesson.id} className="border-t">
+      <td className="p-2">{lesson.lesson_date.toDate().toLocaleDateString("en-GB")}</td>
+      <td className="p-2">{t(lesson.subject.toLowerCase())}</td>
+      <td className="p-2">{t(lesson.class_type || "individual")}</td>
+      <td className="p-2">{teachersMap[lesson.teacher_id] || t("unknownTeacher")}</td>
+      <td className="p-2">
+        <p className="text-green-700">{t("present")}: <strong>{presentCount}</strong></p>
+        <p className="text-red-600">{t("absent")}: <strong>{absentCount}</strong></p>
+      </td>
+      <td className="p-2 text-center space-x-2">
+        <Link to={`/lesson-log/${lesson.id}/details`} className="text-blue-500 underline">
+          {t("showMore")}
+        </Link>
+        <Link to={`/lesson-log/${lesson.id}/edit`} className="text-yellow-500">
+          📝
+        </Link>
+      </td>
+    </tr>
+  );
+})}
+
             </tbody>
           </table>
         )}

@@ -34,7 +34,6 @@
     "lesson_notes": "הערות לשיעור",
     "notes_placeholder": "הערות...",
     "progress_assessment": "הערכת התקדמות",
-    "progress_placeholder": "למשל: טוב, צריך שיפור...",
     "add_row": "הוסף שורה",
     "save_all_lessons": "שמור את כל השיעורים",
     "loading_students": "טוען תלמידים...",
@@ -612,7 +611,6 @@
   "lesson_notes": "הערות לשיעור",
   "lesson_notes_placeholder": "לדוגמה: השיעור היה פעיל, למדנו פרק 3...",
   "progress_evaluation": "הערכת התקדמות",
-  "progress_placeholder": "לדוגמה: טוב, צריך שיפור...",
   "save_lesson": "שמור שיעור",
   "lesson_saved": "השיעור נשמר בהצלחה",
   "error_saving_lesson": "שגיאה בשמירת השיעור",
@@ -631,7 +629,7 @@
   "lesson_notes": "הערות לשיעור",
   "lesson_notes_placeholder": "לדוגמה: השיעור היה פעיל, למדנו פרק 3...",
   "progress_evaluation": "הערכת התקדמות",
-  "progress_placeholder": "לדוגמה: טוב, צריך שיפור...",
+  "progress_placeholder": "הזן מספר בין 1 ל־10 המייצג את התקדמות התלמיד",
   "cancel": "ביטול",
   "date": "תאריך",
   "mark_present_students": "סמן תלמידים נוכחים",
@@ -640,7 +638,16 @@
   "total_absences": "סה״כ היעדרויות",
   "missed_lessons": "שיעורים שהוחמצו",
   "no_absent_lessons": "אין שיעורים שהוחמצו",
-  "Absent from the lesson": "נעדר מהשיעור"
+  "Absent from the lesson": "נעדר מהשיעור",
+  "student_notes_placeholder": "הוסף הערה נוספת על התלמיד...",
+  "studentNotes": "הערות תלמיד",
+  "individual": "אישי",
+"newest": "החדשים תחילה",
+"oldest": "הישנים תחילה",
+"attendance": "נוכחות"
+
+
+
 
 
 

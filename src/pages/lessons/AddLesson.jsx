@@ -93,7 +93,7 @@ function AddLesson() {
           start_time: lessonTime || "",
           duration_minutes: parseInt(row.duration, 10) || 0,
           lesson_notes: row.notes || "",
-          progress_assessment: row.progress || "",
+          progress_assessment: Number(row.progress) || 0,
           student_num: lessonRows.length,
           created_at: serverTimestamp(),
         });
@@ -163,9 +163,17 @@ function AddLesson() {
               placeholder={t("notes_placeholder")} />
 
             <label className="block mb-2 font-semibold">{t("progress_assessment")}</label>
-            <input type="text" className="w-full p-2 mb-4 border rounded" value={row.progress}
-              onChange={(e) => handleRowChange(index, "progress", e.target.value)}
-              placeholder={t("progress_placeholder")} />
+           <input
+  type="number"
+  min="1"
+  max="10"
+  step="1"
+  className="w-full p-2 mb-4 border rounded"
+  value={row.progress}
+  onChange={(e) => handleRowChange(index, "progress", e.target.value)}
+  placeholder={t("progress_placeholder")}
+/>
+
           </div>
         ))}
 

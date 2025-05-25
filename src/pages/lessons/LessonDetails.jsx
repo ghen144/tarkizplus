@@ -42,11 +42,12 @@ const LessonDetails = () => {
               const studentSnap = await getDoc(studentRef);
               const studentName = studentSnap.exists() ? studentSnap.data().name : t("unknownStudent");
               return {
-                name: studentName,
-                note: student.student_note || "",
-                progress: student.progress_evaluation || "",
-                status: student.status
-              };
+  name: studentName,
+  student_notes: student.student_notes || "",
+  progress: student.progress_assessment || "",
+  status: student.status
+};
+
             })
           );
           setStudentsInfo(studentsWithNames);
@@ -132,7 +133,8 @@ const LessonDetails = () => {
               ) : (
                 <>
                   <p><strong>{t("progressAssessment")}</strong>: {student.progress || t("no_progress")}</p>
-                  <p><strong>{t("lessonNotes")}</strong>: {student.note || t("no_notes")}</p>
+                  <p><strong>{t("lessonNotes")}</strong>: {student.student_notes || t("no_notes")}</p>
+
                 </>
               )}
             </div>
@@ -141,7 +143,8 @@ const LessonDetails = () => {
       </div>
 
       <div className="mt-6">
-        <Link to="/admin/lessonlog" className="text-blue-500 hover:underline">
+<Link to="/lesson-log" className="text-blue-500 hover:underline">
+
           ← {t("backToLessonLog")}
         </Link>
       </div>

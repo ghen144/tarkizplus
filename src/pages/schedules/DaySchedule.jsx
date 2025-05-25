@@ -259,3 +259,4 @@ export const subjectColors = {
   Hebrew: "bg-yellow-200",
   Arabic: "bg-pink-200",
 };
+

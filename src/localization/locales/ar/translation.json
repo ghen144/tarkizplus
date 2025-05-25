@@ -34,7 +34,6 @@
     "lesson_notes": "ملاحظات الدرس",
     "notes_placeholder": "ملاحظات...",
     "progress_assessment": "تقييم التقدم",
-    "progress_placeholder": "مثلاً: جيد، يحتاج لتحسين...",
     "add_row": "إضافة صف",
     "save_all_lessons": "حفظ جميع الدروس",
     "loading_students": "جاري تحميل الطلاب...",
@@ -602,14 +601,13 @@
   "lesson_notes": "ملاحظات الدرس",
   "lesson_notes_placeholder": "مثلاً: كان الدرس تفاعلي، تم إنهاء الفصل الثالث...",
   "progress_evaluation": "تقييم التقدّم",
-  "progress_placeholder": "مثلاً: جيد، بحاجة لتحسين...",
   "save_lesson": "حفظ الدرس",
   "lesson_saved": "تم حفظ الدرس بنجاح",
   "error_saving_lesson": "حدث خطأ أثناء حفظ الدرس",
   "cancel": "إلغاء",
   "date": "التاريخ",
-  "present": "الحاضرون",
-  "absent": "الغائبون",
+  "present": "حاضر",
+  "absent": "غائب",
   "lesson_saved": "تم حفظ الدرس بنجاح",
   "error_saving_lesson": "حدث خطأ أثناء حفظ الدرس",
   "add_lesson": "إضافة درس",
@@ -621,7 +619,7 @@
   "lesson_notes": "ملاحظات الدرس",
   "lesson_notes_placeholder": "مثلاً: كان الدرس تفاعلي، تم إنهاء الفصل الثالث...",
   "progress_evaluation": "تقييم التقدّم",
-  "progress_placeholder": "مثلاً: جيد، بحاجة لتحسين...",
+  "progress_placeholder": "أدخل رقمًا من 1 إلى 10 يعبّر عن مدى تقدم الطالب",
   "cancel": "إلغاء",
   "date": "التاريخ",
   "mark_present_students": "علِّم الطلاب الحاضرين",
@@ -630,7 +628,16 @@
   "total_absences": "إجمالي الغيابات",
   "missed_lessons": "الدروس التي تم التغيب عنها",
   "no_absent_lessons": "لا يوجد دروس غاب عنها",
-  "Absent from the lesson": "تغيب عن الدرس"
+  "Absent from the lesson": "تغيب عن الدرس",
+  "student_notes_placeholder": "أضف أي ملاحظة إضافية عن الطالب...",
+  "studentNotes": "ملاحظات الطالب",
+  "individual": "فردي",
+"newest": "الأحدث",
+"oldest": "الأقدم",
+"attendance": "الحضور"
+
+
+
 
 
 

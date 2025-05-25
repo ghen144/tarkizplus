@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
@@ -335,7 +336,7 @@ const weeklyAttendance = studentData?.attendance_count_weekly || 0;
     let progress = null;
     if (Array.isArray(lesson.students)) {
       const studentEntry = lesson.students.find(s => s.student_id === currentStudentId);
-      progress = studentEntry?.progress_evaluation;
+      progress = studentEntry?.progress_assessment;
     } else {
       progress = lesson.progress_assessment;
     }
@@ -530,8 +531,9 @@ const weeklyAttendance = studentData?.attendance_count_weekly || 0;
 
       if (Array.isArray(lesson.students)) {
         const match = lesson.students.find(s => s.student_id === currentStudentId);
-        studentNote = match?.student_note || "";
-        studentProgress = match?.progress_evaluation || "";
+        studentNote = match?.student_notes || lesson.lesson_notes || "";
+
+        studentProgress = match?.progress_assessment || "";
       } else {
         studentNote = lesson.lesson_notes || "";
         studentProgress = lesson.progress_assessment || "";

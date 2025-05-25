@@ -46,6 +46,8 @@ const HomePage = () => {
   const [absentStudentIds, setAbsentStudentIds] = useState([]);
   const [lessonNotes, setLessonNotes] = useState("");
   const [progressEvaluation, setProgressEvaluation] = useState("");
+  const [showModal, setShowModal] = useState(false);
+
 
   const auth = getAuth();
 
@@ -100,17 +102,32 @@ const HomePage = () => {
     return () => unsubscribe();
   }, [auth, isTodayView]);
 
-  const handleLessonClick = (slot) => {
-    const matched = allStudents.filter((stu) =>
-      slot.student_ids?.includes(stu.id)
-    );
-    setSelectedLessonStudents(matched);
-    setAbsentStudentIds([]);
-    setLessonNotes("");
-    setProgressEvaluation("");
-    setSelectedSlot(slot);
-    setShowStudentList(true);
-  };
+  // فتح المودال فقط
+const handleOpenModal = (slot) => {
+  const matched = allStudents.filter((stu) =>
+    slot.student_ids?.includes(stu.id)
+  );
+  setSelectedLessonStudents(matched); // ✅ لازم نجيب الطلاب قبل فتح المودال
+  setSelectedSlot(slot);
+  setAbsentStudentIds([]);
+  setLessonNotes("");
+  setProgressEvaluation("");
+  setShowStudentList(false);
+  setShowModal(true);
+};
+
+
+
+// عرض الطلاب فقط
+const handleShowStudents = (slot) => {
+  const matched = allStudents.filter((stu) =>
+    slot.student_ids?.includes(stu.id)
+  );
+  setSelectedLessonStudents(matched);
+  setSelectedSlot((prev) => (prev?.id === slot.id ? null : slot)); // toggle
+  setShowStudentList(true);
+};
+
 
   const handleSaveLesson = async () => {
   if (!selectedSlot || !teacherId) return;
@@ -125,7 +142,7 @@ const HomePage = () => {
       return {
   student_id: stu.id,
   status: "present",
-  progress_evaluation: stu.progress_evaluation || "",
+  progress_assessment: stu.progress_assessment || "",
   student_notes: stu.student_notes || ""
 };
 
@@ -208,21 +225,62 @@ lesson_date: selectedSlot.lesson_date ? new Date(selectedSlot.lesson_date) : new
         {isTodayView ? (
           <>
             <h2 className="text-xl font-bold text-blue-700 mb-2">{t('today_schedule')}</h2>
-            {weeklySchedules.length === 0 ? (
-              <p className="text-gray-600">{t('no_schedules')}</p>
-            ) : (
-              weeklySchedules.map(slot => (
-                <div
-                  key={slot.id}
-                  className="bg-blue-50 p-3 rounded-lg mb-2 shadow-sm cursor-pointer"
-                  onClick={() => handleLessonClick(slot)}
-                >
-                  <div className="font-semibold text-black">{t(slot.subject)}</div>
-                  <div className="text-sm text-gray-700">{slot.start_time} - {slot.end_time}</div>
-                  <div className="text-sm text-gray-700">{t(slot.class_type)}</div>
-                </div>
-              ))
-            )}
+            {weeklySchedules.map(slot => {
+  const showStudentsOnly = selectedSlot?.id === slot.id && showStudentList;
+  const showModalOnly = selectedSlot?.id === slot.id && !showStudentList;
+
+  return (
+    <div
+      key={slot.id}
+      className="bg-blue-50 p-4 rounded-lg mb-3 shadow relative"
+    >
+      {/* زر ➕ لفتح المودال فقط */}
+      <button
+  onClick={(e) => {
+    e.stopPropagation();
+    handleOpenModal(slot); // ✅ هاد أهم سطر!
+  }}
+  className="absolute top-2 right-2 text-blue-600 text-xl hover:text-blue-800"
+  title={t("fill_lesson")}
+>
+  +
+</button>
+
+      {/* الضغط على الكرت يعرض فقط الطلاب */}
+      <div
+        onClick={() => {
+          const matched = allStudents.filter((stu) =>
+            slot.student_ids?.includes(stu.id)
+          );
+          setSelectedLessonStudents(matched);
+          setSelectedSlot(slot);
+          setShowStudentList(true);
+        }}
+        className="cursor-pointer"
+      >
+        <div className="font-semibold text-black text-lg">{t(slot.subject)}</div>
+        <div className="text-sm text-gray-700 mt-1">{slot.start_time} - {slot.end_time}</div>
+        <div className="text-sm text-gray-700">{t(slot.class_type)}</div>
+      </div>
+
+      {/* عرض قائمة الطلاب فقط */}
+      {showStudentsOnly && selectedLessonStudents.length > 0 && (
+        <div className="mt-4 p-3 bg-white border rounded-lg shadow text-sm">
+          <p className="text-blue-800 font-semibold mb-2">{t("students_in_lesson") || "התלמידים בשיעור:"}</p>
+          <ul className="list-disc list-inside text-gray-800 space-y-1">
+            {selectedLessonStudents.map((s, i) => (
+              <li key={i} className="pl-2">{s.name}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+})}
+
+
+
+
           </>
         ) : (
           <>
@@ -252,16 +310,36 @@ lesson_date: selectedSlot.lesson_date ? new Date(selectedSlot.lesson_date) : new
                         });
                         return (
                           <td key={day} className="border px-2 py-1 text-center align-top h-12">
-                            {slot ? (
-                              <div
-                                className="bg-blue-100 p-2 rounded cursor-pointer"
-                                onClick={() => handleLessonClick(slot)}
-                              >
-                                <div className="font-bold">{t(slot.subject)}</div>
-                                <div className="text-xs">{t(slot.class_type)}</div>
-                              </div>
-                            ) : null}
-                          </td>
+  {slot ? (
+    <div
+      className="bg-blue-100 p-2 rounded cursor-pointer"
+      onClick={() => {
+        const matched = allStudents.filter((stu) =>
+          slot.student_ids?.includes(stu.id)
+        );
+        setSelectedLessonStudents(matched);
+        setSelectedSlot(slot);
+        setShowStudentList(true);
+      }}
+    >
+      <div className="font-bold">{t(slot.subject)}</div>
+      <div className="text-xs">{t(slot.class_type)}</div>
+    </div>
+  ) : null}
+
+  {/* 👇 عرض الطلاب تحت الدرس إذا تم اختياره */}
+  {selectedSlot?.id === slot?.id && showStudentList && selectedLessonStudents.length > 0 && (
+    <div className="mt-2 text-xs text-left bg-white border rounded p-2 shadow">
+      <p className="font-semibold text-blue-800 mb-1">{t("students_in_lesson") || "التلاميذ في الدرس:"}</p>
+      <ul className="list-disc list-inside text-gray-800 space-y-1">
+        {selectedLessonStudents.map((s, i) => (
+          <li key={i}>{s.name}</li>
+        ))}
+      </ul>
+    </div>
+  )}
+</td>
+
                         );
                       })}
                     </tr>
@@ -274,7 +352,8 @@ lesson_date: selectedSlot.lesson_date ? new Date(selectedSlot.lesson_date) : new
       </div>
 
       {/* modal تسجيل الدرس */}
-      {selectedSlot && (
+      {showModal && selectedSlot && (
+
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <div className="bg-white rounded-lg p-6 w-full max-w-md space-y-4">
       <h2 className="text-xl font-bold text-blue-800">{t("add_lesson")}</h2>
@@ -337,17 +416,21 @@ lesson_date: selectedSlot.lesson_date ? new Date(selectedSlot.lesson_date) : new
   {!absentStudentIds.includes(stu.id) && (
     <div className="mt-2 space-y-2">
       <input
-        type="text"
-        placeholder={t("progress_placeholder")}
-        className="w-full border rounded p-1 text-sm"
-        value={stu.progress_evaluation || ""}
-        onChange={(e) => {
-          const updated = selectedLessonStudents.map(s =>
-            s.id === stu.id ? { ...s, progress_evaluation: e.target.value } : s
-          );
-          setSelectedLessonStudents(updated);
-        }}
-      />
+  type="number"
+  min="1"
+  max="10"
+  step="1"
+  placeholder={t("progress_placeholder")}
+  className="w-full border rounded p-1 text-sm"
+  value={stu.progress_assessment || ""}
+  onChange={(e) => {
+    const val = parseInt(e.target.value, 10);
+    const updated = selectedLessonStudents.map(s =>
+      s.id === stu.id ? { ...s, progress_assessment: isNaN(val) ? "" : val } : s
+    );
+    setSelectedLessonStudents(updated);
+  }}
+/>
 
       <input
         type="text"
@@ -381,11 +464,15 @@ lesson_date: selectedSlot.lesson_date ? new Date(selectedSlot.lesson_date) : new
 
       <div className="flex justify-end gap-2 mt-4">
         <button
-          onClick={() => setSelectedSlot(null)}
-          className="bg-gray-200 text-gray-700 px-4 py-2 rounded"
-        >
-          {t("cancel")}
-        </button>
+  onClick={() => {
+    setSelectedSlot(null);
+    setShowModal(false); // <--- هذا هو السطر الإضافي المهم
+  }}
+  className="bg-gray-200 text-gray-700 px-4 py-2 rounded"
+>
+  {t("cancel")}
+</button>
+
         <button
   onClick={handleSaveLesson}
   className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"

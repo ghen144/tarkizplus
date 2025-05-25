@@ -33,7 +33,7 @@
     "lesson_notes": "Lesson Notes",
     "notes_placeholder": "Notes...",
     "progress_assessment": "Progress Assessment",
-    "progress_placeholder": "e.g. Good, Needs Improvement, etc.",
+    "progress_placeholder": "Enter a number from 1 to 10 representing the student's progress",
     "add_row": "Add Row",
     "save_all_lessons": "Save All Lessons",
     "loading_students": "Loading assigned students...",
@@ -608,7 +608,6 @@
   "lesson_notes": "Lesson Notes",
   "lesson_notes_placeholder": "e.g., students were engaged, covered chapter 3...",
   "progress_evaluation": "Progress Evaluation",
-  "progress_placeholder": "e.g., Good, needs improvement...",
   "save_lesson": "Save Lesson",
   "lesson_saved": "Lesson saved successfully",
   "error_saving_lesson": "Error saving lesson",
@@ -627,7 +626,6 @@
   "lesson_notes": "Lesson Notes",
   "lesson_notes_placeholder": "e.g., students were engaged, covered chapter 3...",
   "progress_evaluation": "Progress Evaluation",
-  "progress_placeholder": "e.g., Good, needs improvement...",
   "cancel": "Cancel",
   "date": "Date",
   "mark_present_students": "Mark Present Students",
@@ -636,7 +634,16 @@
   "total_absences": "Total absences",
   "missed_lessons": "Missed lessons",
   "no_absent_lessons": "No missed lessons",
-  "Absent from the lesson": "Absent from the lesson"
+  "Absent from the lesson": "Absent from the lesson",
+  "student_notes_placeholder": "Add any additional note about the student...",
+  "studentNotes": "Student Notes",
+  "individual": "Individual",
+"newest": "Newest",
+"oldest": "Oldest",
+"attendance": "Attendance"
+
+
+
 
 
 
