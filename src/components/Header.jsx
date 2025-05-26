@@ -110,13 +110,13 @@ const Header = () => {
 
     if (userRole !== 'admin') {
       students = students.filter(s => assignedStudentIds.includes(s.student_id));
-      lessons = lessons.filter(l =>
+     lessons = lessons.filter
+      (l =>
         l.teacher_id === currentTeacherId &&
-        (
-          (l.student_id && assignedStudentIds.includes(l.student_id)) ||
-          (Array.isArray(l.students) && l.students.some(s => assignedStudentIds.includes(s.student_id)))
-        )
+        Array.isArray(l.students) &&
+        l.students.some(s => assignedStudentIds.includes(s.student_id))
       );
+
       exams = exams.filter(e => assignedStudentIds.includes(e.student_id));
       teachers = [];
     }
@@ -125,9 +125,7 @@ const Header = () => {
       lessons.slice(0, 5).map(async (l) => {
         const teacherDoc = l.teacher_id ? await getDoc(doc(db, 'teachers', l.teacher_id)) : null;
         const teacherName = teacherDoc?.exists() ? teacherDoc.data().name : t("unknown");
-        const studentsCount = Array.isArray(l.students)
-          ? l.students.length
-          : l.student_id ? 1 : 0;
+        const studentsCount = l.students?.length || 0;
 
         return {
           id: l.id,

@@ -77,7 +77,7 @@ const DaySchedule = ({ day, lessons, teacherMap, onLessonClick }) => {
         selectedLesson.assigned_students.map((studentId) => ({
           student_id: studentId,
           present: false,
-          progress_assessment: ""
+          progress_evaluation: ""
         }))
       );
       setLessonNotes("");
@@ -87,13 +87,13 @@ const DaySchedule = ({ day, lessons, teacherMap, onLessonClick }) => {
   const handleStudentChange = (index, value) => {
     const updated = [...studentStates];
     updated[index].present = value;
-    if (!value) updated[index].progress_assessment = "";
+    if (!value) updated[index].progress_evaluation = "";
     setStudentStates(updated);
   };
 
-  const handleAssessmentChange = (index, value) => {
+  const handleEvaluationChange = (index, value) => {
     const updated = [...studentStates];
-    updated[index].progress_assessment = value;
+    updated[index].progress_evaluation = value;
     setStudentStates(updated);
   };
 
@@ -112,8 +112,10 @@ const DaySchedule = ({ day, lessons, teacherMap, onLessonClick }) => {
       lesson_notes: lessonNotes,
       students: studentStates.filter((s) => s.present).map((s) => ({
         student_id: s.student_id,
-        progress_assessment: s.progress_assessment
-      }))
+        progress_evaluation: s.progress_evaluation
+      })),
+      present_count: studentStates.filter((s) => s.present).length,
+      absent_count: studentStates.filter((s) => !s.present).length
     };
 
     try {
@@ -157,13 +159,7 @@ const DaySchedule = ({ day, lessons, teacherMap, onLessonClick }) => {
                       key={laneIndex}
                       rowSpan={rowSpan}
                       className={`border p-1 ${colorClass} cursor-pointer`}
-                      onClick={() => {
-                        if (lesson.class_type === "weekly_schedule") {
-                          setSelectedLesson(lesson);
-                        } else {
-                          onLessonClick(lesson);
-                        }
-                      }}
+                      onClick={() => setSelectedLesson(lesson)}
                     >
                       <p className="text-sm font-bold">{t(lesson.subject.toLowerCase())}</p>
                       <p className="text-xs">{t(lesson.class_type.toLowerCase())}</p>
@@ -217,13 +213,13 @@ const DaySchedule = ({ day, lessons, teacherMap, onLessonClick }) => {
 
                 {student.present && (
                   <div className="mt-2">
-                    <label className="block text-sm mb-1">{t("progress_assessment")}</label>
+                    <label className="block text-sm mb-1">{t("progress_evaluation")}</label>
                     <input
                       type="text"
                       className="w-full border rounded p-1"
                       placeholder={t("progress_placeholder")}
-                      value={student.progress_assessment}
-                      onChange={(e) => handleAssessmentChange(index, e.target.value)}
+                      value={student.evaluation}
+                      onChange={(e) => handleEvaluationChange(index, e.target.value)}
                     />
                   </div>
                 )}
@@ -259,4 +255,3 @@ export const subjectColors = {
   Hebrew: "bg-yellow-200",
   Arabic: "bg-pink-200",
 };
-

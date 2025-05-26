@@ -77,17 +77,11 @@ const LessonLog = () => {
         const snapshot = await getDocs(q);
         const allLessons = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
-        let filteredLessons = [];
+        const filtered = isAdmin
+          ? allLessons
+          : allLessons.filter((lesson) => lesson.teacher_id === teacherDocId);
 
-        if (isAdmin) {
-          filteredLessons = allLessons;
-        } else {
-          filteredLessons = allLessons.filter((lesson) => {
-            return lesson.teacher_id === teacherDocId;
-          });
-        }
-
-        setLessons(filteredLessons.slice(0, lessonsLimit));
+        setLessons(filtered.slice(0, lessonsLimit));
       } catch (err) {
         console.error("Error fetching lessons:", err);
         setLessons([]);
@@ -102,13 +96,19 @@ const LessonLog = () => {
     const teacherMatch =
       selectedTeacherFilters.length === 0 ||
       selectedTeacherFilters.includes(lesson.teacher_id);
+
     const subjectMatch =
       selectedSubjectFilters.length === 0 ||
       selectedSubjectFilters.includes(lesson.subject);
+
     const keywordMatch =
       !searchTerm ||
       lesson.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (studentsMap[lesson.student_id]?.toLowerCase() || "").includes(searchTerm.toLowerCase());
+      (Array.isArray(lesson.students)
+        ? lesson.students.some((s) =>
+            (studentsMap[s.student_id]?.toLowerCase() || "").includes(searchTerm.toLowerCase())
+          )
+        : false);
 
     return teacherMatch && subjectMatch && keywordMatch;
   });
@@ -138,8 +138,10 @@ const LessonLog = () => {
           onChange={(e) => setLessonsLimit(Number(e.target.value))}
           className="border p-2 rounded-lg text-sm shadow-sm"
         >
-          {[10, 20, 30, 50].map(n => (
-            <option key={n} value={n}>{t("show")} {n}</option>
+          {[10, 20, 30, 50].map((n) => (
+            <option key={n} value={n}>
+              {t("show")} {n}
+            </option>
           ))}
         </select>
 
@@ -179,7 +181,7 @@ const LessonLog = () => {
           className="border p-2 rounded-lg text-sm shadow-sm"
         >
           <option value="">{t("select")} {t("subject")}</option>
-          {SUBJECT_OPTIONS.map(subj => (
+          {SUBJECT_OPTIONS.map((subj) => (
             <option key={subj} value={subj}>{t(subj.toLowerCase())}</option>
           ))}
         </select>
@@ -205,14 +207,14 @@ const LessonLog = () => {
                 const presentCount = typeof lesson.present_count === "number"
                   ? lesson.present_count
                   : Array.isArray(lesson.students)
-                    ? lesson.students.filter((s) => s.status === "present").length
-                    : lesson.student_id ? 1 : 0;
+                  ? lesson.students.filter((s) => s.status === "present").length
+                  : 0;
 
                 const absentCount = typeof lesson.absent_count === "number"
                   ? lesson.absent_count
                   : Array.isArray(lesson.students)
-                    ? lesson.students.filter((s) => s.status === "absent").length
-                    : 0;
+                  ? lesson.students.filter((s) => s.status === "absent").length
+                  : 0;
 
                 return (
                   <tr key={lesson.id} className="border-t">
@@ -221,8 +223,8 @@ const LessonLog = () => {
                     <td className="p-2">{t(lesson.class_type || "individual")}</td>
                     <td className="p-2">{teachersMap[lesson.teacher_id] || t("unknownTeacher")}</td>
                     <td className="p-2">
-                    <p className="text-green-700">{t("present")}: <strong>{presentCount}</strong></p>
-                    <p className="text-red-600">{t("absent")}: <strong>{absentCount}</strong></p>
+                      <p className="text-green-700">{t("present")}: <strong>{presentCount}</strong></p>
+                      <p className="text-red-600">{t("absent")}: <strong>{absentCount}</strong></p>
                     </td>
                     <td className="p-2 text-center space-x-2">
                       <Link to={`/lesson-log/${lesson.id}/details`} className="text-blue-500 underline">

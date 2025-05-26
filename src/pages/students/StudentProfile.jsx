@@ -69,18 +69,11 @@ const studentLessons = lessons.filter((lesson) => {
     return lesson.students.some(
       (s) => s.student_id === currentStudentId && s.status === "present"
     );
-  } else {
-    return lesson.student_id === currentStudentId;
-  }
+  } 
 });
 
-const attendedCount = studentLessons.filter(
-  (lesson) =>
-    Array.isArray(lesson.students) &&
-    lesson.students.some(
-      (s) => s.student_id === currentStudentId && s.status === "present"
-    )
-).length;
+const attendedCount = studentLessons.length;
+
 
 const missedCount = lessons.filter((lesson) => {
   if (Array.isArray(lesson.students)) {
@@ -90,18 +83,8 @@ const missedCount = lessons.filter((lesson) => {
   return false; 
 }).length;
 
-
-
-const untrackedLessons = studentLessons.filter(
-  (lesson) =>
-    Array.isArray(lesson.students) &&
-    !lesson.students.some((s) => s.student_id === currentStudentId)
-).length;
-
-const totalAttendance = attendedCount + untrackedLessons;
+const totalAttendance = attendedCount;
 const weeklyAttendance = studentData?.attendance_count_weekly || 0;
-
-
 
   useEffect(() => {
     const auth = getAuth();
@@ -320,13 +303,8 @@ const weeklyAttendance = studentData?.attendance_count_weekly || 0;
 
   const progressData = filteredAndSortedLessons
   .map((lesson) => {
-    let progress = null;
-    if (Array.isArray(lesson.students)) {
-      const studentEntry = lesson.students.find(s => s.student_id === currentStudentId);
-      progress = studentEntry?.progress_assessment;
-    } else {
-      progress = lesson.progress_assessment;
-    }
+    const match = lesson.students.find(s => s.student_id === currentStudentId);
+    const progress = match?.progress_evaluation;
 
     return {
       date: lesson.lesson_date?.toDate().toLocaleDateString("en-GB"),
@@ -334,9 +312,6 @@ const weeklyAttendance = studentData?.attendance_count_weekly || 0;
     };
   })
   .filter(item => !isNaN(item.progress));
-
-
- 
 
 
   return (
@@ -510,10 +485,10 @@ const weeklyAttendance = studentData?.attendance_count_weekly || 0;
         const match = lesson.students.find(s => s.student_id === currentStudentId);
         studentNote = match?.student_notes || lesson.lesson_notes || "";
 
-        studentProgress = match?.progress_assessment || "";
+        studentProgress = match?.progress_evaluation || "";
       } else {
         studentNote = lesson.lesson_notes || "";
-        studentProgress = lesson.progress_assessment || "";
+        studentProgress = lesson.progress_evaluation || "";
       }
 
       return (

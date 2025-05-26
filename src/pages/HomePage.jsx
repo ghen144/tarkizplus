@@ -142,7 +142,7 @@ const handleShowStudents = (slot) => {
       return {
   student_id: stu.id,
   status: "present",
-  progress_assessment: stu.progress_assessment || "",
+  progress_evaluation: stu.progress_evaluation || "",
   student_notes: stu.student_notes || ""
 };
 
@@ -422,11 +422,11 @@ lesson_date: selectedSlot.lesson_date ? new Date(selectedSlot.lesson_date) : new
   step="1"
   placeholder={t("progress_placeholder")}
   className="w-full border rounded p-1 text-sm"
-  value={stu.progress_assessment || ""}
+  value={stu.progress_evaluation || ""}
   onChange={(e) => {
     const val = parseInt(e.target.value, 10);
     const updated = selectedLessonStudents.map(s =>
-      s.id === stu.id ? { ...s, progress_assessment: isNaN(val) ? "" : val } : s
+      s.id === stu.id ? { ...s, progress_evaluation: isNaN(val) ? "" : val } : s
     );
     setSelectedLessonStudents(updated);
   }}

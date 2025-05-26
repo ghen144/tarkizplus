@@ -93,7 +93,7 @@ function AddLesson() {
           start_time: lessonTime || "",
           duration_minutes: parseInt(row.duration, 10) || 0,
           lesson_notes: row.notes || "",
-          progress_assessment: Number(row.progress) || 0,
+          progress_evaluation: Number(row.progress) || 0,
           student_num: lessonRows.length,
           created_at: serverTimestamp(),
         });
@@ -162,7 +162,7 @@ function AddLesson() {
               onChange={(e) => handleRowChange(index, "notes", e.target.value)}
               placeholder={t("notes_placeholder")} />
 
-            <label className="block mb-2 font-semibold">{t("progress_assessment")}</label>
+            <label className="block mb-2 font-semibold">{t("progress_evaluation")}</label>
            <input
   type="number"
   min="1"

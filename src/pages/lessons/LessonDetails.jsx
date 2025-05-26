@@ -44,23 +44,13 @@ const LessonDetails = () => {
               return {
                 name: studentName,
                 student_notes: student.student_notes || "",
-                progress: student.progress_assessment || "",
+                progress: student.progress_evaluation || "",
                 status: student.status
                     };
 
             })
           );
           setStudentsInfo(studentsWithNames);
-        } else if (lessonData.student_id) {
-          const studentRef = doc(db, 'students', lessonData.student_id);
-          const studentSnap = await getDoc(studentRef);
-          const studentName = studentSnap.exists() ? studentSnap.data().name : t("unknownStudent");
-          setStudentsInfo([{
-            name: studentName,
-            note: lessonData.lesson_notes || "",
-            progress: lessonData.progress_assessment || "",
-            status: "present"
-          }]);
         }
 
       } catch (err) {
@@ -132,7 +122,7 @@ const LessonDetails = () => {
               <p className="text-red-600">{t("Absent from the lesson")}</p>
               ) : (
                 <>
-                  <p><strong>{t("progressAssessment")}</strong>: {student.progress || t("no_progress")}</p>
+                  <p><strong>{t("progressEvaluation")}</strong>: {student.progress || t("no_progress")}</p>
                   <p><strong>{t("lessonNotes")}</strong>: {student.student_notes || t("no_notes")}</p>
 
                 </>

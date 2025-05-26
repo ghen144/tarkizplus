@@ -58,42 +58,22 @@ function AdminTeachers() {
   let totalMinutes = 0;
 
   snapshot.forEach((doc) => {
-    const data = doc.data();
-    const lessonDate = data.lesson_date?.toDate?.();
-    if (!lessonDate) return;
+  const data = doc.data();
+  const lessonDate = data.lesson_date?.toDate?.();
+  if (!lessonDate) return;
 
-    if (
-      lessonDate.getFullYear() !== now.getFullYear() ||
-      lessonDate.getMonth() !== now.getMonth()
-    ) {
-      return;
-    }
+  if (
+    lessonDate.getFullYear() !== now.getFullYear() ||
+    lessonDate.getMonth() !== now.getMonth()
+  ) {
+    return;
+  }
 
-    if (data.duration_minutes) {
-      totalMinutes += Number(data.duration_minutes);
-    }
+  if (data.duration_minutes) {
+    totalMinutes += Number(data.duration_minutes);
+  }
+});
 
-    else if (data.start_time && data.end_time) {
-      try {
-        const [startHour, startMin] = data.start_time.split(":").map(Number);
-        const [endHour, endMin] = data.end_time.split(":").map(Number);
-
-        const start = new Date(lessonDate);
-        start.setHours(startHour, startMin || 0, 0);
-
-        const end = new Date(lessonDate);
-        end.setHours(endHour, endMin || 0, 0);
-
-        const diffMs = end - start;
-        const diffMin = diffMs / (1000 * 60);
-        if (diffMin > 0 && diffMin < 300) {
-          totalMinutes += diffMin;
-        }
-      } catch (e) {
-        console.warn("Failed to parse time for lesson", doc.id, e);
-      }
-    }
-  });
 
   return (totalMinutes / 60).toFixed(1); 
 };

@@ -79,7 +79,10 @@ const AdminHomePage = () => {
         const recentLessons = lSnap.docs
           .sort((a, b) => b.data().lesson_date.toDate() - a.data().lesson_date.toDate())
           .slice(0, 3)
-          .map(d => `📝 ${t(d.data().subject)} ${t('lesson_on')} ${d.data().lesson_date.toDate().toLocaleDateString()}`);
+          .map(d => {
+                    const count = d.data().students?.length || 0;
+                    return `📝 ${t(d.data().subject)} (${count} ${t('students')}) ${t('lesson_on')} ${d.data().lesson_date.toDate().toLocaleDateString()}`;
+                    });
 
         const recentExams = eSnap.docs
           .sort((a, b) => b.data().exam_date.toDate() - a.data().exam_date.toDate())
