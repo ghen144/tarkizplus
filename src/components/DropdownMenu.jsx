@@ -1,106 +1,55 @@
-// GlobalSearchEnhanced.jsx
-import React, { useEffect, useState } from 'react';
-import { db } from '@/firebase/firebase.jsx';
-import { collection, getDocs } from 'firebase/firestore';
-import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+// DropdownMenu.jsx
+import React, { useState, useRef } from 'react';
 
-const GlobalSearchEnhanced = ({ query }) => {
-  const { t } = useTranslation();
-  const [results, setResults] = useState({ students: [], teachers: [], lessons: [], exams: [] });
-  const navigate = useNavigate();
+const DropdownMenu = ({ trigger, children, className = "" }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const timeoutRef = useRef(null);
+  const containerRef = useRef(null);
 
-  useEffect(() => {
-    const fetchAll = async () => {
-      if (query.trim() === '') {
-        setResults({ students: [], teachers: [], lessons: [], exams: [] });
-        return;
-      }
-
-      const [studentsSnap, teachersSnap, lessonsSnap, examsSnap] = await Promise.all([
-        getDocs(collection(db, 'students')),
-        getDocs(collection(db, 'teachers')),
-        getDocs(collection(db, 'lessons')),
-        getDocs(collection(db, 'exams')),
-      ]);
-
-      const q = query.toLowerCase();
-
-      const students = studentsSnap.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
-        .filter(s => s.name?.toLowerCase().includes(q) || s.student_id?.includes(q))
-        .slice(0, 5);
-
-      const teachers = teachersSnap.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
-        .filter(t => t.name?.toLowerCase().includes(q) || t.email?.toLowerCase().includes(q))
-        .slice(0, 5);
-
-      const lessons = lessonsSnap.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
-        .filter(l => l.subject?.toLowerCase().includes(q))
-        .slice(0, 5);
-
-      const exams = examsSnap.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
-        .filter(e => e.subject?.toLowerCase().includes(q) || e.material?.toLowerCase().includes(q))
-        .slice(0, 5);
-
-      setResults({ students, teachers, lessons, exams });
-    };
-
-    fetchAll();
-  }, [query]);
-
-  const handleSelect = (type, id) => {
-    switch (type) {
-      case 'student':
-        navigate(`/students/${id}`);
-        break;
-      case 'teacher':
-        navigate(`/admin/teachers/${id}/edit`);
-        break;
-      case 'lesson':
-        navigate(`/lesson-log/${id}/details`);
-        break;
-      case 'exam':
-        navigate(`/admin/exams`); // Modify if individual exam pages exist
-        break;
-      default:
-        break;
-    }
+  const handleMouseEnter = () => {
+    clearTimeout(timeoutRef.current);
+    setIsOpen(true);
   };
 
-  const renderSection = (label, items, icon, type) =>
-    items.length > 0 && (
-      <div className="mb-4">
-        <p className="font-bold text-blue-600">{icon} {t(label)}</p>
-        <ul>
-          {items.map(item => (
-            <li key={item.id}>
-              <button
-                onClick={() => handleSelect(type, item.id)}
-                className="text-left w-full py-1 text-sm text-gray-800 hover:underline"
-              >
-                {item.name || item.subject || item.material}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
-    );
+  const handleMouseLeave = () => {
+    timeoutRef.current = setTimeout(() => setIsOpen(false), 200);
+  };
+
+  const toggleOpen = (e) => {
+    e.stopPropagation();
+    clearTimeout(timeoutRef.current);
+    setIsOpen((prev) => !prev);
+  };
 
   return (
-    <div className="absolute top-full left-0 right-0 bg-white border mt-1 rounded shadow z-10 max-h-80 overflow-y-auto p-4">
-      {renderSection('students', results.students, '👦', 'student')}
-      {renderSection('teachers', results.teachers, '🧑‍🏫', 'teacher')}
-      {renderSection('lessons', results.lessons, '📚', 'lesson')}
-      {renderSection('exams', results.exams, '📝', 'exam')}
-      {Object.values(results).every(arr => arr.length === 0) && (
-        <p className="text-gray-500 text-sm">{t("no_results")}</p>
-      )}
-    </div>
+      <div
+          ref={containerRef}
+          className="relative inline-block"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+      >
+        {React.isValidElement(trigger) ? (
+            // clone your custom trigger (no extra wrapper)
+            React.cloneElement(trigger, { onClick: toggleOpen })
+        ) : (
+            // fallback: wrap non-elements
+            <button onClick={toggleOpen} className="bg-transparent border-none p-0">
+              {trigger}
+            </button>
+        )}
+
+        <div
+            className={`
+          absolute top-full mt-1 right-0 z-50 bg-white border border-gray-200
+          rounded-lg shadow-lg w-48 transition-all duration-150
+          ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}
+          ${className}
+        `}
+        >
+          {children}
+        </div>
+      </div>
   );
 };
 
-export default GlobalSearchEnhanced;
+export default DropdownMenu;
