@@ -1,259 +1,282 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { Search, ChevronDown } from 'lucide-react';
-import DropdownMenu from './DropdownMenu.jsx';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import React, {useEffect, useState, useRef} from 'react';
+import {Search, ChevronDown, Globe} from 'lucide-react';
+import DropdownMenu from './GlobalSearchEnhanced.jsx';
+import {getAuth, onAuthStateChanged} from 'firebase/auth';
 import {
-  collection, getDocs, getDoc, doc, query, where
+    collection, getDocs, getDoc, doc, query, where
 } from 'firebase/firestore';
-import { db } from '@/firebase/firebase.jsx';
-import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import {db} from '@/firebase/firebase.jsx';
+import {useTranslation} from 'react-i18next';
+import {useNavigate} from 'react-router-dom';
+import DropDownMenu from "@/components/DropDownMenu.jsx";
 
 const Header = () => {
-  const { t } = useTranslation();
-  const auth = getAuth();
-  const navigate = useNavigate();
-  const [userName, setUserName] = useState('User');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [results, setResults] = useState({ students: [], teachers: [], lessons: [], exams: [] });
-  const [showResults, setShowResults] = useState(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [userRole, setUserRole] = useState(localStorage.getItem('userRole') || '');
-  const [assignedStudentIds, setAssignedStudentIds] = useState([]);
-  const [currentTeacherId, setCurrentTeacherId] = useState('');
+    const {t} = useTranslation();
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [userName, setUserName] = useState('User');
+    const [searchQuery, setSearchQuery] = useState('');
+    const auth = getAuth();
+    const [userRole, setUserRole] = useState(localStorage.getItem('userRole') || '');
 
-  const resultsRef = useRef(null);
+    const navigate = useNavigate();
+    const [results, setResults] = useState({students: [], teachers: [], lessons: [], exams: []});
+    const [showResults, setShowResults] = useState(false);
+    const [assignedStudentIds, setAssignedStudentIds] = useState([]);
+    const [currentTeacherId, setCurrentTeacherId] = useState('');
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        try {
-          const collectionName = userRole === 'admin' ? 'admin' : 'teachers';
-          const q = query(collection(db, collectionName), where('email', '==', user.email));
-          const snapshot = await getDocs(q);
-          if (!snapshot.empty) {
-            const data = snapshot.docs[0].data();
-            setUserName(data.name || t("user"));
-            if (userRole !== 'admin') {
-              setAssignedStudentIds(data.assigned_students || []);
-              setCurrentTeacherId(snapshot.docs[0].id);
+    const resultsRef = useRef(null);
+
+    const [isLangOpen, setIsLangOpen] = useState(false);
+    const toggleLangDropdown = () => setIsLangOpen((prev) => !prev);
+    const closeLangDropdown = () => setIsLangOpen(false);
+    const {i18n} = useTranslation();
+    const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
+    const closeDropdown = () => setIsDropdownOpen(false);
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                try {
+                    const collectionName = userRole === 'admin' ? 'admin' : 'teachers';
+                    const q = query(collection(db, collectionName), where('email', '==', user.email));
+                    const snapshot = await getDocs(q);
+                    if (!snapshot.empty) {
+                        const data = snapshot.docs[0].data();
+                        setUserName(data.name || t("user"));
+                        if (userRole !== 'admin') {
+                            setAssignedStudentIds(data.assigned_students || []);
+                            setCurrentTeacherId(snapshot.docs[0].id);
+                        }
+                    }
+                } catch (err) {
+                    console.error("Error loading user:", err);
+                }
             }
-          }
-        } catch (err) {
-          console.error("Error loading user:", err);
-        }
-      }
-    });
-    return () => unsubscribe();
-  }, [userRole, t]);
+        });
+        return () => unsubscribe();
+    }, [userRole, t]);
 
-  useEffect(() => {
-    const closeOnOutsideClick = (e) => {
-      if (resultsRef.current && !resultsRef.current.contains(e.target)) {
-        setShowResults(false);
-      }
-    };
-    document.addEventListener("mousedown", closeOnOutsideClick);
-    return () => document.removeEventListener("mousedown", closeOnOutsideClick);
-  }, []);
-
-  const handleSearch = async (e) => {
-    const queryValue = e.target.value;
-    setSearchQuery(queryValue);
-    if (queryValue.trim() === '') {
-      setResults({ students: [], teachers: [], lessons: [], exams: [] });
-      return;
-    }
-
-    const q = queryValue.toLowerCase();
-
-    const SUBJECT_TRANSLATIONS = {
-      math: ["math", "رياضيات", "מתמטיקה"],
-      english: ["english", "انجليزي", "إنجليزي", "אנגלית"],
-      hebrew: ["hebrew", "عبري", "עברית"],
-      arabic: ["arabic", "عربي", "ערבית"]
-    };
-
-    const normalizedSubject = Object.keys(SUBJECT_TRANSLATIONS).find((key) =>
-      SUBJECT_TRANSLATIONS[key].some(variant =>
-        variant.includes(q) || q.includes(variant)
-      )
-    );
-
-    const [studentsSnap, teachersSnap, lessonsSnap, examsSnap] = await Promise.all([
-      getDocs(collection(db, 'students')),
-      getDocs(collection(db, 'teachers')),
-      getDocs(collection(db, 'lessons')),
-      getDocs(collection(db, 'exams')),
-    ]);
-
-    let students = studentsSnap.docs
-      .map(doc => ({ id: doc.id, ...doc.data() }))
-      .filter(s => s.name?.toLowerCase().includes(q) || s.student_id?.includes(q));
-
-    let teachers = teachersSnap.docs
-      .map(doc => ({ id: doc.id, ...doc.data() }))
-      .filter(t => t.name?.toLowerCase().includes(q) || t.email?.toLowerCase().includes(q));
-
-    let lessons = lessonsSnap.docs
-      .map(doc => ({ id: doc.id, ...doc.data() }))
-      .filter(l => {
-        const subject = l.subject?.toLowerCase();
-        if (!subject) return false;
-        if (normalizedSubject) return subject === normalizedSubject;
-        return subject.includes(q);
-      });
-
-    let exams = examsSnap.docs
-      .map(doc => ({ id: doc.id, ...doc.data() }))
-      .filter(e => e.subject?.toLowerCase().includes(q) || e.material?.toLowerCase().includes(q));
-
-    if (userRole !== 'admin') {
-      students = students.filter(s => assignedStudentIds.includes(s.student_id));
-     lessons = lessons.filter
-      (l =>
-        l.teacher_id === currentTeacherId &&
-        Array.isArray(l.students) &&
-        l.students.some(s => assignedStudentIds.includes(s.student_id))
-      );
-
-      exams = exams.filter(e => assignedStudentIds.includes(e.student_id));
-      teachers = [];
-    }
-
-    const enrichedLessons = await Promise.all(
-      lessons.slice(0, 5).map(async (l) => {
-        const teacherDoc = l.teacher_id ? await getDoc(doc(db, 'teachers', l.teacher_id)) : null;
-        const teacherName = teacherDoc?.exists() ? teacherDoc.data().name : t("unknown");
-        const studentsCount = l.students?.length || 0;
-
-        return {
-          id: l.id,
-          subject: l.subject,
-          date: l.lesson_date?.toDate().toLocaleDateString(),
-          teacherName,
-          studentsCount,
+    useEffect(() => {
+        const closeOnOutsideClick = (e) => {
+            if (resultsRef.current && !resultsRef.current.contains(e.target)) {
+                setShowResults(false);
+            }
         };
-      })
-    );
+        document.addEventListener("mousedown", closeOnOutsideClick);
+        return () => document.removeEventListener("mousedown", closeOnOutsideClick);
+    }, []);
 
-    setResults({
-      students: students.slice(0, 5),
-      teachers: teachers.slice(0, 5),
-      lessons: enrichedLessons,
-      exams: exams.slice(0, 5)
-    });
-    setShowResults(true);
-  };
+    const handleSearch = async (e) => {
+        const queryValue = e.target.value;
+        setSearchQuery(queryValue);
+        if (queryValue.trim() === '') {
+            setResults({students: [], teachers: [], lessons: [], exams: []});
+            return;
+        }
 
-  const handleResultClick = (type, id) => {
-    if (type === 'student') navigate(`/students/${id}`);
-    else if (type === 'teacher') navigate(`/admin/teachers/${id}/edit`);
-    else if (type === 'lesson') navigate(`/lesson-log/${id}/details`);
-    else if (type === 'exam') navigate(`/admin/exams`);
+        const q = queryValue.toLowerCase();
 
-    setSearchQuery('');
-    setResults({ students: [], teachers: [], lessons: [], exams: [] });
-    setShowResults(false);
-  };
+        const SUBJECT_TRANSLATIONS = {
+            math: ["math", "رياضيات", "מתמטיקה"],
+            english: ["english", "انجليزي", "إنجليزي", "אנגלית"],
+            hebrew: ["hebrew", "عبري", "עברית"],
+            arabic: ["arabic", "عربي", "ערבית"]
+        };
 
-  return (
-    <header className="bg-white p-4 border-b flex justify-between items-center">
-      <div>
-        <h1 className="text-xl font-semibold">
-          {t("welcome")}, {userName?.split(' ')[0] || t("user")}
-        </h1>
-      </div>
-      <div className="flex items-center gap-4 relative">
-        <div className="relative w-96" ref={resultsRef}>
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder={t("search")}
-            value={searchQuery}
-            onChange={handleSearch}
-            onFocus={() => setShowResults(true)}
-            className="pl-10 pr-4 py-2 rounded-lg border border-gray-300 w-full"
-          />
-          {showResults && (
-            <div className="absolute top-full left-0 right-0 bg-white border mt-1 rounded shadow z-10 max-h-96 overflow-y-auto">
-              {results.students.length > 0 && (
-                <div>
-                  <p className="text-sm text-gray-500 px-4 py-1 border-b">{t("students")}</p>
-                  {results.students.map((s) => (
+        const normalizedSubject = Object.keys(SUBJECT_TRANSLATIONS).find((key) =>
+            SUBJECT_TRANSLATIONS[key].some(variant =>
+                variant.includes(q) || q.includes(variant)
+            )
+        );
+
+        const [studentsSnap, teachersSnap, lessonsSnap, examsSnap] = await Promise.all([
+            getDocs(collection(db, 'students')),
+            getDocs(collection(db, 'teachers')),
+            getDocs(collection(db, 'lessons')),
+            getDocs(collection(db, 'exams')),
+        ]);
+
+        let students = studentsSnap.docs
+            .map(doc => ({id: doc.id, ...doc.data()}))
+            .filter(s => s.name?.toLowerCase().includes(q) || s.student_id?.includes(q));
+
+        let teachers = teachersSnap.docs
+            .map(doc => ({id: doc.id, ...doc.data()}))
+            .filter(t => t.name?.toLowerCase().includes(q) || t.email?.toLowerCase().includes(q));
+
+        let lessons = lessonsSnap.docs
+            .map(doc => ({id: doc.id, ...doc.data()}))
+            .filter(l => {
+                const subject = l.subject?.toLowerCase();
+                if (!subject) return false;
+                if (normalizedSubject) return subject === normalizedSubject;
+                return subject.includes(q);
+            });
+
+        let exams = examsSnap.docs
+            .map(doc => ({id: doc.id, ...doc.data()}))
+            .filter(e => e.subject?.toLowerCase().includes(q) || e.material?.toLowerCase().includes(q));
+
+        if (userRole !== 'admin') {
+            students = students.filter(s => assignedStudentIds.includes(s.student_id));
+            lessons = lessons.filter
+            (l =>
+                l.teacher_id === currentTeacherId &&
+                Array.isArray(l.students) &&
+                l.students.some(s => assignedStudentIds.includes(s.student_id))
+            );
+
+            exams = exams.filter(e => assignedStudentIds.includes(e.student_id));
+            teachers = [];
+        }
+
+        const enrichedLessons = await Promise.all(
+            lessons.slice(0, 5).map(async (l) => {
+                const teacherDoc = l.teacher_id ? await getDoc(doc(db, 'teachers', l.teacher_id)) : null;
+                const teacherName = teacherDoc?.exists() ? teacherDoc.data().name : t("unknown");
+                const studentsCount = l.students?.length || 0;
+
+                return {
+                    id: l.id,
+                    subject: l.subject,
+                    date: l.lesson_date?.toDate().toLocaleDateString(),
+                    teacherName,
+                    studentsCount,
+                };
+            })
+        );
+
+        setResults({
+            students: students.slice(0, 5),
+            teachers: teachers.slice(0, 5),
+            lessons: enrichedLessons,
+            exams: exams.slice(0, 5)
+        });
+        setShowResults(true);
+    };
+
+    const handleResultClick = (type, id) => {
+        if (type === 'student') navigate(`/students/${id}`);
+        else if (type === 'teacher') navigate(`/admin/teachers/${id}/edit`);
+        else if (type === 'lesson') navigate(`/lesson-log/${id}/details`);
+        else if (type === 'exam') navigate(`/admin/exams`);
+
+        setSearchQuery('');
+        setResults({students: [], teachers: [], lessons: [], exams: []});
+        setShowResults(false);
+    };
+
+    return (
+        <header className="bg-white p-4 border-b flex justify-between items-center">
+            {/*Search */}
+            <div className="relative w-full max-w-sm" ref={resultsRef}>
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400"/>
+                <input
+                    type="text"
+                    placeholder={t("search")}
+                    value={searchQuery}
+                    onChange={handleSearch}
+                    onFocus={() => setShowResults(true)}
+                    className="pl-10 pr-4 py-2 rounded-lg border border-gray-300 w-full"
+                />
+                {showResults && (
                     <div
-                      key={s.id}
-                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm"
-                      onMouseDown={() => handleResultClick('student', s.id)}
-                    >
-                      👦 {s.name}
+                        className="absolute top-full left-0 right-0 bg-white border mt-1 rounded shadow z-10 max-h-96 overflow-y-auto">
+                        {results.students.length > 0 && (
+                            <div>
+                                <p className="text-sm text-gray-500 px-4 py-1 border-b">{t("students")}</p>
+                                {results.students.map((s) => (
+                                    <div
+                                        key={s.id}
+                                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                                        onMouseDown={() => handleResultClick('student', s.id)}
+                                    >
+                                        👦 {s.name}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {userRole === 'admin' && results.teachers.length > 0 && (
+                            <div>
+                                <p className="text-sm text-gray-500 px-4 py-1 border-b">{t("teachers")}</p>
+                                {results.teachers.map((t) => (
+                                    <div
+                                        key={t.id}
+                                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                                        onMouseDown={() => handleResultClick('teacher', t.id)}
+                                    >
+                                        🧑‍🏫 {t.name}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {results.lessons.length > 0 && (
+                            <div>
+                                <p className="text-sm text-gray-500 px-4 py-1 border-b">{t("lessons")}</p>
+                                {results.lessons.map((l) => (
+                                    <div
+                                        key={l.id}
+                                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                                        onMouseDown={() => handleResultClick('lesson', l.id)}
+                                    >
+                                        📘 {l.date} - {t(l.subject)}<br/>
+                                        👥 {l.studentsCount} | 🧑‍🏫 {l.teacherName}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {results.exams.length > 0 && (
+                            <div>
+                                <p className="text-sm text-gray-500 px-4 py-1 border-b">{t("exams")}</p>
+                                {results.exams.map((e) => (
+                                    <div
+                                        key={e.id}
+                                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                                        onMouseDown={() => handleResultClick('exam', e.id)}
+                                    >
+                                        📝 {t(e.subject)} - {e.material}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {Object.values(results).every(arr => arr.length === 0) && (
+                            <p className="text-gray-500 text-sm px-4 py-2">{t("no_results")}</p>
+                        )}
                     </div>
-                  ))}
-                </div>
-              )}
-              {userRole === 'admin' && results.teachers.length > 0 && (
-                <div>
-                  <p className="text-sm text-gray-500 px-4 py-1 border-b">{t("teachers")}</p>
-                  {results.teachers.map((t) => (
-                    <div
-                      key={t.id}
-                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm"
-                      onMouseDown={() => handleResultClick('teacher', t.id)}
-                    >
-                      🧑‍🏫 {t.name}
-                    </div>
-                  ))}
-                </div>
-              )}
-              {results.lessons.length > 0 && (
-                <div>
-                  <p className="text-sm text-gray-500 px-4 py-1 border-b">{t("lessons")}</p>
-                  {results.lessons.map((l) => (
-                    <div
-                      key={l.id}
-                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm"
-                      onMouseDown={() => handleResultClick('lesson', l.id)}
-                    >
-                      📘 {l.date} - {t(l.subject)}<br />
-                      👥 {l.studentsCount} | 🧑‍🏫 {l.teacherName}
-                    </div>
-                  ))}
-                </div>
-              )}
-              {results.exams.length > 0 && (
-                <div>
-                  <p className="text-sm text-gray-500 px-4 py-1 border-b">{t("exams")}</p>
-                  {results.exams.map((e) => (
-                    <div
-                      key={e.id}
-                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm"
-                      onMouseDown={() => handleResultClick('exam', e.id)}
-                    >
-                      📝 {t(e.subject)} - {e.material}
-                    </div>
-                  ))}
-                </div>
-              )}
-              {Object.values(results).every(arr => arr.length === 0) && (
-                <p className="text-gray-500 text-sm px-4 py-2">{t("no_results")}</p>
-              )}
+                )}
             </div>
-          )}
-        </div>
 
-        <div className="relative">
-          <button
-            onClick={() => setIsDropdownOpen(prev => !prev)}
-            className="flex items-center gap-2 text-gray-600 hover:text-blue-600 focus:outline-none bg-gray-100 px-4 py-2 rounded-full"
-          >
-            <span className="font-semibold">{userRole === 'admin' ? '🛡️' : '👤'} {userName}</span>
-            <ChevronDown size={16} />
-          </button>
-          {isDropdownOpen && <DropdownMenu onClose={() => setIsDropdownOpen(false)} />}
-        </div>
-      </div>
-    </header>
-  );
+            <div className="flex items-center gap-4 ml-auto relative">
+                {/* Language Globe */}
+                <DropDownMenu
+                    label={<Globe className="h-5 w-5" />}
+                    options={["en", "ar", "he"]}
+                    selected={[i18n.language]}
+                    onChange={([lng]) => i18n.changeLanguage(lng)}
+                    renderLabel={(lng) => lng.toUpperCase()}
+                    multiSelect={false}
+                />
+
+
+
+                {/* Avatar */}
+                <div className="relative">
+                    <button
+                        onClick={toggleDropdown}
+                        className="flex items-center gap-2 text-gray-600 hover:text-blue-500 focus:outline-none"
+                    >
+                        <img
+                            src={`https://ui-avatars.com/api/?name=${userName || 'User'}&background=random`}
+                            alt="User"
+                            className="h-10 w-10 rounded-full transition-transform hover:scale-105"
+                        />
+                    </button>
+                    {isDropdownOpen && <DropdownMenu onClose={closeDropdown}/>}
+                </div>
+            </div>
+
+        </header>
+    );
 };
 
 export default Header;

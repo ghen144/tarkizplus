@@ -1,9 +1,17 @@
 import React from 'react';
-import { Home, Users, LogOut, GraduationCap, BookOpen, ClipboardList, FileText } from 'lucide-react';
+import {
+    Home,
+    Users,
+    LogOut,
+    GraduationCap,
+    BookOpen,
+    ClipboardList,
+    FileText,
+} from 'lucide-react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { getAuth, signOut } from 'firebase/auth';
 import { useTranslation } from 'react-i18next';
-import Logo from './Logo.jsx';
+import Logo from '../Logo.jsx';
 
 const AdminSidebar = () => {
     const navigate = useNavigate();
@@ -29,16 +37,15 @@ const AdminSidebar = () => {
         { icon: Users, label: t('students'), path: '/admin/students' },
         { icon: GraduationCap, label: t('teachers'), path: '/admin/teachers' },
         { icon: BookOpen, label: t('schedules'), path: '/admin/schedule' },
-{ icon: ClipboardList, label: t('lesson_log'), path: '/admin/lesson-log' },
-
-        { icon: FileText, label: t('exams'), path: '/admin/exams' }
+        { icon: ClipboardList, label: t('lesson_log'), path: '/admin/lessonlog' },
+        { icon: FileText, label: t('exams'), path: '/admin/exams' },
     ];
 
     return (
-        <div className="w-64 bg-white border-r h-screen fixed left-0 top-0 flex flex-col justify-between">
+        <aside className="w-64 h-screen fixed left-0 top-0 bg-white border-r shadow-sm z-20 flex flex-col justify-between">
             <div>
-                {/* Logo/Header */}
-                <div className="p-6 border-b flex items-center">
+                {/* Logo Section */}
+                <div className="p-6 border-b flex items-center gap-2 text-indigo-700 font-bold text-lg tracking-wide">
                     <Logo />
                 </div>
 
@@ -48,41 +55,34 @@ const AdminSidebar = () => {
                         <Link
                             key={item.path}
                             to={item.path}
-                            className={`flex items-center p-3 mb-2 rounded transition-colors ${
+                            className={`group flex items-center p-3 mb-2 rounded-lg transition-all ${
                                 location.pathname === item.path
-                                    ? 'bg-blue-100 text-blue-600 font-semibold'
-                                    : 'hover:bg-gray-100 text-gray-800'
+                                    ? 'bg-indigo-100 text-indigo-700 font-semibold'
+                                    : 'hover:bg-gray-100 text-gray-700'
                             }`}
                         >
-                            <item.icon className="mr-3" size={20} />
+                            <item.icon
+                                className="mr-3 group-hover:scale-110 transition-transform duration-200"
+                                size={20}
+                            />
                             {item.label}
                         </Link>
                     ))}
                 </nav>
             </div>
 
-            {/* Bottom Section: Language Switcher + Sign Out */}
+            {/* Bottom: Logout */}
             <div className="p-4 border-t space-y-4">
-                {/* Language Switcher */}
-                <div>
-                    <p className="text-sm font-medium mb-2">{t('change_language')}</p>
-                    <div className="flex gap-2">
-                        <button onClick={() => handleLanguageChange('en')} className="px-3 py-1 border rounded text-sm">EN</button>
-                        <button onClick={() => handleLanguageChange('ar')} className="px-3 py-1 border rounded text-sm">ع</button>
-                        <button onClick={() => handleLanguageChange('he')} className="px-3 py-1 border rounded text-sm">ע</button>
-                    </div>
-                </div>
 
-                {/* Sign Out */}
                 <button
                     onClick={handleSignOut}
-                    className="w-full flex items-center justify-center p-3 bg-red-50 text-red-600 rounded hover:bg-red-100"
+                    className="w-full flex items-center justify-center p-3 bg-red-50 text-red-600 rounded hover:bg-red-100 transition"
                 >
                     <LogOut className="mr-2" size={20} />
                     {t('sign_out')}
                 </button>
             </div>
-        </div>
+        </aside>
     );
 };
 

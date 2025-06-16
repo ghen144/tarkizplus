@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLocation, Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar.jsx'; // Teacher Sidebar
-import AdminSidebar from './AdminSidebar.jsx'; // Admin Sidebar
+import AdminSidebar from './admin/AdminSidebar.jsx'; // Admin Sidebar
 import Header from './Header.jsx';
 
 const Layout = () => {

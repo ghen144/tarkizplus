@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { collection, getDocs, updateDoc, doc, deleteDoc } from "firebase/firestore";
 import { db } from "@/firebase/firebase.jsx";
 import { Link } from "react-router-dom";
-import AdminSidebar from "@/components/AdminSidebar.jsx";
+import AdminSidebar from "@/components/admin/AdminSidebar.jsx";
 import DaySchedule from "@/pages/schedules/DaySchedule.jsx";
 import Select from "react-select";
 import { useTranslation } from "react-i18next";

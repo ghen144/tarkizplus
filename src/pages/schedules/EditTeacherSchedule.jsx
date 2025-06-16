@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/firebase/firebase.jsx";
-import AdminSidebar from "@/components/AdminSidebar.jsx";
+import AdminSidebar from "@/components/admin/AdminSidebar.jsx";
 import { useTranslation } from "react-i18next";
 
 const EditTeacherSchedule = () => {

@@ -4,6 +4,8 @@ import { db } from '@/firebase/firebase.jsx';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import SkeletonLoader from "@/components/SkeletonLoader.jsx";
+import DropDownMenu from "@/components/DropDownMenu.jsx";
 
 function AdminStudentsPage() {
     const { t } = useTranslation();
@@ -12,8 +14,6 @@ function AdminStudentsPage() {
     const [sortOrder, setSortOrder] = useState("asc");
     const [selectedGrades, setSelectedGrades] = useState([]);
     const [selectedSubjects, setSelectedSubjects] = useState([]);
-    const [gradeDropdownOpen, setGradeDropdownOpen] = useState(false);
-    const [subjectDropdownOpen, setSubjectDropdownOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const navigate = useNavigate();
 
@@ -93,6 +93,7 @@ function AdminStudentsPage() {
 
     return (
         <div className="p-6">
+            {/* Header */}
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-semibold">{t('all_students')}</h2>
                 <button
@@ -103,7 +104,7 @@ function AdminStudentsPage() {
                 </button>
             </div>
 
-            {/* Filters */}
+            {/* Filters & Tags */}
             <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
                 <input
                     type="text"
@@ -113,51 +114,27 @@ function AdminStudentsPage() {
                     className="border px-4 py-2 rounded w-full md:w-64"
                 />
 
-                <div className="relative">
-                    <button
-                        onClick={() => setGradeDropdownOpen(!gradeDropdownOpen)}
-                        className="bg-white border rounded px-4 py-2 text-sm hover:bg-gray-100"
-                    >
-                        {t('filter_by_grade')}
-                    </button>
-                    {gradeDropdownOpen && (
-                        <div className="absolute z-10 mt-2 bg-white border rounded shadow p-2 max-h-60 overflow-y-auto">
-                            {allGrades.map((grade) => (
-                                <label key={grade.value} className="flex items-center space-x-2">
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedGrades.includes(grade.value)}
-                                        onChange={() => toggleSelection(grade.value, selectedGrades, setSelectedGrades)}
-                                    />
-                                    <span>{t(`grades.${grade.key}`)}</span>
-                                </label>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                {/* Grade filter button */}
 
-                <div className="relative">
-                    <button
-                        onClick={() => setSubjectDropdownOpen(!subjectDropdownOpen)}
-                        className="bg-white border rounded px-4 py-2 text-sm hover:bg-gray-100"
-                    >
-                        {t('filter_by_subject')}
-                    </button>
-                    {subjectDropdownOpen && (
-                        <div className="absolute z-10 mt-2 bg-white border rounded shadow p-2 max-h-60 overflow-y-auto">
-                            {allSubjects.map((subject) => (
-                                <label key={subject} className="flex items-center space-x-2">
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedSubjects.includes(subject)}
-                                        onChange={() => toggleSelection(subject, selectedSubjects, setSelectedSubjects)}
-                                    />
-                                    <span>{t(`subjects.${subject.toLowerCase()}`)}</span>
-                                </label>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                <DropDownMenu
+                    label={t("filter_by_grade")}
+                    options={allGrades.map((g) => g.value)}
+                    selected={selectedGrades}
+                    onChange={setSelectedGrades}
+                    renderLabel={(g) => t(`grades.${g.replace(/\D/g, "")}`)}
+                    multiSelect={true}
+                />
+
+                {/* Subject filter button */}
+                <DropDownMenu
+                    label={t("filter_by_subject")}
+                    options={allSubjects}
+                    selected={selectedSubjects}
+                    onChange={setSelectedSubjects}
+                    renderLabel={(s) => t(`subjects.${s.toLowerCase()}`)}
+                    multiSelect={true}
+                />
+
 
                 <button
                     onClick={() => setSortOrder(prev => (prev === "asc" ? "desc" : "asc"))}
@@ -167,82 +144,71 @@ function AdminStudentsPage() {
                 </button>
             </div>
 
+            {/* Selected tags */}
             <div className="flex flex-wrap gap-2 mb-6">
                 {selectedGrades.map((grade) => (
                     <span key={grade} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
-                        {t(`grades.${grade.replace(/\D/g, "")}`)}
+                    {t(`grades.${grade.replace(/\D/g, "")}`)}
                         <X size={14} className="cursor-pointer" onClick={() => removeTag(grade, setSelectedGrades)} />
-                    </span>
+                </span>
                 ))}
                 {selectedSubjects.map((subject) => (
                     <span key={subject} className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
-                        {t(`subjects.${subject.toLowerCase()}`)}
+                    {t(`subjects.${subject.toLowerCase()}`)}
                         <X size={14} className="cursor-pointer" onClick={() => removeTag(subject, setSelectedSubjects)} />
-                    </span>
+                </span>
                 ))}
             </div>
 
+            {/* Loader or Grid */}
             {loading ? (
-                <p>{t('loading')}</p>
+                <SkeletonLoader rows={6} showButton={true} />
             ) : (
-                <div className="overflow-x-auto">
-                    <table className="min-w-full bg-white rounded shadow">
-                        <thead className="bg-gray-100">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">{t('name')}</th>
-                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">{t('grade')}</th>
-                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">{t('subjects')}</th>
-                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">{t('actions')}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredStudents.map((student) => (
-                                <tr
-                                    key={student.id}
-                                    onClick={() => handleStudentClick(student.id)}
-                                    className="hover:bg-gray-50 cursor-pointer border-b"
-                                >
-                                    <td className="px-6 py-4">{student.name}</td>
-                                    <td className="px-6 py-4">
-                                        {t(`grades.${student.grade.replace(/\D/g, "")}`)}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        {Array.isArray(student.subjects)
-                                            ? student.subjects.map((sub, i) => (
-                                                <span key={i} className="inline-block mr-2">
-                                                    {t(`subjects.${sub.toLowerCase()}`)}
-                                                </span>
-                                            ))
-                                            : student.subjects || '—'}
-                                    </td>
-                                    <td className="px-6 py-4 flex gap-2">
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                navigate(`/admin/students/${student.id}/edit`);
-                                            }}
-                                            className="bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-1 rounded text-sm"
-                                        >
-                                            {t('edit')}
-                                        </button>
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDeleteStudent(student.id);
-                                            }}
-                                            className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
-                                        >
-                                            {t('delete')}
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredStudents.length > 0 ? (
+                        filteredStudents.map((student) => (
+                            <div
+                                key={student.id}
+                                className="bg-white p-6 rounded-lg shadow hover:bg-gray-50 transition cursor-pointer"
+                                onClick={() => handleStudentClick(student.id)}
+                            >
+                                <h3 className="text-lg font-medium">{student.name}</h3>
+                                <p className="text-gray-600 text-sm mt-1">{t(`grades.${student.grade.replace(/\D/g, "")}`)}</p>
+                                <p className="text-gray-500 text-sm mt-1">
+                                    {Array.isArray(student.subjects)
+                                        ? student.subjects.map((sub) => t(`subjects.${sub.toLowerCase()}`)).join(', ')
+                                        : student.subjects || '—'}
+                                </p>
+                                <div className="flex justify-end gap-2 pt-4">
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            navigate(`/admin/students/${student.id}/edit`);
+                                        }}
+                                        className="px-3 py-1 rounded-lg bg-yellow-100 text-yellow-800 hover:bg-yellow-200 text-sm font-medium transition-colors"
+                                    >
+                                        {t('edit')}
+                                    </button>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDeleteStudent(student.id);
+                                        }}
+                                        className="px-3 py-1 rounded-lg bg-red-100 text-red-800 hover:bg-red-200 text-sm font-medium transition-colors"
+                                    >
+                                        {t('delete')}
+                                    </button>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <p className="text-center text-gray-500">{t("no_students")}</p>
+                    )}
                 </div>
             )}
         </div>
     );
+
 }
 
 export default AdminStudentsPage;

@@ -12,7 +12,7 @@ import {
 } from "firebase/firestore";
 import {getAuth, onAuthStateChanged} from "firebase/auth";
 import {useTranslation} from "react-i18next";
-import AdminSidebar from "@/components/AdminSidebar.jsx";
+import AdminSidebar from "@/components/admin/AdminSidebar.jsx";
 import {
     Users,
     User,
@@ -187,9 +187,9 @@ const AdminHomePage = () => {
                                 <QuickActionButton icon={<PlusCircle className="h-6 w-6 text-yellow-600"/>}
                                                    label={t('schedule_lesson')} to="/admin/schedule/new"
                                                    color="bg-yellow-50"/>
-                                <QuickActionButton icon={<PlusCircle className="h-6 w-6 text-rose-600"/>}
+                                <QuickActionButton icon={<PlusCircle className="h-6 w-6 text-purple-500"/>}
                                                    label={t('log_exam')} onClick={() => setShowExamModal(true)}
-                                                   color="bg-rose-50"/>
+                                                   color="bg-purple-50"/>
                             </div>
                         </div>
 

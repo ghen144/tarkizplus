@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { collection, getDocs, addDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { db } from "@/firebase/firebase.jsx";
-import AdminSidebar from "@/components/AdminSidebar.jsx";
+import AdminSidebar from "@/components/admin/AdminSidebar.jsx";
 import { useTranslation } from "react-i18next";
 
 const SUBJECT_OPTIONS = ["Math", "English", "Hebrew", "Arabic"];
