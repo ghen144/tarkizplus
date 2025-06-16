@@ -1,730 +1,901 @@
-
-import React, { useState, useEffect } from "react";
-import { useNavigate, useParams, useLocation } from "react-router-dom";
+import React, {useState, useEffect} from "react";
+import {useNavigate, useParams, useLocation} from "react-router-dom";
 import {
-  doc,
-  getDoc,
-  collection,
-  getDocs,
-  query,
-  where,
-  orderBy,
-  addDoc,
+    doc, getDoc, collection, getDocs, query, where, orderBy, addDoc,
 } from "firebase/firestore";
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
+    LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 
-import { db } from "@/firebase/firebase.jsx";
-import { getAuth } from "firebase/auth";
+import {db} from "@/firebase/firebase.jsx";
+import {getAuth} from "firebase/auth";
 import {
-  ArrowLeft,
-  BookOpen,
-  AlertCircle,
-  User,
-  Smartphone,
-  Calendar,
-  ClipboardList,
-  CheckCircle,
+    ArrowLeft, BookOpen, AlertCircle, User, Smartphone, Calendar, ClipboardList, CheckCircle,
 } from "lucide-react";
-import { useTranslation } from "react-i18next";
+import {useTranslation} from "react-i18next";
+import IconButton from "@/components/common/IconButton.jsx";
+import DropDownMenu from "@/components/DropDownMenu.jsx";
+import { CircularProgressbarWithChildren, buildStyles } from 'react-circular-progressbar';
+import 'react-circular-progressbar/dist/styles.css';
+
 
 const StudentProfile = () => {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
-  const { studentId } = useParams();
-  const [studentData, setStudentData] = useState(null);
-  const [lessons, setLessons] = useState([]);
-  const [teachersMap, setTeachersMap] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+    const {t} = useTranslation();
+    const navigate = useNavigate();
+    const {studentId} = useParams();
+    const [studentData, setStudentData] = useState(null);
+    const [lessons, setLessons] = useState([]);
+    const [teachersMap, setTeachersMap] = useState({});
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-  // Filters
-  const [selectedTeacherFilters, setSelectedTeacherFilters] = useState([]);
-  const [selectedSubjectFilters, setSelectedSubjectFilters] = useState([]);
-  const [selectedDate, setSelectedDate] = useState("");
-  const [sortOrder, setSortOrder] = useState("desc");
+    // Filters
+    const [selectedTeacherFilters, setSelectedTeacherFilters] = useState([]);
+    const [selectedSubjectFilters, setSelectedSubjectFilters] = useState([]);
+    const [selectedDate, setSelectedDate] = useState("");
+    const [sortOrder, setSortOrder] = useState("desc");
 
-  // Exams
-  const [exams, setExams] = useState([]);
-  const [showExamForm, setShowExamForm] = useState(false);
-  const [newExam, setNewExam] = useState({
-    subject: "",
-    exam_date: "",
-    material: "",
-  });
-  const [isAdmin, setIsAdmin] = useState(false);
-const currentStudentId = studentData?.student_id || "";
+    // Exams
+    const [exams, setExams] = useState([]);
+    const [showExamForm, setShowExamForm] = useState(false);
+    const [newExam, setNewExam] = useState({
+        subject: "", exam_date: "", material: "",
+    });
+    const [isAdmin, setIsAdmin] = useState(false);
+    const currentStudentId = studentData?.student_id || "";
 
-  // نحسب حضور وغياب الطالب
-const studentLessons = lessons.filter((lesson) => {
-  if (Array.isArray(lesson.students)) {
-    // درس جماعي: لازم يكون الطالب موجود وstatus = "present"
-    return lesson.students.some(
-      (s) => s.student_id === currentStudentId && s.status === "present"
-    );
-  } 
-});
+    // نحسب حضور وغياب الطالب
+    const studentLessons = lessons.filter((lesson) => {
+        if (Array.isArray(lesson.students)) {
+            // درس جماعي: لازم يكون الطالب موجود وstatus = "present"
+            return lesson.students.some((s) => s.student_id === currentStudentId && s.status === "present");
+        }
+    });
 
-const attendedCount = studentLessons.length;
+    const attendedCount = studentLessons.length;
 
 
-const missedCount = lessons.filter((lesson) => {
-  if (Array.isArray(lesson.students)) {
-    const studentEntry = lesson.students.find((s) => s.student_id === currentStudentId);
-    return studentEntry && studentEntry.status === "absent";
-  }
-  return false; 
-}).length;
+    const missedCount = lessons.filter((lesson) => {
+        if (Array.isArray(lesson.students)) {
+            const studentEntry = lesson.students.find((s) => s.student_id === currentStudentId);
+            return studentEntry && studentEntry.status === "absent";
+        }
+        return false;
+    }).length;
 
-const totalAttendance = attendedCount;
-const weeklyAttendance = studentData?.attendance_count_weekly || 0;
+    const totalAttendance = attendedCount;
+    const weeklyAttendance = studentData?.attendance_count_weekly || 0;
 
-  useEffect(() => {
-    const auth = getAuth();
-    const user = auth.currentUser;
 
-    if (user) {
-      const checkAdminStatus = async () => {
+
+    useEffect(() => {
+        const auth = getAuth();
+        const user = auth.currentUser;
+
+        if (user) {
+            const checkAdminStatus = async () => {
+                try {
+                    const adminRef = doc(db, "admins", user.uid);
+                    const adminSnap = await getDoc(adminRef);
+                    setIsAdmin(adminSnap.exists());
+                } catch (error) {
+                    console.error(t("error_checking_admin"), error);
+                    setIsAdmin(false);
+                }
+            };
+            checkAdminStatus();
+        }
+    }, []);
+
+    const handleSaveExam = async () => {
+        if (!newExam.subject || !newExam.exam_date || !newExam.material) {
+            alert(t("alert_fill_all_fields"));
+            return;
+        }
+
         try {
-          const adminRef = doc(db, "admins", user.uid);
-          const adminSnap = await getDoc(adminRef);
-          setIsAdmin(adminSnap.exists());
-        } catch (error) {
-          console.error(t("error_checking_admin"), error);
-          setIsAdmin(false);
+            const examDateTimestamp = new Date(newExam.exam_date);
+            await addDoc(collection(db, "exams"), {
+                student_id: studentId,
+                subject: newExam.subject,
+                exam_date: examDateTimestamp,
+                material: newExam.material,
+            });
+            alert(t("alert_exam_added"));
+            setShowExamForm(false);
+            setNewExam({subject: "", exam_date: "", material: ""});
+
+            const updatedSnapshot = await getDocs(query(collection(db, "exams"), where("student_id", "==", studentId)));
+            const updatedExams = updatedSnapshot.docs.map((doc) => ({id: doc.id, ...doc.data()}));
+            setExams(updatedExams);
+        } catch (err) {
+            console.error("Error adding exam:", err);
+            alert(t("alert_exam_failed"));
         }
-      };
-      checkAdminStatus();
-    }
-  }, []);
-
-  const handleSaveExam = async () => {
-    if (!newExam.subject || !newExam.exam_date || !newExam.material) {
-      alert(t("alert_fill_all_fields"));
-      return;
-    }
-
-    try {
-      const examDateTimestamp = new Date(newExam.exam_date);
-      await addDoc(collection(db, "exams"), {
-        student_id: studentId,
-        subject: newExam.subject,
-        exam_date: examDateTimestamp,
-        material: newExam.material,
-      });
-      alert(t("alert_exam_added"));
-      setShowExamForm(false);
-      setNewExam({ subject: "", exam_date: "", material: "" });
-
-      const updatedSnapshot = await getDocs(
-        query(collection(db, "exams"), where("student_id", "==", studentId))
-      );
-      const updatedExams = updatedSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setExams(updatedExams);
-    } catch (err) {
-      console.error("Error adding exam:", err);
-      alert(t("alert_exam_failed"));
-    }
-  };
-
-  const handleAddTeacherFilter = (e) => {
-    const teacherName = e.target.value;
-    if (teacherName && !selectedTeacherFilters.includes(teacherName)) {
-      setSelectedTeacherFilters((prev) => [...prev, teacherName]);
-    }
-    e.target.value = "";
-  };
-
-  const handleAddSubjectFilter = (e) => {
-    const subject = e.target.value;
-    if (subject && !selectedSubjectFilters.includes(subject)) {
-      setSelectedSubjectFilters((prev) => [...prev, subject]);
-    }
-    e.target.value = "";
-  };
-
-  const removeTeacherFilter = (name) => {
-    setSelectedTeacherFilters((prev) => prev.filter((t) => t !== name));
-  };
-
-  const removeSubjectFilter = (subject) => {
-    setSelectedSubjectFilters((prev) => prev.filter((s) => s !== subject));
-  };
-
-  useEffect(() => {
-    const fetchStudentDataAndLessons = async () => {
-      if (!studentId) {
-        setError(t("error_no_student_id"));
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const studentRef = doc(db, "students", studentId);
-        const studentDocSnap = await getDoc(studentRef);
-        if (!studentDocSnap.exists()) {
-          setError(t("error_student_not_found"));
-          setLoading(false);
-          return;
-        }
-        const studentDocData = studentDocSnap.data();
-        setStudentData({ id: studentId, ...studentDocData });
-
-        const lessonsQuery = query(
-  collection(db, "lessons"),
-  orderBy("lesson_date", "desc")
-);
-
-        const lessonsSnapshot = await getDocs(lessonsQuery);
-        const lessonsList = lessonsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-        setLessons(lessonsList);
-
-
-
-
-        const teachersSnap = await getDocs(collection(db, "teachers"));
-        const tMap = {};
-        teachersSnap.forEach((tdoc) => {
-          const tData = tdoc.data();
-          tMap[tdoc.id] = tData.name || t("unnamed_teacher");
-        });
-        setTeachersMap(tMap);
-
-        const examsQuery = query(
-          collection(db, "exams"),
-          where("student_id", "==", studentId)
-        );
-        const examsSnapshot = await getDocs(examsQuery);
-        const examsList = examsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-        setExams(examsList);
-      } catch (err) {
-        console.error("Error fetching student/lessons:", err);
-        setError(t("error_loading_data", { message: err.message }));
-      } finally {
-        setLoading(false);
-      }
     };
 
-    fetchStudentDataAndLessons();
-  }, [studentId]);
-  const handleReturn = () => {
-    navigate(isAdmin ? "/admin/students" : "/students");
-  };
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen bg-gray-50">
-        <main className="ml-64 flex-1 p-6 flex items-center justify-center">
-          <p>{t("loading")}</p>
-        </main>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex min-h-screen bg-gray-50">
-        <main className="ml-64 flex-1 p-6">
-          <div className="flex items-center justify-center h-full">
-            <p className="text-red-500">{error}</p>
-          </div>
-          <div className="mt-6">
-            <button
-              className="flex items-center bg-white p-3 rounded-lg shadow hover:bg-gray-100"
-              onClick={handleReturn}
-            >
-              <ArrowLeft className="h-5 w-5 text-gray-500 mr-2" />
-              {t("return_button")}
-            </button>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
-  const {
-    name,
-    grade,
-    subjects,
-    learning_difficulties,
-    parent_phone_number,
-    PreferredLearningStyle,
-    engagement_level,
-    recent_performance,
-    attendance_count_weekly,
-    reading_accommodation,
-    oral_response_allowed,
-    extra_time,
-    spelling_mistakes_ignored,
-    calculator_or_formula_sheet,
-    private_or_group_lessons,
-  } = studentData || {};
-
-  const subjectsText = Array.isArray(subjects)
-  ? subjects.map((s) => t(s)).join(", ")
-  : t("na");
-
-
-  const formatDate = (ts) =>
-    ts ? ts.toDate().toLocaleDateString() : t("no_date");
-
- const filteredAndSortedLessons = [...studentLessons]
-  .filter((lesson) => {
-    const teacherName = teachersMap[lesson.teacher_id] || "";
-    const matchesTeacher =
-      selectedTeacherFilters.length === 0 ||
-      selectedTeacherFilters.includes(teacherName);
-
-    const matchesSubject =
-      selectedSubjectFilters.length === 0 ||
-      selectedSubjectFilters.includes(lesson.subject);
-
-    const matchesDate =
-      !selectedDate ||
-      (lesson.lesson_date &&
- lesson.lesson_date.toDate().toLocaleDateString("en-CA") === selectedDate);
-
-
-    return matchesTeacher && matchesSubject && matchesDate;
-  })
-  .sort((a, b) => {
-    const dateA = a.lesson_date?.toDate();
-    const dateB = b.lesson_date?.toDate();
-    if (!dateA || !dateB) return 0;
-    return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
-  });
-
-  const progressData = filteredAndSortedLessons
-  .map((lesson) => {
-    const match = lesson.students.find(s => s.student_id === currentStudentId);
-    const progress = match?.progress_evaluation;
-
-    return {
-      date: lesson.lesson_date?.toDate().toLocaleDateString("en-GB"),
-      progress: Number(progress)
+    const handleAddTeacherFilter = (e) => {
+        const teacherName = e.target.value;
+        if (teacherName && !selectedTeacherFilters.includes(teacherName)) {
+            setSelectedTeacherFilters((prev) => [...prev, teacherName]);
+        }
+        e.target.value = "";
     };
-  })
-  .filter(item => !isNaN(item.progress));
+
+    const handleAddSubjectFilter = (e) => {
+        const subject = e.target.value;
+        if (subject && !selectedSubjectFilters.includes(subject)) {
+            setSelectedSubjectFilters((prev) => [...prev, subject]);
+        }
+        e.target.value = "";
+    };
+
+    const removeTeacherFilter = (name) => {
+        setSelectedTeacherFilters((prev) => prev.filter((t) => t !== name));
+    };
+
+    const removeSubjectFilter = (subject) => {
+        setSelectedSubjectFilters((prev) => prev.filter((s) => s !== subject));
+    };
+
+    useEffect(() => {
+        const fetchStudentDataAndLessons = async () => {
+            if (!studentId) {
+                setError(t("error_no_student_id"));
+                setLoading(false);
+                return;
+            }
+
+            try {
+                const studentRef = doc(db, "students", studentId);
+                const studentDocSnap = await getDoc(studentRef);
+                if (!studentDocSnap.exists()) {
+                    setError(t("error_student_not_found"));
+                    setLoading(false);
+                    return;
+                }
+                const studentDocData = studentDocSnap.data();
+                setStudentData({id: studentId, ...studentDocData});
+
+                const lessonsQuery = query(collection(db, "lessons"), orderBy("lesson_date", "desc"));
+
+                const lessonsSnapshot = await getDocs(lessonsQuery);
+                const lessonsList = lessonsSnapshot.docs.map((doc) => ({id: doc.id, ...doc.data()}));
+                setLessons(lessonsList);
 
 
-  return (
-    <div className="flex min-h-screen bg-gray-200">
-      <main className="ml-0 flex-1 p-6 space-y-6">
-        {/* General Information Card */}
-        <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
-          <div className="flex items-center gap-2 mb-4">
-            <User className="h-5 w-5 text-blue-600" />
-            <h2 className="text-2xl font-bold">
-              {t("general_info")}
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <strong>{t("name")}:</strong> {name || t("na")}
-            </div>
-            <div>
-            <strong>{t("grade")}:</strong> {t(grade) || t("na")}
+                const teachersSnap = await getDocs(collection(db, "teachers"));
+                const tMap = {};
+                teachersSnap.forEach((tdoc) => {
+                    const tData = tdoc.data();
+                    tMap[tdoc.id] = tData.name || t("unnamed_teacher");
+                });
+                setTeachersMap(tMap);
 
-            </div>
-            <div>
-              <strong>{t("subjects")}:</strong> {subjectsText}
-            </div>
-            <div>
-              <strong>{t("parent_phone")}:</strong> {parent_phone_number || t("na")}
-            </div>
-          </div>
-        </div>
+                const examsQuery = query(collection(db, "exams"), where("student_id", "==", studentId));
+                const examsSnapshot = await getDocs(examsQuery);
+                const examsList = examsSnapshot.docs.map((doc) => ({id: doc.id, ...doc.data()}));
+                setExams(examsList);
+            } catch (err) {
+                console.error("Error fetching student/lessons:", err);
+                setError(t("error_loading_data", {message: err.message}));
+            } finally {
+                setLoading(false);
+            }
+        };
 
-        <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
-          <div className="flex items-center gap-2 mb-4">
-            <BookOpen className="h-5 w-5 text-blue-600" />
+        fetchStudentDataAndLessons();
+    }, [studentId]);
+    const handleReturn = () => {
+        navigate(isAdmin ? "/admin/students" : "/students");
+    };
 
-            <h2 className="text-2xl font-bold">{t("learning_accommodations")}</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div><strong>{t("preferred_learning_style")}</strong>: {PreferredLearningStyle || t("na")}</div>
-            <div><strong>{t("learning_difficulties")}</strong>: {learning_difficulties || t("no")}</div>
-            <div><strong>{t("private_or_group")}</strong>: {t(private_or_group_lessons) || t("na")}</div>
-            <div><strong>{t("reading_accommodation")}</strong>: {reading_accommodation ? t("yes") : t("no")}</div>
-            <div><strong>{t("oral_response")}</strong>: {oral_response_allowed ? t("yes") : t("no")}</div>
-            <div><strong>{t("extra_time")}</strong>: {extra_time ? t("yes") : t("no")}</div>
-            <div><strong>{t("spelling_ignored")}</strong>: {spelling_mistakes_ignored ? t("yes") : t("no")}</div>
-            <div><strong>{t("calculator_or_sheet")}</strong>: {calculator_or_formula_sheet ? t("yes") : t("no")}</div>
-          </div>
-        </div>
+    if (loading) {
+        return (<div className="flex min-h-screen bg-gray-50">
+            <main className="ml-64 flex-1 p-6 flex items-center justify-center">
+                <p>{t("loading")}</p>
+            </main>
+        </div>);
+    }
 
-        <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
-        <div className="flex items-center gap-2 mb-4">
-            <CheckCircle className="h-5 w-5 text-blue-600" />
-            <h2 className="text-2xl font-bold">{t("performance_progress")}</h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div><strong>{t("engagement_level")}</strong>: {engagement_level || t("na")}</div>
-        <div><strong>{t("recent_performance")}</strong>: {recent_performance || t("na")}</div>
-        <div><strong>{t("weekly_attendance")}</strong>: {weeklyAttendance}</div>
-        <div><strong>{t("total_absences")}</strong>: {missedCount}</div>
-        </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow mt-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Calendar className="h-5 w-5 text-blue-500" />
-            <h2 className="text-2xl font-bold">{t("lesson_history")}</h2>
-          </div>
-          <p className="text-sm text-gray-500 mb-2">
-            {t("filter_info")}
-          </p>
-
-          {/* Filter Controls */}
-          <div className="flex flex-wrap gap-4 mb-4">
-            {/* Teacher Filter */}
-            <div>
-              <p className="font-medium mb-1">{t("teacher")}</p>
-              <select onChange={handleAddTeacherFilter} className="p-2 border rounded text-sm">
-                <option value="">{t("select")}</option>
-                {Object.entries(teachersMap).map(([id, name]) => (
-                  <option key={id} value={name}>{name}</option>
-                ))}
-              </select>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {selectedTeacherFilters.map((name) => (
-                  <span
-                    key={name}
-                    className="bg-blue-200 text-blue-800 rounded px-2 py-1 text-sm flex items-center"
-                  >
-                    {name}
+    if (error) {
+        return (<div className="flex min-h-screen bg-gray-50">
+            <main className="ml-64 flex-1 p-6">
+                <div className="flex items-center justify-center h-full">
+                    <p className="text-red-500">{error}</p>
+                </div>
+                <div className="mt-6">
                     <button
-                      onClick={() => removeTeacherFilter(name)}
-                      className="ml-1 text-blue-600 font-bold"
+                        className="flex items-center bg-white p-3 rounded-lg shadow hover:bg-gray-100"
+                        onClick={handleReturn}
                     >
-                      &times;
+                        <ArrowLeft className="h-5 w-5 text-gray-500 mr-2"/>
+                        {t("return_button")}
                     </button>
-                  </span>
-                ))}
-              </div>
+                </div>
+            </main>
+        </div>);
+    }
+
+    const {
+        name,
+        grade,
+        subjects,
+        learning_difficulties,
+        parent_phone_number,
+        PreferredLearningStyle,
+        engagement_level,
+        recent_performance,
+        attendance_count_weekly,
+        reading_accommodation,
+        oral_response_allowed,
+        extra_time,
+        spelling_mistakes_ignored,
+        calculator_or_formula_sheet,
+        private_or_group_lessons,
+    } = studentData || {};
+
+    const subjectsText = Array.isArray(subjects) ? subjects.map((s) => t(s)).join(", ") : t("na");
+
+
+    const formatDate = (ts) => ts ? ts.toDate().toLocaleDateString() : t("no_date");
+
+    const filteredAndSortedLessons = [...studentLessons]
+        .filter((lesson) => {
+            const teacherName = teachersMap[lesson.teacher_id] || "";
+            const matchesTeacher = selectedTeacherFilters.length === 0 || selectedTeacherFilters.includes(teacherName);
+
+            const matchesSubject = selectedSubjectFilters.length === 0 || selectedSubjectFilters.includes(lesson.subject);
+
+            const matchesDate = !selectedDate || (lesson.lesson_date && lesson.lesson_date.toDate().toLocaleDateString("en-CA") === selectedDate);
+
+
+            return matchesTeacher && matchesSubject && matchesDate;
+        })
+        .sort((a, b) => {
+            const dateA = a.lesson_date?.toDate();
+            const dateB = b.lesson_date?.toDate();
+            if (!dateA || !dateB) return 0;
+            return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
+        });
+
+    const progressData = filteredAndSortedLessons
+        .map((lesson) => {
+            const match = lesson.students.find(s => s.student_id === currentStudentId);
+            const progress = match?.progress_evaluation;
+
+            return {
+                date: lesson.lesson_date?.toDate().toLocaleDateString("en-GB"), progress: Number(progress)
+            };
+        })
+        .filter(item => !isNaN(item.progress));
+
+    return (
+        <div className="space-y-10">
+            {/* Top Return Button */}
+            <div className="flex justify-start">
+                <IconButton
+                    label={t("return_button")}
+                    color="gray"
+                    onClick={handleReturn}
+                />
             </div>
 
-    <div>
-      <p className="font-medium mb-1">{t("subject")}</p>
-      <select onChange={handleAddSubjectFilter} className="p-2 border rounded text-sm">
-        <option value="">{t("select")}</option>
-        {[...new Set(lessons.map((l) => l.subject))].map((subject) => (
-          <option key={subject} value={subject}>{t(subject)}</option>
-        ))}
-      </select>
-      <div className="mt-2 flex flex-wrap gap-2">
-        {selectedSubjectFilters.map((subject) => (
-          <span
-            key={subject}
-            className="bg-green-200 text-green-800 rounded px-2 py-1 text-sm flex items-center"
-          >
-            {subject}
-            <button
-              onClick={() => removeSubjectFilter(subject)}
-              className="ml-1 text-green-600 font-bold"
-            >
-              &times;
-            </button>
-          </span>
-        ))}
-      </div>
-    </div>
+            {/* Student Name + Info */}
+            <div className="space-y-1">
+                <h1 className="text-4xl font-bold text-gray-900">{name || t("na")}</h1>
+                <p className="text-gray-600 text-sm">
+                    {t("grade")}: {t(grade)} • {subjectsText}
+                </p>
+            </div>
+
+            {/* Charts Section */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Progress Chart */}
+                <div className="bg-white rounded-xl shadow p-6">
+                    <h2 className="text-lg font-semibold text-blue-700 mb-4">
+                        {t("progress_over_time")}
+                    </h2>
+                    {progressData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={250}>
+                            <LineChart data={progressData.reverse()}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="date" />
+                                <YAxis domain={[1, 5]} ticks={[1, 2, 3, 4, 5]} />
+                                <Tooltip />
+                                <Line
+                                    type="monotone"
+                                    dataKey="progress"
+                                    stroke="#2563eb"
+                                    strokeWidth={3}
+                                    dot={{ r: 5 }}
+                                />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <p className="text-sm text-gray-500">{t("no_progress_data")}</p>
+                    )}
+                </div>
+
+                {/* Attendance Circle */}
+                <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center justify-center">
+                    <p className="text-sm font-medium text-gray-700 mb-2">{t("attendance_rate")}</p>
+                    <div className="w-40 h-40">
+                        <CircularProgressbarWithChildren
+                            value={attendedCount / (missedCount + attendedCount) * 100}
+                            strokeWidth={12}
+                            styles={buildStyles({
+                                pathColor: '#16a34a',
+                                trailColor: '#dc2626',
+                                strokeLinecap: 'butt',
+                                trailTransition: 'none',
+                            })}
+                        >
+                            <div className="text-xl font-bold text-gray-800">
+                                {Math.round((attendedCount / (missedCount + attendedCount)) * 100)}%
+                            </div>
+                        </CircularProgressbarWithChildren>
+                    </div>
+                </div>
+            </div>
+
+            {/* Info Cards: Accommodations & Performance */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Learning Profile */}
+                <div className="bg-white p-6 rounded-xl shadow space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-800">{t("learning_profile")}</h3>
+                    <div className="text-sm">
+                        <p><strong>{t("preferred_learning_style")}:</strong> {PreferredLearningStyle || t("na")}</p>
+                        <p><strong>{t("learning_difficulties")}:</strong> {learning_difficulties || t("no")}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2 pt-2">
+                        {reading_accommodation && <span className="pill">{t("reading_accommodation")}</span>}
+                        {oral_response_allowed && <span className="pill">{t("oral_response")}</span>}
+                        {extra_time && <span className="pill">{t("extra_time")}</span>}
+                        {spelling_mistakes_ignored && <span className="pill">{t("spelling_ignored")}</span>}
+                        {calculator_or_formula_sheet && <span className="pill">{t("calculator_or_sheet")}</span>}
+                        {!reading_accommodation && !oral_response_allowed && !extra_time && !spelling_mistakes_ignored && !calculator_or_formula_sheet && (
+                            <p className="text-sm text-gray-500">{t("no_accommodations")}</p>
+                        )}
+                    </div>
+                </div>
+
+                {/* Performance Card */}
+                <div className="bg-white p-6 rounded-xl shadow space-y-2 text-sm">
+                    <h3 className="text-lg font-semibold text-gray-800">{t("performance")}</h3>
+                    <p><strong>{t("engagement_level")}:</strong> {engagement_level || t("na")}</p>
+                    <p><strong>{t("recent_performance")}:</strong> {recent_performance || t("na")}</p>
+                    <p><strong>{t("weekly_attendance")}:</strong> {weeklyAttendance}</p>
+                    <p><strong>{t("total_absences")}:</strong> {missedCount}</p>
+                </div>
+            </div>
+
+            {/* Lesson History */}
+            {/* === FILTERS === */}
+            {/*<div className="flex flex-wrap gap-4 mb-4">
+                <DropDownMenu
+                    label={t("filter_by_subject")}
+                    options={Array.from(new Set(filteredAndSortedLessons.map((l) => l.subject))).map((s) => ({
+                        label: t(s),
+                        value: s
+                    }))}
+                    selected={selectedSubjectFilters}
+                    onSelect={setSelectedSubjectFilters()}
+                    placeholder={t("all_subjects")}
+                    allowClear
+                />
+                <DropDownMenu
+                    label={t("filter_by_teacher")}
+                    options={Array.from(new Set(filteredAndSortedLessons.map((l) => teachersMap[l.teacher_id] || t("no_teacher")))).map((tName) => ({
+                        label: tName,
+                        value: tName
+                    }))}
+                    selected={selectedTeacherFilters}
+                    onSelect={setSelectedTeacherFilters()}
+                    placeholder={t("all_teachers")}
+                    allowClear
+                />
+            </div>*/}
+
+            {/* === TABLE === */}
+            <div className="overflow-x-auto rounded-xl shadow bg-white">
+                <table className="min-w-full table-auto text-sm text-left">
+                    <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
+                    <tr>
+                        <th className="px-4 py-3">{t("date")}</th>
+                        <th className="px-4 py-3">{t("subject")}</th>
+                        <th className="px-4 py-3">{t("teacher")}</th>
+                        <th className="px-4 py-3">{t("notes")}</th>
+                        <th className="px-4 py-3 text-center">{t("progress")}</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {filteredAndSortedLessons
+                        .filter(lesson => {
+                            const teacherName = teachersMap[lesson.teacher_id] || t("no_teacher");
+                            return (
+                                (!selectedSubjectFilters || lesson.subject === selectedSubjectFilters) &&
+                                (!selectedTeacherFilters || teacherName === selectedTeacherFilters)
+                            );
+                        })
+                        .map((lesson) => {
+                            const teacherName = teachersMap[lesson.teacher_id] || t("no_teacher");
+                            const studentEntry = lesson.students?.find(s => s.student_id === currentStudentId) || {};
+                            const notes = studentEntry.student_notes || lesson.lesson_notes || t("no_notes");
+                            const progress = studentEntry.progress_evaluation || t("no_progress");
+                            const date = formatDate(lesson.lesson_date);
+                            const subject = t(lesson.subject);
+
+                            const progressColor = {
+                                "1": "bg-red-100 text-red-700",
+                                "2": "bg-orange-100 text-orange-700",
+                                "3": "bg-yellow-100 text-yellow-700",
+                                "4": "bg-blue-100 text-blue-700",
+                                "5": "bg-green-100 text-green-700",
+                            }[progress] || "bg-gray-100 text-gray-600";
+
+                            return (
+                                <tr key={lesson.id} className="border-t hover:bg-gray-50">
+                                    <td className="px-4 py-3 text-gray-800 whitespace-nowrap">{date}</td>
+                                    <td className="px-4 py-3 font-medium text-blue-700">{subject}</td>
+                                    <td className="px-4 py-3">{teacherName}</td>
+                                    <td className="px-4 py-3 text-gray-700">{notes}</td>
+                                    <td className="px-4 py-3 text-center">
+                <span className={`text-xs font-semibold px-3 py-1 rounded-full inline-block ${progressColor}`}>
+                  {progress}
+                </span>
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
 
 
-    <input
-          type="date"
-          value={selectedDate}
-          onChange={(e) => setSelectedDate(e.target.value)}
-          className="p-2 border rounded"
-    />
-    <button
-          onClick={() => setSortOrder((prev) => (prev === "desc" ? "asc" : "desc"))}
-          className="p-2 border rounded bg-white text-gray-700 hover:bg-gray-100"
-    >
-    {sortOrder === "desc"? t("sort_newest"): t("sort_oldest")}
-    </button>
-    </div>
-
-<div className="overflow-x-auto">
-  {lessons.length > 0 ? (
-    <table className="min-w-full bg-white">
-      <thead>
-        <tr>
-          <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-            {t("date")}
-          </th>
-          <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-            {t("teacher")}
-          </th>
-          <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-            {t("subject")}
-          </th>
-          <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-            {t("notes")}
-          </th>
-          <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-            {t("progress")}
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-  {filteredAndSortedLessons.map((lesson) => {
-      const teacherName = teachersMap[lesson.teacher_id] || lesson.teacher_id || t("no_teacher");
-
-      let studentNote = "";
-      let studentProgress = "";
-
-      if (Array.isArray(lesson.students)) {
-        const match = lesson.students.find(s => s.student_id === currentStudentId);
-        studentNote = match?.student_notes || lesson.lesson_notes || "";
-
-        studentProgress = match?.progress_evaluation || "";
-      } else {
-        studentNote = lesson.lesson_notes || "";
-        studentProgress = lesson.progress_evaluation || "";
-      }
-
-      return (
-        <tr key={lesson.id} className="hover:bg-gray-50">
-          <td className="px-6 py-4 border-b border-gray-200">
-            {formatDate(lesson.lesson_date)}
-          </td>
-          <td className="px-6 py-4 border-b border-gray-200">
-            {teacherName}
-          </td>
-          <td className="px-6 py-4 border-b border-gray-200">
-            {t(lesson.subject) || t("no_subject")}
-          </td>
-          <td className="px-6 py-4 border-b border-gray-200">
-            {studentNote || t("no_notes")}
-          </td>
-          <td className="px-6 py-4 border-b border-gray-200">
-            {studentProgress || t("no_progress")}
-          </td>
-        </tr>
-      );
-    })}
-    
-</tbody>
-
-    </table>
-  ) : (
-    <p className="text-gray-500">{t("no_lessons")}</p>
-  )}
-</div>
-</div>
-
-{/* Missed Lessons Table */}
-<div className="bg-white p-6 rounded-lg shadow mt-6">
-  <div className="flex items-center gap-2 mb-4">
-    <AlertCircle className="h-5 w-5 text-red-500" />
-    <h2 className="text-2xl font-bold">{t("missed_lessons")}</h2>
-  </div>
-  <div className="overflow-x-auto">
-    {lessons.some(lesson =>
-      Array.isArray(lesson.students) &&
-      lesson.students.find(s => s.student_id === currentStudentId && s.status === "absent")
-    ) ? (
-      <table className="min-w-full bg-white">
-        <thead>
-          <tr>
-            <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-              {t("date")}
-            </th>
-            <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-              {t("teacher")}
-            </th>
-            <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-              {t("subject")}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {lessons
-            .filter(
-              lesson =>
-                Array.isArray(lesson.students) &&
-                lesson.students.some(s => s.student_id === currentStudentId && s.status === "absent")
-            )
-            .map(lesson => {
-              const teacherName =
-                teachersMap[lesson.teacher_id] || lesson.teacher_id || t("no_teacher");
-              return (
-                <tr key={lesson.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 border-b border-gray-200">
-                    {formatDate(lesson.lesson_date)}
-                  </td>
-                  <td className="px-6 py-4 border-b border-gray-200">{teacherName}</td>
-                  <td className="px-6 py-4 border-b border-gray-200">
-                    {t(lesson.subject) || t("no_subject")}
-                  </td>
-                </tr>
-              );
-            })}
-        </tbody>
-      </table>
-    ) : (
-      <p className="text-gray-500">{t("no_absent_lessons")}</p>
-    )}
-  </div>
-</div>
+            {/* Exams */}
+            <div className="bg-white p-6 rounded-xl shadow space-y-4">
+                <h3 className="text-lg font-semibold text-gray-800">{t("exams")}</h3>
+                {exams.length > 0 ? (
+                    <ul className="space-y-2 text-sm">
+                        {exams.map((exam) => {
+                            const date = exam.exam_date?.toDate().toLocaleDateString("en-GB") || t("no_date");
+                            return (
+                                <li key={exam.id} className="border rounded-lg px-4 py-3">
+                                    <p className="font-medium text-gray-800">{t(exam.subject)}</p>
+                                    <p className="text-gray-600">{t("exam_date")}: {date}</p>
+                                    <p className="text-gray-700">{t("material")}: {exam.material}</p>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                ) : (
+                    <p className="text-sm text-gray-500">{t("no_exams")}</p>
+                )}
+            </div>
+        </div>
+    );
 
 
-
-{/* Progress Chart */}
-<div className="bg-white p-6 rounded-lg shadow-md space-y-4">
-  <div className="flex items-center gap-2 mb-4">
-    <CheckCircle className="h-5 w-5 text-blue-600" />
-    <h2 className="text-2xl font-bold">{t("progress_over_time")}</h2>
-  </div>
-  {progressData.length > 0 ? (
-    <ResponsiveContainer width="100%" height={300}>
-      <LineChart data={progressData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="date" />
-        <YAxis
-  domain={[1, 5]}
-  ticks={[1, 2, 3, 4, 5]}
-  label={{
-    value: t("progress"),
-    angle: -90,
-    position: "insideLeft",
-    offset: 10
-  }}
-/>
-
-<Tooltip
-  formatter={(value, name) => {
-    const translatedName = name === "progress" ? t("progress") : name;
-    return [value, translatedName];
-  }}
-/>
-
-        <Line
-          type="monotone"
-          dataKey="progress"
-          stroke="#3182ce"
-          strokeWidth={2}
-          dot={{ r: 4 }}
-        />
-      </LineChart>
-    </ResponsiveContainer>
-  ) : (
-    <p className="text-gray-500">{t("no_progress_data")}</p>
-  )}
-</div>
-
-{/* Exam Table */}
-<div className="bg-white p-6 rounded-lg shadow mt-6">
-  <div className="flex items-center gap-2 mb-4">
-    <ClipboardList className="h-5 w-5 text-blue-500" />
-    <h2 className="text-xl font-semibold">{t("exams")}</h2>
-  </div>
-  {exams.length > 0 ? (
-    <table className="min-w-full bg-white">
-      <thead>
-        <tr>
-          <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-            {t("subject")}
-          </th>
-          <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-            {t("exam_date")}
-          </th>
-          <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-            {t("material")}
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {exams.map((exam) => {
-          let examDate = t("no_date");
-          if (exam.exam_date && typeof exam.exam_date.toDate === "function") {
-            examDate = exam.exam_date.toDate().toLocaleDateString("en-GB");
-          }
-          return (
-            <tr key={exam.id} className="hover:bg-gray-50">
-              <td className="px-6 py-4 border-b border-gray-200">{exam.subject}</td>
-              <td className="px-6 py-4 border-b border-gray-200">{examDate}</td>
-              <td className="px-6 py-4 border-b border-gray-200">{exam.material}</td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
-  ) : (
-    <p className="text-gray-500">{t("no_exams")}</p>
-  )}
-</div>
-
-<div className="mt-4">
-  <button
-    onClick={() => setShowExamForm((prev) => !prev)}
-    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-  >
-    {showExamForm ? t("cancel") : t("add_exam")}
-  </button>
-</div>
-
-{showExamForm && (
-  <div className="bg-gray-50 p-4 mt-4 rounded shadow space-y-4 max-w-md">
-    <div>
-      <label className="block font-medium">{t("subject")}</label>
-      <input
-        type="text"
-        value={newExam.subject}
-        onChange={(e) => setNewExam({ ...newExam, subject: e.target.value })}
-        className="w-full border p-2 rounded"
-        placeholder={t("placeholder_subject")}
-      />
-    </div>
-    <div>
-      <label className="block font-medium">{t("exam_date")}</label>
-      <input
-        type="datetime-local"
-        value={newExam.exam_date}
-        onChange={(e) => setNewExam({ ...newExam, exam_date: e.target.value })}
-        className="w-full border p-2 rounded"
-      />
-    </div>
-    <div>
-      <label className="block font-medium">{t("material")}</label>
-      <input
-        type="text"
-        value={newExam.material}
-        onChange={(e) => setNewExam({ ...newExam, material: e.target.value })}
-        className="w-full border p-2 rounded"
-        placeholder={t("placeholder_material")}
-      />
-    </div>
-    <button
-      onClick={handleSaveExam}
-      className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-    >
-      {t("save_exam")}
-    </button>
-  </div>
-)}
-
-{/* Return Button */}
-<div className="mt-6">
-  <button
-    className="flex items-center bg-white p-3 rounded-lg shadow hover:bg-gray-100"
-    onClick={handleReturn}
-  >
-    <ArrowLeft className="h-5 w-5 text-gray-500 mr-2" />
-    {t("return_button")}
-  </button>
-</div>
-</main>
-</div>
-);
+    // return (
+    //     <div className="flex min-h-screen bg-gray-200">
+    //         <main className="ml-0 flex-1 p-6 space-y-6">
+    //             {/* General Information Card */}
+    //             <div className="bg-white p-6 rounded-lg shadow space-y-4">
+    //                 <div className="flex justify-between items-center">
+    //                     <h2 className="text-2xl font-bold flex items-center gap-2">
+    //                         <User className="text-blue-600 h-5 w-5"/>
+    //                         {t("general_info")}
+    //                     </h2>
+    //                     <IconButton
+    //                         label={t("return_button")}
+    //                         color="gray"
+    //                         onClick={handleReturn}
+    //                     />
+    //                 </div>
+    //                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    //                     <div>
+    //                         <strong>{t("name")}:</strong> {name || t("na")}
+    //                     </div>
+    //                     <div>
+    //                         <strong>{t("grade")}:</strong> {t(grade) || t("na")}
+    //
+    //                     </div>
+    //                     <div>
+    //                         <strong>{t("subjects")}:</strong> {subjectsText}
+    //                     </div>
+    //                     <div>
+    //                         <strong>{t("parent_phone")}:</strong> {parent_phone_number || t("na")}
+    //                     </div>
+    //                 </div>
+    //             </div>
+    //
+    //             <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
+    //                 <div className="flex items-center gap-2 mb-4">
+    //                     <BookOpen className="h-5 w-5 text-blue-600"/>
+    //
+    //                     <h2 className="text-2xl font-bold">{t("learning_accommodations")}</h2>
+    //                 </div>
+    //                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    //                     <div><strong>{t("preferred_learning_style")}</strong>: {PreferredLearningStyle || t("na")}</div>
+    //                     <div><strong>{t("learning_difficulties")}</strong>: {learning_difficulties || t("no")}</div>
+    //                     <div><strong>{t("private_or_group")}</strong>: {t(private_or_group_lessons) || t("na")}</div>
+    //                     <div><strong>{t("reading_accommodation")}</strong>: {reading_accommodation ? t("yes") : t("no")}
+    //                     </div>
+    //                     <div><strong>{t("oral_response")}</strong>: {oral_response_allowed ? t("yes") : t("no")}</div>
+    //                     <div><strong>{t("extra_time")}</strong>: {extra_time ? t("yes") : t("no")}</div>
+    //                     <div><strong>{t("spelling_ignored")}</strong>: {spelling_mistakes_ignored ? t("yes") : t("no")}
+    //                     </div>
+    //                     <div>
+    //                         <strong>{t("calculator_or_sheet")}</strong>: {calculator_or_formula_sheet ? t("yes") : t("no")}
+    //                     </div>
+    //                 </div>
+    //             </div>
+    //
+    //             <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
+    //                 <div className="flex items-center gap-2 mb-4">
+    //                     <CheckCircle className="h-5 w-5 text-blue-600"/>
+    //                     <h2 className="text-2xl font-bold">{t("performance_progress")}</h2>
+    //                 </div>
+    //                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+    //                     <div><strong>{t("engagement_level")}</strong>: {engagement_level || t("na")}</div>
+    //                     <div><strong>{t("recent_performance")}</strong>: {recent_performance || t("na")}</div>
+    //                     <div><strong>{t("weekly_attendance")}</strong>: {weeklyAttendance}</div>
+    //                     <div><strong>{t("total_absences")}</strong>: {missedCount}</div>
+    //                 </div>
+    //             </div>
+    //
+    //             <div className="bg-white p-6 rounded-lg shadow mt-6">
+    //                 <div className="flex items-center gap-2 mb-4">
+    //                     <Calendar className="h-5 w-5 text-blue-500"/>
+    //                     <h2 className="text-2xl font-bold">{t("lesson_history")}</h2>
+    //                 </div>
+    //                 <p className="text-sm text-gray-500 mb-2">
+    //                     {t("filter_info")}
+    //                 </p>
+    //
+    //                 {/* Filter Controls */}
+    //                 <div className="flex flex-wrap gap-4 mb-4">
+    //                     {/* Teacher Filter */}
+    //                     <div>
+    //                         <p className="font-medium mb-1">{t("teacher")}</p>
+    //                         <select onChange={handleAddTeacherFilter} className="p-2 border rounded text-sm">
+    //                             <option value="">{t("select")}</option>
+    //                             {Object.entries(teachersMap).map(([id, name]) => (
+    //                                 <option key={id} value={name}>{name}</option>
+    //                             ))}
+    //                         </select>
+    //                         <div className="mt-2 flex flex-wrap gap-2">
+    //                             {selectedTeacherFilters.map((name) => (
+    //                                 <span
+    //                                     key={name}
+    //                                     className="bg-blue-200 text-blue-800 rounded px-2 py-1 text-sm flex items-center"
+    //                                 >
+    //                 {name}
+    //                                     <button
+    //                                         onClick={() => removeTeacherFilter(name)}
+    //                                         className="ml-1 text-blue-600 font-bold"
+    //                                     >
+    //                   &times;
+    //                 </button>
+    //               </span>
+    //                             ))}
+    //                         </div>
+    //                     </div>
+    //
+    //                     <div>
+    //                         <p className="font-medium mb-1">{t("subject")}</p>
+    //                         <select onChange={handleAddSubjectFilter} className="p-2 border rounded text-sm">
+    //                             <option value="">{t("select")}</option>
+    //                             {[...new Set(lessons.map((l) => l.subject))].map((subject) => (
+    //                                 <option key={subject} value={subject}>{t(subject)}</option>
+    //                             ))}
+    //                         </select>
+    //                         <div className="mt-2 flex flex-wrap gap-2">
+    //                             {selectedSubjectFilters.map((subject) => (
+    //                                 <span
+    //                                     key={subject}
+    //                                     className="bg-green-200 text-green-800 rounded px-2 py-1 text-sm flex items-center"
+    //                                 >
+    //         {subject}
+    //                                     <button
+    //                                         onClick={() => removeSubjectFilter(subject)}
+    //                                         className="ml-1 text-green-600 font-bold"
+    //                                     >
+    //           &times;
+    //         </button>
+    //       </span>
+    //                             ))}
+    //                         </div>
+    //                     </div>
+    //
+    //
+    //                     <input
+    //                         type="date"
+    //                         value={selectedDate}
+    //                         onChange={(e) => setSelectedDate(e.target.value)}
+    //                         className="p-2 border rounded"
+    //                     />
+    //                     <button
+    //                         onClick={() => setSortOrder((prev) => (prev === "desc" ? "asc" : "desc"))}
+    //                         className="p-2 border rounded bg-white text-gray-700 hover:bg-gray-100"
+    //                     >
+    //                         {sortOrder === "desc" ? t("sort_newest") : t("sort_oldest")}
+    //                     </button>
+    //                 </div>
+    //
+    //                 <div className="overflow-x-auto">
+    //                     {lessons.length > 0 ? (
+    //                         <table className="min-w-full bg-white">
+    //                             <thead>
+    //                             <tr>
+    //                                 <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+    //                                     {t("date")}
+    //                                 </th>
+    //                                 <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+    //                                     {t("teacher")}
+    //                                 </th>
+    //                                 <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+    //                                     {t("subject")}
+    //                                 </th>
+    //                                 <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+    //                                     {t("notes")}
+    //                                 </th>
+    //                                 <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+    //                                     {t("progress")}
+    //                                 </th>
+    //                             </tr>
+    //                             </thead>
+    //                             <tbody>
+    //                             {filteredAndSortedLessons.map((lesson) => {
+    //                                 const teacherName = teachersMap[lesson.teacher_id] || lesson.teacher_id || t("no_teacher");
+    //
+    //                                 let studentNote = "";
+    //                                 let studentProgress = "";
+    //
+    //                                 if (Array.isArray(lesson.students)) {
+    //                                     const match = lesson.students.find(s => s.student_id === currentStudentId);
+    //                                     studentNote = match?.student_notes || lesson.lesson_notes || "";
+    //
+    //                                     studentProgress = match?.progress_evaluation || "";
+    //                                 } else {
+    //                                     studentNote = lesson.lesson_notes || "";
+    //                                     studentProgress = lesson.progress_evaluation || "";
+    //                                 }
+    //
+    //                                 return (
+    //                                     <tr key={lesson.id} className="hover:bg-gray-50">
+    //                                         <td className="px-6 py-4 border-b border-gray-200">
+    //                                             {formatDate(lesson.lesson_date)}
+    //                                         </td>
+    //                                         <td className="px-6 py-4 border-b border-gray-200">
+    //                                             {teacherName}
+    //                                         </td>
+    //                                         <td className="px-6 py-4 border-b border-gray-200">
+    //                                             {t(lesson.subject) || t("no_subject")}
+    //                                         </td>
+    //                                         <td className="px-6 py-4 border-b border-gray-200">
+    //                                             {studentNote || t("no_notes")}
+    //                                         </td>
+    //                                         <td className="px-6 py-4 border-b border-gray-200">
+    //                                             {studentProgress || t("no_progress")}
+    //                                         </td>
+    //                                     </tr>
+    //                                 );
+    //                             })}
+    //
+    //                             </tbody>
+    //
+    //                         </table>
+    //                     ) : (
+    //                         <p className="text-gray-500">{t("no_lessons")}</p>
+    //                     )}
+    //                 </div>
+    //             </div>
+    //
+    //             {/* Missed Lessons Table */}
+    //             <div className="bg-white p-6 rounded-lg shadow mt-6">
+    //                 <div className="flex items-center gap-2 mb-4">
+    //                     <AlertCircle className="h-5 w-5 text-red-500"/>
+    //                     <h2 className="text-2xl font-bold">{t("missed_lessons")}</h2>
+    //                 </div>
+    //                 <div className="overflow-x-auto">
+    //                     {lessons.some(lesson =>
+    //                         Array.isArray(lesson.students) &&
+    //                         lesson.students.find(s => s.student_id === currentStudentId && s.status === "absent")
+    //                     ) ? (
+    //                         <table className="min-w-full bg-white">
+    //                             <thead>
+    //                             <tr>
+    //                                 <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+    //                                     {t("date")}
+    //                                 </th>
+    //                                 <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+    //                                     {t("teacher")}
+    //                                 </th>
+    //                                 <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+    //                                     {t("subject")}
+    //                                 </th>
+    //                             </tr>
+    //                             </thead>
+    //                             <tbody>
+    //                             {lessons
+    //                                 .filter(
+    //                                     lesson =>
+    //                                         Array.isArray(lesson.students) &&
+    //                                         lesson.students.some(s => s.student_id === currentStudentId && s.status === "absent")
+    //                                 )
+    //                                 .map(lesson => {
+    //                                     const teacherName =
+    //                                         teachersMap[lesson.teacher_id] || lesson.teacher_id || t("no_teacher");
+    //                                     return (
+    //                                         <tr key={lesson.id} className="hover:bg-gray-50">
+    //                                             <td className="px-6 py-4 border-b border-gray-200">
+    //                                                 {formatDate(lesson.lesson_date)}
+    //                                             </td>
+    //                                             <td className="px-6 py-4 border-b border-gray-200">{teacherName}</td>
+    //                                             <td className="px-6 py-4 border-b border-gray-200">
+    //                                                 {t(lesson.subject) || t("no_subject")}
+    //                                             </td>
+    //                                         </tr>
+    //                                     );
+    //                                 })}
+    //                             </tbody>
+    //                         </table>
+    //                     ) : (
+    //                         <p className="text-gray-500">{t("no_absent_lessons")}</p>
+    //                     )}
+    //                 </div>
+    //             </div>
+    //
+    //
+    //             {/* Progress Chart */}
+    //             <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
+    //                 <div className="flex items-center gap-2 mb-4">
+    //                     <CheckCircle className="h-5 w-5 text-blue-600"/>
+    //                     <h2 className="text-2xl font-bold">{t("progress_over_time")}</h2>
+    //                 </div>
+    //                 {progressData.length > 0 ? (
+    //                     <ResponsiveContainer width="100%" height={300}>
+    //                         <LineChart data={progressData} margin={{top: 20, right: 30, left: 0, bottom: 5}}>
+    //                             <CartesianGrid strokeDasharray="3 3"/>
+    //                             <XAxis dataKey="date"/>
+    //                             <YAxis
+    //                                 domain={[1, 5]}
+    //                                 ticks={[1, 2, 3, 4, 5]}
+    //                                 label={{
+    //                                     value: t("progress"),
+    //                                     angle: -90,
+    //                                     position: "insideLeft",
+    //                                     offset: 10
+    //                                 }}
+    //                             />
+    //
+    //                             <Tooltip
+    //                                 formatter={(value, name) => {
+    //                                     const translatedName = name === "progress" ? t("progress") : name;
+    //                                     return [value, translatedName];
+    //                                 }}
+    //                             />
+    //
+    //                             <Line
+    //                                 type="monotone"
+    //                                 dataKey="progress"
+    //                                 stroke="#3182ce"
+    //                                 strokeWidth={2}
+    //                                 dot={{r: 4}}
+    //                             />
+    //                         </LineChart>
+    //                     </ResponsiveContainer>
+    //                 ) : (
+    //                     <p className="text-gray-500">{t("no_progress_data")}</p>
+    //                 )}
+    //             </div>
+    //
+    //             {/* Exam Table */}
+    //             <div className="bg-white p-6 rounded-lg shadow mt-6">
+    //                 <div className="flex items-center gap-2 mb-4">
+    //                     <ClipboardList className="h-5 w-5 text-blue-500"/>
+    //                     <h2 className="text-xl font-semibold">{t("exams")}</h2>
+    //                 </div>
+    //                 {exams.length > 0 ? (
+    //                     <table className="min-w-full bg-white">
+    //                         <thead>
+    //                         <tr>
+    //                             <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+    //                                 {t("subject")}
+    //                             </th>
+    //                             <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+    //                                 {t("exam_date")}
+    //                             </th>
+    //                             <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+    //                                 {t("material")}
+    //                             </th>
+    //                         </tr>
+    //                         </thead>
+    //                         <tbody>
+    //                         {exams.map((exam) => {
+    //                             let examDate = t("no_date");
+    //                             if (exam.exam_date && typeof exam.exam_date.toDate === "function") {
+    //                                 examDate = exam.exam_date.toDate().toLocaleDateString("en-GB");
+    //                             }
+    //                             return (
+    //                                 <tr key={exam.id} className="hover:bg-gray-50">
+    //                                     <td className="px-6 py-4 border-b border-gray-200">{exam.subject}</td>
+    //                                     <td className="px-6 py-4 border-b border-gray-200">{examDate}</td>
+    //                                     <td className="px-6 py-4 border-b border-gray-200">{exam.material}</td>
+    //                                 </tr>
+    //                             );
+    //                         })}
+    //                         </tbody>
+    //                     </table>
+    //                 ) : (
+    //                     <p className="text-gray-500">{t("no_exams")}</p>
+    //                 )}
+    //             </div>
+    //
+    //             <div className="mt-4">
+    //                 <button
+    //                     onClick={() => setShowExamForm((prev) => !prev)}
+    //                     className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+    //                 >
+    //                     {showExamForm ? t("cancel") : t("add_exam")}
+    //                 </button>
+    //             </div>
+    //
+    //             {showExamForm && (
+    //                 <div className="bg-gray-50 p-4 mt-4 rounded shadow space-y-4 max-w-md">
+    //                     <div>
+    //                         <label className="block font-medium">{t("subject")}</label>
+    //                         <input
+    //                             type="text"
+    //                             value={newExam.subject}
+    //                             onChange={(e) => setNewExam({...newExam, subject: e.target.value})}
+    //                             className="w-full border p-2 rounded"
+    //                             placeholder={t("placeholder_subject")}
+    //                         />
+    //                     </div>
+    //                     <div>
+    //                         <label className="block font-medium">{t("exam_date")}</label>
+    //                         <input
+    //                             type="datetime-local"
+    //                             value={newExam.exam_date}
+    //                             onChange={(e) => setNewExam({...newExam, exam_date: e.target.value})}
+    //                             className="w-full border p-2 rounded"
+    //                         />
+    //                     </div>
+    //                     <div>
+    //                         <label className="block font-medium">{t("material")}</label>
+    //                         <input
+    //                             type="text"
+    //                             value={newExam.material}
+    //                             onChange={(e) => setNewExam({...newExam, material: e.target.value})}
+    //                             className="w-full border p-2 rounded"
+    //                             placeholder={t("placeholder_material")}
+    //                         />
+    //                     </div>
+    //                     <button
+    //                         onClick={handleSaveExam}
+    //                         className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+    //                     >
+    //                         {t("save_exam")}
+    //                     </button>
+    //                 </div>
+    //             )}
+    //
+    //             {/* Return Button */}
+    //             <div className="mt-6">
+    //                 <button
+    //                     className="flex items-center bg-white p-3 rounded-lg shadow hover:bg-gray-100"
+    //                     onClick={handleReturn}
+    //                 >
+    //                     <ArrowLeft className="h-5 w-5 text-gray-500 mr-2"/>
+    //                     {t("return_button")}
+    //                 </button>
+    //             </div>
+    //         </main>
+    //     </div>
+    // );
 };
 
 export default StudentProfile;

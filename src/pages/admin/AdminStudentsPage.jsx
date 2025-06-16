@@ -1,14 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
-import { db } from '@/firebase/firebase.jsx';
-import { useNavigate } from 'react-router-dom';
-import { X } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import React, {useEffect, useState} from 'react';
+import {collection, getDocs, deleteDoc, doc} from 'firebase/firestore';
+import {db} from '@/firebase/firebase.jsx';
+import {useNavigate} from 'react-router-dom';
+import {X,Plus } from 'lucide-react';
+import {useTranslation} from 'react-i18next';
 import SkeletonLoader from "@/components/SkeletonLoader.jsx";
 import DropDownMenu from "@/components/DropDownMenu.jsx";
+import IconButton from "@/components/common/IconButton.jsx";
 
 function AdminStudentsPage() {
-    const { t } = useTranslation();
+    const {t} = useTranslation();
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [sortOrder, setSortOrder] = useState("asc");
@@ -80,12 +81,14 @@ function AdminStudentsPage() {
             return sortOrder === "asc" ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
         });
 
-    const allGrades = Array.from(new Set(students.map(s => s.grade)))
+    const allGrades = Array.from(new Set(students.map((s) => s.grade)))
         .filter(Boolean)
-        .map(grade => ({
+        .map((grade) => ({
             key: grade.replace(/\D/g, ""),
-            value: grade
-        }));
+            value: grade,
+        }))
+        .sort((a, b) => Number(a.key) - Number(b.key));
+
 
     const allSubjects = Array.from(new Set(
         students.flatMap(s => Array.isArray(s.subjects) ? s.subjects : [])
@@ -96,12 +99,13 @@ function AdminStudentsPage() {
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-semibold">{t('all_students')}</h2>
-                <button
+                <IconButton
+                    color="green"
                     onClick={() => navigate("/admin/students/add")}
-                    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
                 >
-                    {t('add_student')}
-                </button>
+                    <Plus size={16} />
+                    {t("add_student")}
+                </IconButton>
             </div>
 
             {/* Filters & Tags */}
@@ -147,22 +151,25 @@ function AdminStudentsPage() {
             {/* Selected tags */}
             <div className="flex flex-wrap gap-2 mb-6">
                 {selectedGrades.map((grade) => (
-                    <span key={grade} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
+                    <span key={grade}
+                          className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
                     {t(`grades.${grade.replace(/\D/g, "")}`)}
-                        <X size={14} className="cursor-pointer" onClick={() => removeTag(grade, setSelectedGrades)} />
+                        <X size={14} className="cursor-pointer" onClick={() => removeTag(grade, setSelectedGrades)}/>
                 </span>
                 ))}
                 {selectedSubjects.map((subject) => (
-                    <span key={subject} className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
+                    <span key={subject}
+                          className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
                     {t(`subjects.${subject.toLowerCase()}`)}
-                        <X size={14} className="cursor-pointer" onClick={() => removeTag(subject, setSelectedSubjects)} />
+                        <X size={14} className="cursor-pointer"
+                           onClick={() => removeTag(subject, setSelectedSubjects)}/>
                 </span>
                 ))}
             </div>
 
             {/* Loader or Grid */}
             {loading ? (
-                <SkeletonLoader rows={6} showButton={true} />
+                <SkeletonLoader rows={6} showButton={true}/>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredStudents.length > 0 ? (
@@ -180,24 +187,23 @@ function AdminStudentsPage() {
                                         : student.subjects || '—'}
                                 </p>
                                 <div className="flex justify-end gap-2 pt-4">
-                                    <button
+                                    <IconButton
+                                        color="yellow"
+                                        label={t("edit")}
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             navigate(`/admin/students/${student.id}/edit`);
                                         }}
-                                        className="px-3 py-1 rounded-lg bg-yellow-100 text-yellow-800 hover:bg-yellow-200 text-sm font-medium transition-colors"
-                                    >
-                                        {t('edit')}
-                                    </button>
-                                    <button
+                                    />
+                                    <IconButton
+                                        color="red"
+                                        label={t("delete")}
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             handleDeleteStudent(student.id);
                                         }}
-                                        className="px-3 py-1 rounded-lg bg-red-100 text-red-800 hover:bg-red-200 text-sm font-medium transition-colors"
-                                    >
-                                        {t('delete')}
-                                    </button>
+                                    />
+
                                 </div>
                             </div>
                         ))
