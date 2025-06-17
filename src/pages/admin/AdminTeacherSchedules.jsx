@@ -1,235 +1,173 @@
 import React, { useState, useEffect } from "react";
-import { collection, getDocs, updateDoc, doc, deleteDoc } from "firebase/firestore";
-import { db } from "@/firebase/firebase.jsx";
-import { Link } from "react-router-dom";
-import AdminSidebar from "@/components/admin/AdminSidebar.jsx";
-import DaySchedule from "@/pages/schedules/DaySchedule.jsx";
-import Select from "react-select";
-import { useTranslation } from "react-i18next";
-
-const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "@/firebase/firebase";
+import SoftActionButton from "@/components/common/IconButton.jsx";
 
 const AdminTeacherSchedule = () => {
-    const { t } = useTranslation();
     const [schedules, setSchedules] = useState([]);
-    const [teacherMap, setTeacherMap] = useState({});
-    const [loading, setLoading] = useState(true);
     const [selectedDay, setSelectedDay] = useState("Monday");
+    const rooms = [...new Set(schedules.map(s => s.room))];
+    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"];
+    const timeSlots = [
+         "10:00", "11:00", "12:00",
+        "13:00", "14:00", "15:00", "16:00", "18:00","19:00"
+    ];
     const [selectedLesson, setSelectedLesson] = useState(null);
-    const [editForm, setEditForm] = useState({
-        day_of_week: "",
-        start_time: "",
-        end_time: "",
-        subject: "",
-        class_type: "",
-        active: "Yes"
-    });
-    const [studentNames, setStudentNames] = useState([]);
-    const [allStudents, setAllStudents] = useState([]);
-    const [editError, setEditError] = useState("");
-
-    const fetchSchedules = async () => {
-        try {
-            const snapshot = await getDocs(collection(db, "weekly_schedule"));
-            const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-            setSchedules(data);
-        } catch (err) {
-            console.error("Error fetching schedules:", err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const fetchTeachers = async () => {
-        try {
-            const snapshot = await getDocs(collection(db, "teachers"));
-            const map = {};
-            snapshot.docs.forEach((doc) => {
-                const d = doc.data();
-                map[doc.id] = d.name;
-            });
-            setTeacherMap(map);
-        } catch (err) {
-            console.error("Error fetching teacher data:", err);
-        }
-    };
-
-    const fetchStudents = async () => {
-        try {
-            const snapshot = await getDocs(collection(db, "students"));
-            const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-            setAllStudents(list);
-        } catch (err) {
-            console.error("Error fetching students:", err);
-        }
-    };
 
     useEffect(() => {
+        const fetchSchedules = async () => {
+            const snapshot = await getDocs(collection(db, "weekly_schedule"));
+            const data = snapshot.docs.map(doc => doc.data());
+            setSchedules(data);
+        };
         fetchSchedules();
-        fetchTeachers();
-        fetchStudents();
     }, []);
 
-    const lessonsByDay = {};
-    DAYS.forEach(day => {
-        lessonsByDay[day] = schedules.filter((lesson) => lesson.day_of_week === day);
-    });
-
-    const handleLessonClick = (lesson) => {
-        const names = (lesson.student_ids || []).map(id => allStudents.find(s => s.id === id)?.name || id);
-        setSelectedLesson(lesson);
-        setStudentNames(names);
-        setEditError("");
-        setEditForm({
-            day_of_week: lesson.day_of_week,
-            start_time: lesson.start_time,
-            end_time: lesson.end_time,
-            subject: lesson.subject,
-            class_type: lesson.class_type,
-            active: lesson.active || "Yes"
-        });
-    };
-
-    const handleUpdateLesson = async (e) => {
-        e.preventDefault();
-        setEditError("");
-        const student_ids = studentNames.map(name => allStudents.find(s => s.name.toLowerCase().trim() === name.toLowerCase().trim())?.id).filter(Boolean);
-        try {
-            await updateDoc(doc(db, "weekly_schedule", selectedLesson.id), { ...editForm, student_ids });
-            await fetchSchedules();
-            setSelectedLesson(null);
-        } catch (err) {
-            console.error("Error updating lesson:", err);
-            setEditError(t("error_update_lesson"));
-        }
-    };
-
-    const handleDeleteLesson = async () => {
-        if (!window.confirm(t("confirm_delete_lesson"))) return;
-        try {
-            await deleteDoc(doc(db, "weekly_schedule", selectedLesson.id));
-            await fetchSchedules();
-            setSelectedLesson(null);
-        } catch (err) {
-            console.error("Error deleting lesson:", err);
-        }
-    };
-
-    if (loading) return <p>{t("loading_schedules")}</p>;
+    const filteredSchedules = schedules.filter(lesson => lesson.day === selectedDay);
 
     return (
-        <div className="flex min-h-screen bg-gray-100">
-            <AdminSidebar active="schedules" />
-            <main className="flex-1 p-6">
-                <div className="flex items-center justify-between mb-6">
-                    <h1 className="text-3xl font-bold">{t("teacher_schedules")}</h1>
-                    <Link to="/admin/schedule/new" className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
-                        + {t("add_schedule")}
-                    </Link>
-                </div>
+        <div className="p-6">
+            {/* Tab buttons */}
+            <div className="flex gap-2 mb-4">
+                {["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"].map((day) => (
+                    <button
+                        key={day}
+                        onClick={() => setSelectedDay(day)}
+                        className={`px-4 py-2 rounded-full ${
+                            selectedDay === day ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-700"
+                        }`}
+                    >
+                        {day}
+                    </button>
+                ))}
+            </div>
 
-                <div className="mb-4 flex flex-wrap gap-2">
-                    {DAYS.map(day => (
-                        <button
-                            key={day}
-                            onClick={() => setSelectedDay(day)}
-                            className={`px-4 py-1 rounded ${selectedDay === day ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-700"}`}
-                        >
-                            {t(day.toLowerCase())}
-                        </button>
+            {/* Schedule Table */}
+            <div className="p-4 overflow-auto">
+                <div className={`grid`} style={{gridTemplateColumns: `120px repeat(${rooms.length}, 1fr)`}}>
+
+                    {/* Header */}
+                    <div className="bg-gray-100 font-bold p-3 border-r border-b">Time</div>
+                    {rooms.map(room => (
+                        <div key={room} className="bg-gray-100 font-bold p-3 border-b text-center">{room}</div>
+                    ))}
+
+                    {/* Time Rows */}
+                    {timeSlots.map((slot, rowIndex) => (
+                        <React.Fragment key={slot}>
+                            {/* Time Label */}
+                            <div className="p-3 border-r border-b bg-gray-50 font-medium">{slot}</div>
+
+                            {/* Room Cells */}
+                            {rooms.map(room => {
+                                const lessonsInSlot = filteredSchedules.filter(s =>
+                                    s.room === room &&
+                                    s.start_time === slot // or use a smarter range match later
+                                );
+
+                                return (
+                                    <div key={`${slot}-${room}`}
+                                         className="border p-2 min-h-[80px] flex flex-col gap-2">
+                                        {lessonsInSlot.map((lesson, idx) => (
+                                            <>
+                                                <div className="font-semibold">{lesson.sessionType}</div>
+                                                <div>{lesson.teacher}</div>
+                                                <div className="text-xs">{lesson.start_time} - {lesson.end_time}</div>
+                                                <SoftActionButton
+                                                    label="More..."
+                                                    color="gray"
+                                                    onClick={() => setSelectedLesson(lesson)}
+                                                    className="text-xs"
+                                                />
+                                            </>
+
+                                        ))}
+                                    </div>
+                                );
+                            })}
+                        </React.Fragment>
                     ))}
                 </div>
-
-                <DaySchedule
-                    day={selectedDay}
-                    lessons={lessonsByDay[selectedDay]}
-                    teacherMap={teacherMap}
-                    onLessonClick={handleLessonClick}
+            </div>
+            {selectedLesson && (
+                <LessonOverlay
+                    lesson={selectedLesson}
+                    onClose={() => setSelectedLesson(null)}
+                    onSave={(updatedLesson) => {
+                        // Update logic here
+                        setSchedules(prev =>
+                            prev.map(l => l.lesson_id === updatedLesson.lesson_id ? updatedLesson : l)
+                        );
+                        setSelectedLesson(null);
+                    }}
                 />
+            )}
 
-                {selectedLesson && (
-                    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-                        <div className="bg-white p-6 rounded shadow-lg w-full max-w-md">
-                            <h2 className="text-2xl font-bold mb-4">{t("edit_lesson")}</h2>
-                            {editError && <p className="text-red-500 mb-2">{editError}</p>}
-                            <form onSubmit={handleUpdateLesson} className="space-y-4">
-                                <div>
-                                    <label className="block font-medium">{t("day_of_week")}</label>
-                                    <select value={editForm.day_of_week} onChange={(e) => setEditForm({ ...editForm, day_of_week: e.target.value })} className="w-full border p-2 rounded">
-                                        {DAYS.map(day => (
-                                            <option key={day} value={day}>{t(day.toLowerCase())}</option>
-                                        ))}
-                                    </select>
-                                </div>
+        </div>
+    );
+};
+const LessonOverlay = ({ lesson, onClose, onSave }) => {
+    const [start, setStart] = useState(lesson.start_time);
+    const [end, setEnd] = useState(lesson.end_time);
+    const [room, setRoom] = useState(lesson.room);
 
-                                <div className="flex gap-2">
-                                    <div className="flex-1">
-                                        <label className="block font-medium">{t("start_time")}</label>
-                                        <input type="time" value={editForm.start_time} onChange={(e) => setEditForm({ ...editForm, start_time: e.target.value })} className="w-full border p-2 rounded" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <label className="block font-medium">{t("end_time")}</label>
-                                        <input type="time" value={editForm.end_time} onChange={(e) => setEditForm({ ...editForm, end_time: e.target.value })} className="w-full border p-2 rounded" />
-                                    </div>
-                                </div>
+    return (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+            <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg space-y-4 relative">
 
-                                <div>
-                                    <label className="block font-medium">{t("subject")}</label>
-                                    <select
-                                        value={editForm.subject}
-                                        onChange={(e) => setEditForm({ ...editForm, subject: e.target.value })}
-                                        className="w-full border p-2 rounded"
-                                    >
-                                        {[...new Set(schedules.map((s) => s.subject))].map((subj) => (
-                                            <option key={subj} value={subj}>
-                                                {t(`subjects.${subj.toLowerCase()}`)}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
+                <button onClick={onClose} className="absolute top-2 right-2 text-gray-500 hover:text-black">✕</button>
 
-                                <div>
-                                    <label className="block font-medium">{t("class_type")}</label>
-                                    <select value={editForm.class_type} onChange={(e) => setEditForm({ ...editForm, class_type: e.target.value })} className="w-full border p-2 rounded">
-                                        <option value="Group">{t("group")}</option>
-                                        <option value="Private">{t("private")}</option>
-                                    </select>
-                                </div>
+                <h2 className="text-xl font-semibold">Lesson Details</h2>
 
-                                <div>
-                                    <label className="block font-medium">{t("active")}</label>
-                                    <select value={editForm.active} onChange={(e) => setEditForm({ ...editForm, active: e.target.value })} className="w-full border p-2 rounded">
-                                        <option value="Yes">{t("yes")}</option>
-                                        <option value="No">{t("no")}</option>
-                                    </select>
-                                </div>
+                <div className="space-y-2 text-sm">
+                    <div><strong>Teacher:</strong> {lesson.teacher}</div>
+                    <div><strong>Type:</strong> {lesson.sessionType}</div>
+                    <div><strong>Day:</strong> {lesson.day}</div>
 
-                                <div>
-                                    <label className="block font-medium">{t("students")}</label>
-                                    <Select
-                                        isMulti
-                                        options={allStudents.map(student => ({ value: student.name, label: student.name }))}
-                                        value={studentNames.map(name => ({ value: name, label: name }))}
-                                        onChange={(selectedOptions) => setStudentNames(selectedOptions.map(opt => opt.value))}
-                                    />
-                                </div>
+                    <label className="block">
+                        <span className="text-sm text-gray-700">Room</span>
+                        <input
+                            type="text"
+                            value={room}
+                            onChange={(e) => setRoom(e.target.value)}
+                            className="w-full border rounded p-2 mt-1"
+                        />
+                    </label>
 
-                                <div className="flex justify-end gap-2">
-                                    <button type="button" onClick={() => setSelectedLesson(null)} className="px-4 py-2 rounded border text-gray-700 hover:bg-gray-100">
-                                        {t("cancel")}
-                                    </button>
-                                    <button type="submit" className="px-4 py-2 rounded bg-blue-500 text-white hover:bg-blue-600">
-                                        {t("save")}
-                                    </button>
-                                    <button type="button" onClick={handleDeleteLesson} className="px-4 py-2 rounded bg-red-500 text-white hover:bg-red-600">
-                                        {t("delete")}
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
+                    <div className="flex gap-2">
+                        <label className="flex-1">
+                            <span className="text-sm text-gray-700">Start Time</span>
+                            <input
+                                type="time"
+                                value={start}
+                                onChange={(e) => setStart(e.target.value)}
+                                className="w-full border rounded p-2 mt-1"
+                            />
+                        </label>
+                        <label className="flex-1">
+                            <span className="text-sm text-gray-700">End Time</span>
+                            <input
+                                type="time"
+                                value={end}
+                                onChange={(e) => setEnd(e.target.value)}
+                                className="w-full border rounded p-2 mt-1"
+                            />
+                        </label>
                     </div>
-                )}
-            </main>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-4">
+                    <SoftActionButton label="Cancel" color="gray" onClick={onClose} />
+                    <SoftActionButton
+                        label="Save"
+                        color="green"
+                        onClick={() => {
+                            const updated = { ...lesson, start_time: start, end_time: end, room };
+                            onSave(updated);
+                        }}
+                    />
+                </div>
+            </div>
         </div>
     );
 };
