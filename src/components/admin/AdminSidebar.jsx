@@ -37,7 +37,7 @@ const AdminSidebar = () => {
         { icon: Users, label: t('students'), path: '/admin/students' },
         { icon: GraduationCap, label: t('teachers'), path: '/admin/teachers' },
         { icon: BookOpen, label: t('schedules'), path: '/admin/schedule' },
-        { icon: ClipboardList, label: t('lesson_log'), path: '/admin/lessonlog' },
+        { icon: ClipboardList, label: t('lesson_log'), path: '/admin/lesson-log' },
         { icon: FileText, label: t('exams'), path: '/admin/exams' },
     ];
 

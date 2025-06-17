@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { collection, getDocs, deleteDoc, doc, query, where, Timestamp } from 'firebase/firestore';
 import { db } from '@/firebase/firebase.jsx';
 import { useNavigate } from 'react-router-dom';
-import { X } from 'lucide-react';
+import {Plus, X} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import IconButton from "@/components/common/IconButton.jsx";
+import DropDownMenu from "@/components/common/DropDownMenu.jsx";
 
-function AdminTeachers() {
+function AdminTeachersPage() {
     const { t } = useTranslation();
     const [teachers, setTeachers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -122,12 +124,13 @@ function AdminTeachers() {
         <div className="p-6">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-semibold">{t("all_teachers")}</h2>
-                <button
-                    onClick={() => navigate('/admin/teachers/add')}
-                    className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded"
+                <IconButton
+                    color="green"
+                    onClick={() => navigate("/admin/teachers/add")}
                 >
+                    <Plus size={16} />
                     {t("add_teacher")}
-                </button>
+                </IconButton>
             </div>
 
             <div className="flex flex-wrap gap-4 mb-6 items-start">
@@ -140,26 +143,15 @@ function AdminTeachers() {
                 />
 
                 <div className="relative">
-                    <button
-                        onClick={() => setSubjectDropdownOpen(!subjectDropdownOpen)}
-                        className="bg-white border px-4 py-2 rounded text-sm hover:bg-gray-100"
-                    >
-                        {t("filter_by_subject")}
-                    </button>
-                    {subjectDropdownOpen && (
-                        <div className="absolute z-10 mt-2 bg-white border rounded shadow p-2 max-h-60 overflow-y-auto">
-                            {allSubjects.map(subject => (
-                                <label key={subject} className="flex items-center space-x-2">
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedSubjects.includes(subject)}
-                                        onChange={() => toggleSubject(subject)}
-                                    />
-                                    <span>{t(`subjects.${subject.toLowerCase()}`)}</span>
-                                </label>
-                            ))}
-                        </div>
-                    )}
+
+                    <DropDownMenu
+                        label={t("filter_by_subject")}
+                        options={allSubjects}
+                        selected={selectedSubjects}
+                        onChange={setSelectedSubjects}
+                        renderLabel={(s) => t(`subjects.${s.toLowerCase()}`)}
+                        multiSelect={true}
+                    />
                 </div>
 
                 <select
@@ -235,18 +227,23 @@ function AdminTeachers() {
                                         )}
                                     </td>
                                     <td className="px-6 py-4 flex gap-2">
-                                        <button
-                                            onClick={() => navigate(`/admin/teachers/${teacher.id}/edit`)}
-                                            className="bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-1 rounded text-sm"
-                                        >
-                                            {t("edit")}
-                                        </button>
-                                        <button
-                                            onClick={() => handleDelete(teacher.teacher_id)}
-                                            className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
-                                        >
-                                            {t("delete")}
-                                        </button>
+                                        <IconButton
+                                            color="yellow"
+                                            label={t("edit")}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                navigate(`/admin/teachers/${teacher.id}/edit`);
+                                            }}
+                                        />
+
+                                        <IconButton
+                                            color="red"
+                                            label={t("delete")}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDelete(teacher.teacher_id);
+                                            }}
+                                        />
                                     </td>
                                 </tr>
                             ))}
@@ -258,4 +255,4 @@ function AdminTeachers() {
     );
 }
 
-export default AdminTeachers;
+export default AdminTeachersPage;

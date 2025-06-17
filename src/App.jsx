@@ -16,7 +16,7 @@ import AdminHomePage from './pages/admin/AdminHomePage.jsx';
 import EditTeacherSchedule from './pages/schedules/EditTeacherSchedule.jsx';
 import AdminTeacherSchedules from './pages/admin/AdminTeacherSchedules.jsx';
 import NewSchedule from './pages/NewSchedule.jsx';
-import AdminTeachers from './pages/admin/adminteachers.jsx';
+import AdminTeachersPage from './pages/admin/AdminTeachersPage.jsx';
 import AddTeacherPage from './pages/admin/AddTeacherPage.jsx';
 import EditStudentPage from './pages/admin/EditStudentPage.jsx';
 import EditTeacherPage from './pages/admin/EditTeacherPage.jsx';
@@ -52,7 +52,7 @@ function App() {
           <Route path="/admin/schedule/edit/:id" element={<EditTeacherSchedule />} />
           <Route path="/admin/schedule" element={<AdminTeacherSchedules />} />
           <Route path="/admin/schedule/new" element={<NewSchedule />} />
-          <Route path="/admin/teachers" element={<AdminTeachers />} />
+          <Route path="/admin/teachers" element={<AdminTeachersPage />} />
           <Route path="/admin/teachers/add" element={<AddTeacherPage />} />
           <Route path="/admin/students/:studentId/edit" element={<EditStudentPage />} />
           <Route path="/admin/teachers/:teacherId/edit" element={<EditTeacherPage />} />

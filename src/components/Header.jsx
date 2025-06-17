@@ -8,7 +8,7 @@ import {
 import {db} from '@/firebase/firebase.jsx';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router-dom';
-import DropDownMenu from "@/components/DropDownMenu.jsx";
+import DropDownMenu from "@/components/common/DropDownMenu.jsx";
 
 const Header = () => {
     const {t} = useTranslation();

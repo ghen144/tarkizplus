@@ -5,7 +5,7 @@ import {useNavigate} from 'react-router-dom';
 import {X,Plus } from 'lucide-react';
 import {useTranslation} from 'react-i18next';
 import SkeletonLoader from "@/components/SkeletonLoader.jsx";
-import DropDownMenu from "@/components/DropDownMenu.jsx";
+import DropDownMenu from "@/components/common/DropDownMenu.jsx";
 import IconButton from "@/components/common/IconButton.jsx";
 
 function AdminStudentsPage() {

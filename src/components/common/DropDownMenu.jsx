@@ -1,11 +1,13 @@
 import React, {useState, useRef} from "react";
+import { ChevronDown } from "lucide-react";
 
 const DropDownMenu = ({
                           label,
                           options = [],
                           selected = [],
                           onChange,
-                          renderLabel = (v) => v,
+                          renderLabel = (v) =>
+                              typeof v === "string" ? v : (typeof v === "object" && v.label ? v.label : ""),
                           multiSelect = true,
                           width = "min-w-[10rem] max-w-xs"
                       }) => {
@@ -46,9 +48,12 @@ const DropDownMenu = ({
         >
             <button
                 onClick={toggleDropdown}
-                className="bg-white border border-blue-200 rounded-full px-4 py-2 text-sm text-blue-700 hover:bg-blue-50 transition"
+                className="bg-white border border-blue-200 rounded-md px-4 py-2 text-sm text-blue-700 hover:bg-blue-50 transition flex items-center justify-between gap-2 w-full"
             >
-                {label}
+                <span>{label}</span>
+                <ChevronDown
+                    className={`h-4 w-4 transition-transform duration-200 ${isOpen ? "rotate-180" : "rotate-0"}`}
+                />
             </button>
 
             {/* always rendered now, fades in/out */}

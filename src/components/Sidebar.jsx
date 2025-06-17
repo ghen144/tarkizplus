@@ -25,7 +25,7 @@ const Sidebar = () => {
     const menuItems = [
         {icon: Home, label: t('home'), path: '/homepage', active: location.pathname === '/homepage'},
         {icon: Users, label: t('students'), path: '/students', active: location.pathname === '/students'},
-        {icon: BookOpenText, label: t('lesson_log'), path: '/lesson-log', active: location.pathname === '/lesson-log'}
+        {icon: BookOpenText, label: t('lesson-log'), path: '/lesson-log', active: location.pathname === '/lesson-log'}
     ];
 
     return (
