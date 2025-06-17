@@ -21,10 +21,16 @@ const Layout = () => {
                 {userRole === 'admin' ? <AdminSidebar /> : <Sidebar />}
             </div>
 
-            <div className="flex-1 ml-64">
-                <Header />
-                <main className="p-6">
-                    <Outlet /> {/* This renders the matched route component */}
+            {/* Main content area */}
+            <div className="flex-1 ml-64 flex flex-col max-h-screen overflow-hidden">
+                {/* Sticky Header */}
+                <div className="sticky top-0 z-40 bg-white shadow">
+                    <Header />
+                </div>
+
+                {/* Scrollable main content */}
+                <main className="flex-1 overflow-y-auto p-6">
+                    <Outlet />
                 </main>
             </div>
         </div>
