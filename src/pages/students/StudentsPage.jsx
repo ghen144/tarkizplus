@@ -4,7 +4,7 @@ import {User, Search} from 'lucide-react';
 import {db} from '@/firebase/firebase.jsx';
 import {collection, getDocs, query, where} from 'firebase/firestore';
 import {getAuth, onAuthStateChanged} from 'firebase/auth';
-import SkeletonLoader from '@/components/SkeletonLoader.jsx';
+import SkeletonLoader from '@/components/common/SkeletonLoader.jsx';
 import {useTranslation} from 'react-i18next';
 
 function StudentsPage() {

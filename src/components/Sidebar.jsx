@@ -2,7 +2,7 @@ import React from 'react';
 import {Home, Users, BookOpenText, LogOut} from 'lucide-react';
 import {useNavigate, Link, useLocation} from 'react-router-dom';
 import {getAuth, signOut} from 'firebase/auth';
-import Logo from './Logo.jsx';
+import Logo from './common/Logo.jsx';
 import {useTranslation} from 'react-i18next';
 import i18n from '@/localization/i18n.js';
 
@@ -25,7 +25,7 @@ const Sidebar = () => {
     const menuItems = [
         {icon: Home, label: t('home'), path: '/homepage', active: location.pathname === '/homepage'},
         {icon: Users, label: t('students'), path: '/students', active: location.pathname === '/students'},
-        {icon: BookOpenText, label: t('lesson-log'), path: '/lesson-log', active: location.pathname === '/lesson-log'}
+        {icon: BookOpenText, label: t('lesson_log'), path: '/lesson-log', active: location.pathname === '/lesson-log'}
     ];
 
     return (

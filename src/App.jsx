@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import {BrowserRouter as Router, Routes, Route} from 'react-router-dom';
 import Layout from './components/Layout.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import HomePage from './pages/HomePage.jsx';
@@ -22,51 +22,48 @@ import EditStudentPage from './pages/admin/EditStudentPage.jsx';
 import EditTeacherPage from './pages/admin/EditTeacherPage.jsx';
 import AdminExamsPage from "./pages/admin/AdminExamsPage.jsx";
 
-import { useTranslation } from 'react-i18next';
-
+import {useTranslation} from 'react-i18next';
 
 
 function App() {
-  const { i18n } = useTranslation();
+    const {i18n} = useTranslation();
 
-  return (
-    <Router>
-      <Routes>
-        {/* Login route (no layout) */}
-        <Route path="/" element={<LoginPage />} />
+    return (
+        <Router>
+            <Routes>
+                {/* Login route (no layout) */}
+                <Route path="/" element={<LoginPage/>}/>
 
-        {/* Routes that share the layout */}
-        <Route element={<Layout />}>
-          <Route path="/homepage" element={<HomePage />} />
-          <Route path="/students" element={<StudentsPage />} />
-          <Route path="/students/:studentId" element={<StudentProfile />} />
-          <Route path="/lesson-log" element={<LessonLog />} />
-          <Route path="/lesson-log/add" element={<AddLesson />} />
-          <Route path="/lesson-log/:lessonId/edit" element={<EditLesson />} />
-          <Route path="/profile" element={<TeacherProfile />} />
-          <Route path="/settings" element={<AppSettings />} />
-          <Route path="/lesson-log/:lessonId/details" element={<LessonDetails />} />
-          <Route path="/admin/students" element={<AdminStudentsPage />} />
-          <Route path="/admin/students/add" element={<AddStudentPage />} />
-          <Route path="/admin/home" element={<AdminHomePage />} />
-          <Route path="/admin/schedule/edit/:id" element={<EditTeacherSchedule />} />
-          <Route path="/admin/schedule" element={<AdminTeacherSchedules />} />
-          <Route path="/admin/schedule/new" element={<NewSchedule />} />
-          <Route path="/admin/teachers" element={<AdminTeachersPage />} />
-          <Route path="/admin/teachers/add" element={<AddTeacherPage />} />
-          <Route path="/admin/students/:studentId/edit" element={<EditStudentPage />} />
-          <Route path="/admin/teachers/:teacherId/edit" element={<EditTeacherPage />} />
-          <Route path="/admin/exams" element={<AdminExamsPage />} />
-          <Route path="/student-profile/:studentId" element={<StudentProfile />} />
-          <Route path="/admin/lesson-log" element={<LessonLog />} />
-
-
+                {/* Routes that share the layout */}
+                <Route element={<Layout/>}>
+                    <Route path="/homepage" element={<HomePage/>}/>
+                    <Route path="/students" element={<StudentsPage/>}/>
+                    <Route path="/students/:studentId" element={<StudentProfile/>}/>
+                    <Route path="/lesson-log" element={<LessonLog/>}/>
+                    <Route path="/lesson-log/add" element={<AddLesson/>}/>
+                    <Route path="/lesson-log/:lessonId/edit" element={<EditLesson/>}/>
+                    <Route path="/profile" element={<TeacherProfile/>}/>
+                    <Route path="/settings" element={<AppSettings/>}/>
+                    <Route path="/lesson-log/:lessonId/details" element={<LessonDetails/>}/>
+                    <Route path="/admin/students" element={<AdminStudentsPage/>}/>
+                    <Route path="/admin/students/add" element={<AddStudentPage/>}/>
+                    <Route path="/admin/home" element={<AdminHomePage/>}/>
+                    <Route path="/admin/schedule/edit/:id" element={<EditTeacherSchedule/>}/>
+                    <Route path="/admin/schedule" element={<AdminTeacherSchedules/>}/>
+                    <Route path="/admin/schedule/new" element={<NewSchedule/>}/>
+                    <Route path="/admin/teachers" element={<AdminTeachersPage/>}/>
+                    <Route path="/admin/teachers/add" element={<AddTeacherPage/>}/>
+                    <Route path="/admin/students/:studentId/edit" element={<EditStudentPage/>}/>
+                    <Route path="/admin/teachers/:teacherId/edit" element={<EditTeacherPage/>}/>
+                    <Route path="/admin/exams" element={<AdminExamsPage/>}/>
+                    <Route path="/student-profile/:studentId" element={<StudentProfile/>}/>
+                    <Route path="/admin/lesson-log" element={<LessonLog/>}/>
 
 
-        </Route>
-      </Routes>
-    </Router>
-  );
+                </Route>
+            </Routes>
+        </Router>
+    );
 }
 
 export default App;

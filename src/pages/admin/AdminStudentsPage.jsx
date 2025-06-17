@@ -4,7 +4,7 @@ import {db} from '@/firebase/firebase.jsx';
 import {useNavigate} from 'react-router-dom';
 import {X,Plus } from 'lucide-react';
 import {useTranslation} from 'react-i18next';
-import SkeletonLoader from "@/components/SkeletonLoader.jsx";
+import SkeletonLoader from "@/components/common/SkeletonLoader.jsx";
 import DropDownMenu from "@/components/common/DropDownMenu.jsx";
 import IconButton from "@/components/common/IconButton.jsx";
 

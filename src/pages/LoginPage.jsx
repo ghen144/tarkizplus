@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import Logo from "@/components/Logo.jsx";
+import Logo from "@/components/common/Logo.jsx";
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/firebase/firebase.jsx';
 import { useTranslation } from 'react-i18next';

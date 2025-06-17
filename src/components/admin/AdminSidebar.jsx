@@ -11,7 +11,7 @@ import {
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { getAuth, signOut } from 'firebase/auth';
 import { useTranslation } from 'react-i18next';
-import Logo from '../Logo.jsx';
+import Logo from '../common/Logo.jsx';
 
 const AdminSidebar = () => {
     const navigate = useNavigate();
