@@ -21,6 +21,8 @@ import AddTeacherPage from './pages/admin/AddTeacherPage.jsx';
 import EditStudentPage from './pages/admin/EditStudentPage.jsx';
 import EditTeacherPage from './pages/admin/EditTeacherPage.jsx';
 import AdminExamsPage from "./pages/admin/AdminExamsPage.jsx";
+import TarkizCompass from "./pages/TarkizCompass.jsx";
+
 
 import {useTranslation} from 'react-i18next';
 
@@ -58,7 +60,7 @@ function App() {
                     <Route path="/admin/exams" element={<AdminExamsPage/>}/>
                     <Route path="/student-profile/:studentId" element={<StudentProfile/>}/>
                     <Route path="/admin/lesson-log" element={<LessonLog/>}/>
-
+                    <Route path="/compass" element={<TarkizCompass/>}/>
 
                 </Route>
             </Routes>

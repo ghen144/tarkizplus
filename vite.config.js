@@ -7,10 +7,19 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 export default defineConfig({
-  plugins: [react()],
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
+    plugins: [react()],
+    resolve: {
+        alias: {
+            '@': path.resolve(__dirname, './src'),
+        },
     },
-  },
+    server: {
+        proxy: {
+            '/api': {
+                target: 'http://localhost:8000',     // This is your FastAPI backend
+                changeOrigin: true,
+                rewrite: (path) => path.replace(/^\/api/, '') // So /api/query -> /query
+            }
+        }
+    }
 })

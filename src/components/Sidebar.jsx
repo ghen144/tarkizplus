@@ -1,5 +1,5 @@
 import React from 'react';
-import {Home, Users, BookOpenText, LogOut} from 'lucide-react';
+import {Home, Users, BookOpenText, LogOut,Compass} from 'lucide-react';
 import {useNavigate, Link, useLocation} from 'react-router-dom';
 import {getAuth, signOut} from 'firebase/auth';
 import Logo from './common/Logo.jsx';
@@ -25,7 +25,9 @@ const Sidebar = () => {
     const menuItems = [
         {icon: Home, label: t('home'), path: '/homepage', active: location.pathname === '/homepage'},
         {icon: Users, label: t('students'), path: '/students', active: location.pathname === '/students'},
-        {icon: BookOpenText, label: t('lesson_log'), path: '/lesson-log', active: location.pathname === '/lesson-log'}
+        {icon: BookOpenText, label: t('lesson_log'), path: '/lesson-log', active: location.pathname === '/lesson-log'},
+        {icon: Compass, label: t('tarkiz_compass'), path: '/compass', active: location.pathname === '/compass'}
+
     ];
 
     return (
