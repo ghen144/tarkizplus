@@ -9,7 +9,6 @@ const AdminTeacherSchedule = () => {
     const rooms = [...new Set(schedules.map(s => s.room))];
     const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"];
     const timeSlots = [
-         "10:00", "11:00", "12:00",
         "13:00", "14:00", "15:00", "16:00", "18:00","19:00"
     ];
     const [selectedLesson, setSelectedLesson] = useState(null);
