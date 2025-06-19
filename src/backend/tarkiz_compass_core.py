@@ -9,7 +9,7 @@ from sklearn.preprocessing import LabelEncoder
 import joblib
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # the 'backend/' folder
-API_KEY = "a6386fd256a7a0d12c46d585791ed0f25a26db7511ef9ad51c40a884505fb240"
+API_KEY = "1fc0749554b1b37d760fd194b9bf81ab80fdb85bd15f3102ba9da4358be1744e"
 CSV_FILES = {
     "Students": os.path.join(BASE_DIR, "data", "Students.csv"),
     "Teachers": os.path.join(BASE_DIR, "data", "Teachers.csv"),
@@ -18,7 +18,7 @@ CSV_FILES = {
 INDEX_BASE_DIR = os.path.join(BASE_DIR, "csv_rag_index")
 MODEL_PATH = os.path.join(BASE_DIR, "data", "teacher_matching_model.pkl")
 LESSON_MODEL_PATH = os.path.join(BASE_DIR, "data", "lesson_recommendation_model.pkl")
-EMB_MODEL = "togethercomputer/M2-BERT-Retrieval-32k"
+EMB_MODEL = "togethercomputer/m2-bert-80M-32k-retrieval"
 LLM_MODEL = "mistralai/Mixtral-8x7B-Instruct-v0.1"
 TOP_K = 50
 SIM_THRESHOLD = 0.2
@@ -54,8 +54,10 @@ def extract_ids(query):
 #     reader = PdfReader(pdf_path)
 #     return "\n".join([page.extract_text() for page in reader.pages if page.extract_text()])
 
+
+
 def handle_query(query):
-    # Ensure indexes are built
+    global chat_history    # Ensure indexes are built
     for name in CSV_FILES:
         idx_file = os.path.join(INDEX_BASE_DIR, name, "embeddings.npy")
         if not os.path.exists(idx_file):
@@ -73,108 +75,115 @@ def handle_query(query):
     lessons_df = dataframes["Lessons"]
     teacher_model = joblib.load(MODEL_PATH) if os.path.exists(MODEL_PATH) else None
 
+
+    # while True:
+    #     query = input("You: ").strip()
+    #     if query.lower() in ("exit", "quit"):
+    #         print("👋 Goodbye!")
+    #         break
+
+    # Match teacher command
+    if query.lower().startswith("match teacher for"):
+        if teacher_model is None:
+            return "🔍 No model found. Please train it first."
+        student_id = query.split()[-1].upper()
+        student_row = students_df[students_df["student_id"] == student_id]
+        if student_row.empty:
+            return f"❌ No student found with ID {student_id}"
+
+        predictions = []
+        for _, teacher_row in teachers_df.iterrows():
+            for _, lesson_row in lessons_df.iterrows():
+                test_row = pd.DataFrame([{
+                    "subject_x": lesson_row["subject"],
+                    "grade": student_row["grade"].values[0],
+                    "preferred_learning_style": student_row["preferred_learning_style"].values[0],
+                    "engagement_level": student_row["engagement_level"].values[0],
+                    "attendance_rate": student_row["attendance_rate"].values[0],
+                    "duration_minutes": lesson_row["duration_minutes"],
+                    "teacher_experience": student_row["teacher_experience"].values[0],
+                    "experience_years": teacher_row["experience_years"]
+                }])
+                for col in test_row.select_dtypes(include="object").columns:
+                    test_row[col] = LabelEncoder().fit_transform(test_row[col].astype(str))
+                score = teacher_model.predict(test_row)[0]
+                predictions.append((score, teacher_row["name"], teacher_row["email"]))
+
+        best_score, best_name, best_email = max(predictions, key=lambda x: x[0])
+        return f"🏅 Best match: {best_name} ({best_email}) with predicted score: {best_score:.2f}"
+
+    # General CSV exploration
+    query_ids = extract_ids(query)
+    contexts = []
+
+    # 1) Direct ID matches
+    for name, df in dataframes.items():
+        mask = df.apply(lambda col: col.astype(str).str.contains('|'.join(query_ids), case=False), axis=0).any(axis=1)
+        if mask.any():
+            snippet = df[mask].to_csv(index=False, lineterminator='\n')
+            contexts.append(f"🔹 From {name} table:\n{snippet}")
+
+    # 2) Embedding-based matches if no direct matches
+    if not contexts:
+        qresp = client.embeddings.create(model=EMB_MODEL, input=[query]).data[0]
+        qvec = np.array(qresp.embedding).reshape(1, -1)
+        for name in CSV_FILES:
+            index_dir = os.path.join(INDEX_BASE_DIR, name)
+            embeddings = np.load(os.path.join(index_dir, "embeddings.npy"))
+            df = pd.read_pickle(os.path.join(index_dir, "dataframe.pkl"))
+            sims = cosine_similarity(qvec, embeddings)[0]
+            top_idx = sims.argsort()[-TOP_K:][::-1]
+            if sims[top_idx[0]] > SIM_THRESHOLD:
+                snippet = df.iloc[top_idx].to_csv(index=False, lineterminator='\n')
+                contexts.append(f"🔹 From {name} table:\n{snippet}")
+
+    # 3) Fallback to recent chat memory
+    if not contexts:
+        memory = "\n".join(f"{m['role'].capitalize()}: {m['content']}" for m in chat_history[-10:])
+        contexts.append(f"No relevant data found in CSV files.\nRecent conversation:\n{memory}")
+
+    context = "\n\n".join(contexts) + f"\n\nPlease answer based only on the above. Question: {query}"
+
+    messages = [
+        {"role": "system", "content": (
+            "You are an authoritative educational recommendation assistant. "
+            "Always ground your answers exclusively in the provided CSV data. "
+            "Do not infer, guess, or hallucinate—avoid any assumptions about missing information. "
+            "Keep your responses concise, factual, and directly on point. "
+            "Only explain your reasoning when explicitly asked to do so. "
+            "When asked to analyze or predict, adopt the role of an expert educator and base every insight solely on the CSV context."
+        )},
+        *chat_history,
+        {"role": "user", "content": context}
+    ]
+
+    resp = client.chat.completions.create(
+        model=LLM_MODEL,
+        messages=messages,
+        max_tokens=512,
+        temperature=0.2
+    )
+    answer = resp.choices[0].message.content
+    # print("Bot:", answer)
+
+    chat_history.extend([
+        {"role": "user", "content": query},
+        {"role": "assistant", "content": answer}
+    ])
+    chat_history = chat_history[-20:]
+    return answer
+
+if __name__ == "__main__":
     print("Welcome to the CSV Data Exploration Chatbot! 🤖")
     print("Ask questions about Students, Teachers, Lessons.")
     print("Use 'match teacher for SXXX' to find the best teacher match.")
     print("Type 'exit' or 'quit' to stop.")
-    chat_history = []
 
     while True:
-        query = input("You: ").strip()
-        if query.lower() in ("exit", "quit"):
+        user_input = input("You: ").strip()
+        if user_input.lower() in ("exit", "quit"):
             print("👋 Goodbye!")
             break
+        response = handle_query(user_input)
+        print("Bot:", response)
 
-        # Match teacher command
-        if query.lower().startswith("match teacher for"):
-            if teacher_model is None:
-                print("🔍 No model found. Please train it first.")
-                continue
-            student_id = query.split()[-1].upper()
-            student_row = students_df[students_df["student_id"] == student_id]
-            if student_row.empty:
-                print(f"❌ No student found with ID {student_id}")
-                continue
-
-            predictions = []
-            for _, teacher_row in teachers_df.iterrows():
-                for _, lesson_row in lessons_df.iterrows():
-                    test_row = pd.DataFrame([{
-                        "subject_x": lesson_row["subject"],
-                        "grade": student_row["grade"].values[0],
-                        "preferred_learning_style": student_row["preferred_learning_style"].values[0],
-                        "engagement_level": student_row["engagement_level"].values[0],
-                        "attendance_rate": student_row["attendance_rate"].values[0],
-                        "duration_minutes": lesson_row["duration_minutes"],
-                        "teacher_experience": student_row["teacher_experience"].values[0],
-                        "experience_years": teacher_row["experience_years"]
-                    }])
-                    for col in test_row.select_dtypes(include="object").columns:
-                        test_row[col] = LabelEncoder().fit_transform(test_row[col].astype(str))
-                    score = teacher_model.predict(test_row)[0]
-                    predictions.append((score, teacher_row["name"], teacher_row["email"]))
-
-            best_score, best_name, best_email = max(predictions, key=lambda x: x[0])
-            print(f"🏅 Best match: {best_name} ({best_email}) with predicted score: {best_score:.2f}")
-            continue
-
-        # General CSV exploration
-        query_ids = extract_ids(query)
-        contexts = []
-
-        # 1) Direct ID matches
-        for name, df in dataframes.items():
-            mask = df.apply(lambda col: col.astype(str).str.contains('|'.join(query_ids), case=False), axis=0).any(axis=1)
-            if mask.any():
-                snippet = df[mask].to_csv(index=False, lineterminator='\n')
-                contexts.append(f"🔹 From {name} table:\n{snippet}")
-
-        # 2) Embedding-based matches if no direct matches
-        if not contexts:
-            qresp = client.embeddings.create(model=EMB_MODEL, input=[query]).data[0]
-            qvec = np.array(qresp.embedding).reshape(1, -1)
-            for name in CSV_FILES:
-                index_dir = os.path.join(INDEX_BASE_DIR, name)
-                embeddings = np.load(os.path.join(index_dir, "embeddings.npy"))
-                df = pd.read_pickle(os.path.join(index_dir, "dataframe.pkl"))
-                sims = cosine_similarity(qvec, embeddings)[0]
-                top_idx = sims.argsort()[-TOP_K:][::-1]
-                if sims[top_idx[0]] > SIM_THRESHOLD:
-                    snippet = df.iloc[top_idx].to_csv(index=False, lineterminator='\n')
-                    contexts.append(f"🔹 From {name} table:\n{snippet}")
-
-        # 3) Fallback to recent chat memory
-        if not contexts:
-            memory = "\n".join(f"{m['role'].capitalize()}: {m['content']}" for m in chat_history[-10:])
-            contexts.append(f"No relevant data found in CSV files.\nRecent conversation:\n{memory}")
-
-        context = "\n\n".join(contexts) + f"\n\nPlease answer based only on the above. Question: {query}"
-
-        messages = [
-            {"role": "system", "content": (
-                "You are an authoritative educational recommendation assistant. "
-                "Always ground your answers exclusively in the provided CSV data. "
-                "Do not infer, guess, or hallucinate—avoid any assumptions about missing information. "
-                "Keep your responses concise, factual, and directly on point. "
-                "Only explain your reasoning when explicitly asked to do so. "
-                "When asked to analyze or predict, adopt the role of an expert educator and base every insight solely on the CSV context."
-            )},
-            *chat_history,
-            {"role": "user", "content": context}
-        ]
-
-        resp = client.chat.completions.create(
-            model=LLM_MODEL,
-            messages=messages,
-            max_tokens=512,
-            temperature=0.2
-        )
-        answer = resp.choices[0].message.content
-        print("Bot:", answer)
-
-        chat_history.extend([
-            {"role": "user", "content": query},
-            {"role": "assistant", "content": answer}
-        ])
-        chat_history = chat_history[-20:]
-    return answer

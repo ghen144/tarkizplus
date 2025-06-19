@@ -16,5 +16,6 @@ class Query(BaseModel):
 
 @app.post("/query")
 def process_query(query: Query):
+    print("🚀 Got query:", query.text)
     answer = handle_query(query.text)
     return {"answer": answer}
