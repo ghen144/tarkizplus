@@ -3,6 +3,7 @@ import { useLocation, Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar.jsx'; // Teacher Sidebar
 import AdminSidebar from './admin/AdminSidebar.jsx'; // Admin Sidebar
 import Header from './common/Header.jsx';
+import ChatWidget from './common/ChatWidget';
 
 const Layout = () => {
     const location = useLocation();
@@ -32,6 +33,8 @@ const Layout = () => {
                 <main className="flex-1 overflow-y-auto ">
                     <Outlet/>
                 </main>
+
+                <ChatWidget/>
             </div>
         </div>
     );
