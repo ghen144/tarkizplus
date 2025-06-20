@@ -20,7 +20,7 @@ class HelpBot:
     def ask(self, question: str) -> str:
         messages = [
             {"role": "system", "content": (
-                "You are a professional help assistant for the MySite platform. "
+                "You are a professional help assistant for the Tarkiz+ platform. "
                 "Answer using only the information provided in the website guide below."
             )},
             {"role": "user", "content": f"{self.pdf_text}\n\nQuestion: {question}"}
