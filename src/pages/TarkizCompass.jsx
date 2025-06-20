@@ -13,7 +13,7 @@ const TarkizCompass = () => {
         setInput("");
 
         try {
-            const response = await fetch("/api/query", {
+            const response = await fetch("http://localhost:8001/query", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ text: input })

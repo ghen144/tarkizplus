@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from tarkiz_compass_core import handle_query  # make sure this matches your filename
+from tarkiz_compass_core import handle_query
 from starlette.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -16,6 +16,12 @@ class Query(BaseModel):
 
 @app.post("/query")
 def process_query(query: Query):
-    print("🚀 Got query:", query.text)
-    answer = handle_query(query.text)
-    return {"answer": answer}
+    # print("Got query:", query.text)
+    # answer =
+    # return {"answer": answer}
+    try:
+        answer = handle_query(query.text)
+        return {"answer": answer}
+    except Exception as e:
+        print("BACKEND ERROR:", str(e))
+        return {"answer": "Sorry, something went wrong.", "error": str(e)}
