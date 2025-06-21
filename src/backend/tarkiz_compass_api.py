@@ -20,6 +20,7 @@ def process_query(query: Query):
     # answer =
     # return {"answer": answer}
     try:
+
         answer = handle_query(query.text)
         return {"answer": answer}
     except Exception as e:

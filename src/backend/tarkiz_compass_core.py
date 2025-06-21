@@ -24,8 +24,12 @@ TOP_K = 50
 SIM_THRESHOLD = 0.2
 
 client = Together(api_key=API_KEY)
-chat_history = []
 
+chat_histories = {
+    "admin": [],
+    "teacher": [],
+    "unknown": []
+}
 def detect_encoding(file_path):
     with open(file_path, 'rb') as f:
         result = chardet.detect(f.read(10000))
@@ -56,8 +60,13 @@ def extract_ids(query):
 
 
 
-def handle_query(query):
-    global chat_history    # Ensure indexes are built
+def handle_query(query, role=None):
+    if role not in chat_histories:
+        role = "unknown"
+
+    chat_history = chat_histories[role]
+
+    # Ensure indexes are built
     for name in CSV_FILES:
         idx_file = os.path.join(INDEX_BASE_DIR, name, "embeddings.npy")
         if not os.path.exists(idx_file):
@@ -74,13 +83,6 @@ def handle_query(query):
     teachers_df = dataframes["Teachers"]
     lessons_df = dataframes["Lessons"]
     teacher_model = joblib.load(MODEL_PATH) if os.path.exists(MODEL_PATH) else None
-
-
-    # while True:
-    #     query = input("You: ").strip()
-    #     if query.lower() in ("exit", "quit"):
-    #         print("👋 Goodbye!")
-    #         break
 
     # Match teacher command
     if query.lower().startswith("match teacher for"):
@@ -116,14 +118,12 @@ def handle_query(query):
     query_ids = extract_ids(query)
     contexts = []
 
-    # 1) Direct ID matches
     for name, df in dataframes.items():
         mask = df.apply(lambda col: col.astype(str).str.contains('|'.join(query_ids), case=False), axis=0).any(axis=1)
         if mask.any():
             snippet = df[mask].to_csv(index=False, lineterminator='\n')
             contexts.append(f"🔹 From {name} table:\n{snippet}")
 
-    # 2) Embedding-based matches if no direct matches
     if not contexts:
         qresp = client.embeddings.create(model=EMB_MODEL, input=[query]).data[0]
         qvec = np.array(qresp.embedding).reshape(1, -1)
@@ -137,7 +137,6 @@ def handle_query(query):
                 snippet = df.iloc[top_idx].to_csv(index=False, lineterminator='\n')
                 contexts.append(f"🔹 From {name} table:\n{snippet}")
 
-    # 3) Fallback to recent chat memory
     if not contexts:
         memory = "\n".join(f"{m['role'].capitalize()}: {m['content']}" for m in chat_history[-10:])
         contexts.append(f"No relevant data found in CSV files.\nRecent conversation:\n{memory}")
@@ -164,14 +163,15 @@ def handle_query(query):
         temperature=0.2
     )
     answer = resp.choices[0].message.content
-    # print("Bot:", answer)
 
     chat_history.extend([
         {"role": "user", "content": query},
         {"role": "assistant", "content": answer}
     ])
-    chat_history = chat_history[-20:]
+    chat_histories[role] = chat_history[-20:]
+
     return answer
+
 
 if __name__ == "__main__":
     print("Welcome to the CSV Data Exploration Chatbot! 🤖")
