@@ -15,8 +15,9 @@ import {
 import {useTranslation} from "react-i18next";
 import IconButton from "@/components/common/IconButton.jsx";
 import DropDownMenu from "@/components/common/DropDownMenu.jsx";
-import { CircularProgressbarWithChildren, buildStyles } from 'react-circular-progressbar';
+import {CircularProgressbarWithChildren, buildStyles} from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
+import ObjectDropDownMenu from "@/components/common/ObjectDropDownMenu.jsx";
 
 
 const StudentProfile = () => {
@@ -66,6 +67,11 @@ const StudentProfile = () => {
     const totalAttendance = attendedCount;
     const weeklyAttendance = studentData?.attendance_count_weekly || 0;
 
+    const teacherOptions = Object.entries(teachersMap).map(([id, name]) => ({
+        label: name,
+        value: name
+    }));
+    console.log("Options:", teacherOptions);
 
 
     useEffect(() => {
@@ -114,25 +120,11 @@ const StudentProfile = () => {
         }
     };
 
-    const handleAddTeacherFilter = (e) => {
-        const teacherName = e.target.value;
-        if (teacherName && !selectedTeacherFilters.includes(teacherName)) {
-            setSelectedTeacherFilters((prev) => [...prev, teacherName]);
-        }
-        e.target.value = "";
-    };
-
-    const handleAddSubjectFilter = (e) => {
-        const subject = e.target.value;
-        if (subject && !selectedSubjectFilters.includes(subject)) {
-            setSelectedSubjectFilters((prev) => [...prev, subject]);
-        }
-        e.target.value = "";
-    };
 
     const removeTeacherFilter = (name) => {
         setSelectedTeacherFilters((prev) => prev.filter((t) => t !== name));
     };
+
 
     const removeSubjectFilter = (subject) => {
         setSelectedSubjectFilters((prev) => prev.filter((s) => s !== subject));
@@ -258,6 +250,8 @@ const StudentProfile = () => {
             if (!dateA || !dateB) return 0;
             return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
         });
+    console.log(" Active teacher filters:", selectedTeacherFilters);
+
 
     const progressData = filteredAndSortedLessons
         .map((lesson) => {
@@ -394,23 +388,38 @@ const StudentProfile = () => {
 
                     {/* Filters */}
                     <div className="flex flex-wrap items-center gap-4 mb-2">
-                        <DropDownMenu
+                        <ObjectDropDownMenu
                             label={t("teacher")}
-                            options={Object.entries(teachersMap).map(([id, name]) => ({label: name, value: name}))}
-                            selected={selectedTeacherFilters[0] || ""}
-                            onSelect={(val) => handleAddTeacherFilter(val.value)}
+                            options={Object.entries(teachersMap).map(([id, name]) => ({
+                                label: name,
+                                value: name
+                            }))}
+                            selected={selectedTeacherFilters.map((name) => ({label: name, value: name}))}
+                            onSelect={(newList) =>
+                                setSelectedTeacherFilters(newList.map((opt) => opt.value))
+                            }
                             placeholder={t("select")}
+                            multiSelect={true}
                         />
-                        <DropDownMenu
+
+
+                        <ObjectDropDownMenu
                             label={t("subject")}
                             options={[...new Set(lessons.map((l) => l.subject))].map((subject) => ({
                                 label: t(subject),
                                 value: subject
                             }))}
-                            selected={selectedSubjectFilters[0] || ""}
-                            onSelect={(val) => handleAddSubjectFilter(val.value)}
+                            selected={selectedSubjectFilters.map((s) => ({
+                                label: t(s),
+                                value: s
+                            }))}
+                            onSelect={(newList) =>
+                                setSelectedSubjectFilters(newList.map((opt) => opt.value))
+                            }
                             placeholder={t("select")}
+                            multiSelect={true}
                         />
+
                         <input
                             type="date"
                             value={selectedDate}
@@ -559,426 +568,6 @@ const StudentProfile = () => {
         </div>
     );
 
-
-    /*return (
-        <div className="flex min-h-screen bg-gray-200">
-            <main className="ml-0 flex-1 p-6 space-y-6">
-                {/!* General Information Card *!/}
-                <div className="bg-white p-6 rounded-lg shadow space-y-4">
-                    <div className="flex justify-between items-center">
-                        <h2 className="text-2xl font-bold flex items-center gap-2">
-                            <User className="text-blue-600 h-5 w-5"/>
-                            {t("general_info")}
-                        </h2>
-                        <IconButton
-                            label={t("return_button")}
-                            color="gray"
-                            onClick={handleReturn}
-                        />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div>
-                            <strong>{t("name")}:</strong> {name || t("na")}
-                        </div>
-                        <div>
-                            <strong>{t("grade")}:</strong> {t(grade) || t("na")}
-
-                        </div>
-                        <div>
-                            <strong>{t("subjects")}:</strong> {subjectsText}
-                        </div>
-                        <div>
-                            <strong>{t("parent_phone")}:</strong> {parent_phone_number || t("na")}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
-                    <div className="flex items-center gap-2 mb-4">
-                        <BookOpen className="h-5 w-5 text-blue-600"/>
-
-                        <h2 className="text-2xl font-bold">{t("learning_accommodations")}</h2>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div><strong>{t("preferred_learning_style")}</strong>: {PreferredLearningStyle || t("na")}</div>
-                        <div><strong>{t("learning_difficulties")}</strong>: {learning_difficulties || t("no")}</div>
-                        <div><strong>{t("private_or_group")}</strong>: {t(private_or_group_lessons) || t("na")}</div>
-                        <div><strong>{t("reading_accommodation")}</strong>: {reading_accommodation ? t("yes") : t("no")}
-                        </div>
-                        <div><strong>{t("oral_response")}</strong>: {oral_response_allowed ? t("yes") : t("no")}</div>
-                        <div><strong>{t("extra_time")}</strong>: {extra_time ? t("yes") : t("no")}</div>
-                        <div><strong>{t("spelling_ignored")}</strong>: {spelling_mistakes_ignored ? t("yes") : t("no")}
-                        </div>
-                        <div>
-                            <strong>{t("calculator_or_sheet")}</strong>: {calculator_or_formula_sheet ? t("yes") : t("no")}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
-                    <div className="flex items-center gap-2 mb-4">
-                        <CheckCircle className="h-5 w-5 text-blue-600"/>
-                        <h2 className="text-2xl font-bold">{t("performance_progress")}</h2>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                        <div><strong>{t("engagement_level")}</strong>: {engagement_level || t("na")}</div>
-                        <div><strong>{t("recent_performance")}</strong>: {recent_performance || t("na")}</div>
-                        <div><strong>{t("weekly_attendance")}</strong>: {weeklyAttendance}</div>
-                        <div><strong>{t("total_absences")}</strong>: {missedCount}</div>
-                    </div>
-                </div>
-
-                <div className="bg-white p-6 rounded-lg shadow mt-6">
-                    <div className="flex items-center gap-2 mb-4">
-                        <Calendar className="h-5 w-5 text-blue-500"/>
-                        <h2 className="text-2xl font-bold">{t("lesson_history")}</h2>
-                    </div>
-                    <p className="text-sm text-gray-500 mb-2">
-                        {t("filter_info")}
-                    </p>
-
-                    {/!* Filter Controls *!/}
-                    <div className="flex flex-wrap gap-4 mb-4">
-                        {/!* Teacher Filter *!/}
-                        <div>
-                            <p className="font-medium mb-1">{t("teacher")}</p>
-                            <select onChange={handleAddTeacherFilter} className="p-2 border rounded text-sm">
-                                <option value="">{t("select")}</option>
-                                {Object.entries(teachersMap).map(([id, name]) => (
-                                    <option key={id} value={name}>{name}</option>
-                                ))}
-                            </select>
-                            <div className="mt-2 flex flex-wrap gap-2">
-                                {selectedTeacherFilters.map((name) => (
-                                    <span
-                                        key={name}
-                                        className="bg-blue-200 text-blue-800 rounded px-2 py-1 text-sm flex items-center"
-                                    >
-                    {name}
-                                        <button
-                                            onClick={() => removeTeacherFilter(name)}
-                                            className="ml-1 text-blue-600 font-bold"
-                                        >
-                      &times;
-                    </button>
-                  </span>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div>
-                            <p className="font-medium mb-1">{t("subject")}</p>
-                            <select onChange={handleAddSubjectFilter} className="p-2 border rounded text-sm">
-                                <option value="">{t("select")}</option>
-                                {[...new Set(lessons.map((l) => l.subject))].map((subject) => (
-                                    <option key={subject} value={subject}>{t(subject)}</option>
-                                ))}
-                            </select>
-                            <div className="mt-2 flex flex-wrap gap-2">
-                                {selectedSubjectFilters.map((subject) => (
-                                    <span
-                                        key={subject}
-                                        className="bg-green-200 text-green-800 rounded px-2 py-1 text-sm flex items-center"
-                                    >
-            {subject}
-                                        <button
-                                            onClick={() => removeSubjectFilter(subject)}
-                                            className="ml-1 text-green-600 font-bold"
-                                        >
-              &times;
-            </button>
-          </span>
-                                ))}
-                            </div>
-                        </div>
-
-
-                        <input
-                            type="date"
-                            value={selectedDate}
-                            onChange={(e) => setSelectedDate(e.target.value)}
-                            className="p-2 border rounded"
-                        />
-                        <button
-                            onClick={() => setSortOrder((prev) => (prev === "desc" ? "asc" : "desc"))}
-                            className="p-2 border rounded bg-white text-gray-700 hover:bg-gray-100"
-                        >
-                            {sortOrder === "desc" ? t("sort_newest") : t("sort_oldest")}
-                        </button>
-                    </div>
-
-                    <div className="overflow-x-auto">
-                        {lessons.length > 0 ? (
-                            <table className="min-w-full bg-white">
-                                <thead>
-                                <tr>
-                                    <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                        {t("date")}
-                                    </th>
-                                    <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                        {t("teacher")}
-                                    </th>
-                                    <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                        {t("subject")}
-                                    </th>
-                                    <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                        {t("notes")}
-                                    </th>
-                                    <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                        {t("progress")}
-                                    </th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                {filteredAndSortedLessons.map((lesson) => {
-                                    const teacherName = teachersMap[lesson.teacher_id] || lesson.teacher_id || t("no_teacher");
-
-                                    let studentNote = "";
-                                    let studentProgress = "";
-
-                                    if (Array.isArray(lesson.students)) {
-                                        const match = lesson.students.find(s => s.student_id === currentStudentId);
-                                        studentNote = match?.student_notes || lesson.lesson_notes || "";
-
-                                        studentProgress = match?.progress_evaluation || "";
-                                    } else {
-                                        studentNote = lesson.lesson_notes || "";
-                                        studentProgress = lesson.progress_evaluation || "";
-                                    }
-
-                                    return (
-                                        <tr key={lesson.id} className="hover:bg-gray-50">
-                                            <td className="px-6 py-4 border-b border-gray-200">
-                                                {formatDate(lesson.lesson_date)}
-                                            </td>
-                                            <td className="px-6 py-4 border-b border-gray-200">
-                                                {teacherName}
-                                            </td>
-                                            <td className="px-6 py-4 border-b border-gray-200">
-                                                {t(lesson.subject) || t("no_subject")}
-                                            </td>
-                                            <td className="px-6 py-4 border-b border-gray-200">
-                                                {studentNote || t("no_notes")}
-                                            </td>
-                                            <td className="px-6 py-4 border-b border-gray-200">
-                                                {studentProgress || t("no_progress")}
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-
-                                </tbody>
-
-                            </table>
-                        ) : (
-                            <p className="text-gray-500">{t("no_lessons")}</p>
-                        )}
-                    </div>
-                </div>
-
-                {/!* Missed Lessons Table *!/}
-                <div className="bg-white p-6 rounded-lg shadow mt-6">
-                    <div className="flex items-center gap-2 mb-4">
-                        <AlertCircle className="h-5 w-5 text-red-500"/>
-                        <h2 className="text-2xl font-bold">{t("missed_lessons")}</h2>
-                    </div>
-                    <div className="overflow-x-auto">
-                        {lessons.some(lesson =>
-                            Array.isArray(lesson.students) &&
-                            lesson.students.find(s => s.student_id === currentStudentId && s.status === "absent")
-                        ) ? (
-                            <table className="min-w-full bg-white">
-                                <thead>
-                                <tr>
-                                    <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                        {t("date")}
-                                    </th>
-                                    <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                        {t("teacher")}
-                                    </th>
-                                    <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                        {t("subject")}
-                                    </th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                {lessons
-                                    .filter(
-                                        lesson =>
-                                            Array.isArray(lesson.students) &&
-                                            lesson.students.some(s => s.student_id === currentStudentId && s.status === "absent")
-                                    )
-                                    .map(lesson => {
-                                        const teacherName =
-                                            teachersMap[lesson.teacher_id] || lesson.teacher_id || t("no_teacher");
-                                        return (
-                                            <tr key={lesson.id} className="hover:bg-gray-50">
-                                                <td className="px-6 py-4 border-b border-gray-200">
-                                                    {formatDate(lesson.lesson_date)}
-                                                </td>
-                                                <td className="px-6 py-4 border-b border-gray-200">{teacherName}</td>
-                                                <td className="px-6 py-4 border-b border-gray-200">
-                                                    {t(lesson.subject) || t("no_subject")}
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        ) : (
-                            <p className="text-gray-500">{t("no_absent_lessons")}</p>
-                        )}
-                    </div>
-                </div>
-
-
-                {/!* Progress Chart *!/}
-                <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
-                    <div className="flex items-center gap-2 mb-4">
-                        <CheckCircle className="h-5 w-5 text-blue-600"/>
-                        <h2 className="text-2xl font-bold">{t("progress_over_time")}</h2>
-                    </div>
-                    {progressData.length > 0 ? (
-                        <ResponsiveContainer width="100%" height={300}>
-                            <LineChart data={progressData} margin={{top: 20, right: 30, left: 0, bottom: 5}}>
-                                <CartesianGrid strokeDasharray="3 3"/>
-                                <XAxis dataKey="date"/>
-                                <YAxis
-                                    domain={[1, 5]}
-                                    ticks={[1, 2, 3, 4, 5]}
-                                    label={{
-                                        value: t("progress"),
-                                        angle: -90,
-                                        position: "insideLeft",
-                                        offset: 10
-                                    }}
-                                />
-
-                                <Tooltip
-                                    formatter={(value, name) => {
-                                        const translatedName = name === "progress" ? t("progress") : name;
-                                        return [value, translatedName];
-                                    }}
-                                />
-
-                                <Line
-                                    type="monotone"
-                                    dataKey="progress"
-                                    stroke="#3182ce"
-                                    strokeWidth={2}
-                                    dot={{r: 4}}
-                                />
-                            </LineChart>
-                        </ResponsiveContainer>
-                    ) : (
-                        <p className="text-gray-500">{t("no_progress_data")}</p>
-                    )}
-                </div>
-
-                {/!* Exam Table *!/}
-                <div className="bg-white p-6 rounded-lg shadow mt-6">
-                    <div className="flex items-center gap-2 mb-4">
-                        <ClipboardList className="h-5 w-5 text-blue-500"/>
-                        <h2 className="text-xl font-semibold">{t("exams")}</h2>
-                    </div>
-                    {exams.length > 0 ? (
-                        <table className="min-w-full bg-white">
-                            <thead>
-                            <tr>
-                                <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                    {t("subject")}
-                                </th>
-                                <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                    {t("exam_date")}
-                                </th>
-                                <th className="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                    {t("material")}
-                                </th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {exams.map((exam) => {
-                                let examDate = t("no_date");
-                                if (exam.exam_date && typeof exam.exam_date.toDate === "function") {
-                                    examDate = exam.exam_date.toDate().toLocaleDateString("en-GB");
-                                }
-                                return (
-                                    <tr key={exam.id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 border-b border-gray-200">{exam.subject}</td>
-                                        <td className="px-6 py-4 border-b border-gray-200">{examDate}</td>
-                                        <td className="px-6 py-4 border-b border-gray-200">{exam.material}</td>
-                                    </tr>
-                                );
-                            })}
-                            </tbody>
-                        </table>
-                    ) : (
-                        <p className="text-gray-500">{t("no_exams")}</p>
-                    )}
-                </div>
-
-                <div className="mt-4">
-                    <button
-                        onClick={() => setShowExamForm((prev) => !prev)}
-                        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                    >
-                        {showExamForm ? t("cancel") : t("add_exam")}
-                    </button>
-                </div>
-
-                {showExamForm && (
-                    <div className="bg-gray-50 p-4 mt-4 rounded shadow space-y-4 max-w-md">
-                        <div>
-                            <label className="block font-medium">{t("subject")}</label>
-                            <input
-                                type="text"
-                                value={newExam.subject}
-                                onChange={(e) => setNewExam({...newExam, subject: e.target.value})}
-                                className="w-full border p-2 rounded"
-                                placeholder={t("placeholder_subject")}
-                            />
-                        </div>
-                        <div>
-                            <label className="block font-medium">{t("exam_date")}</label>
-                            <input
-                                type="datetime-local"
-                                value={newExam.exam_date}
-                                onChange={(e) => setNewExam({...newExam, exam_date: e.target.value})}
-                                className="w-full border p-2 rounded"
-                            />
-                        </div>
-                        <div>
-                            <label className="block font-medium">{t("material")}</label>
-                            <input
-                                type="text"
-                                value={newExam.material}
-                                onChange={(e) => setNewExam({...newExam, material: e.target.value})}
-                                className="w-full border p-2 rounded"
-                                placeholder={t("placeholder_material")}
-                            />
-                        </div>
-                        <button
-                            onClick={handleSaveExam}
-                            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-                        >
-                            {t("save_exam")}
-                        </button>
-                    </div>
-                )}
-
-                {/!* Return Button *!/}
-                <div className="mt-6">
-                    <button
-                        className="flex items-center bg-white p-3 rounded-lg shadow hover:bg-gray-100"
-                        onClick={handleReturn}
-                    >
-                        <ArrowLeft className="h-5 w-5 text-gray-500 mr-2"/>
-                        {t("return_button")}
-                    </button>
-                </div>
-            </main>
-        </div>
-    );*/
 };
 
 export default StudentProfile;

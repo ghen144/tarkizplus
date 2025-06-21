@@ -260,19 +260,31 @@ const Header = () => {
 
 
                 {/* Avatar */}
-                <div className="relative">
-                    <button
-                        onClick={toggleDropdown}
-                        className="flex items-center gap-2 text-gray-600 hover:text-blue-500 focus:outline-none"
-                    >
+                <DropDownMenu
+                    label={
                         <img
                             src={`https://ui-avatars.com/api/?name=${userName || 'User'}&background=random`}
                             alt="User"
                             className="h-10 w-10 rounded-full transition-transform hover:scale-105"
                         />
-                    </button>
-                    {isDropdownOpen && <DropdownMenu onClose={closeDropdown}/>}
-                </div>
+                    }
+                    options={["View Profile", "Settings", "Logout"]}
+                    selected={[]} // No selection state needed here
+                    onChange={([action]) => {
+                        if (action === "View Profile") {
+                            // Navigate or open profile modal
+                            console.log("View Profile");
+                        } else if (action === "Settings") {
+                            console.log("Open Settings");
+                        } else if (action === "Logout") {
+                            // Run logout logic
+                            console.log("🚪 Logout");
+                        }
+                    }}
+                    renderLabel={(opt) => opt} // Show plain text options
+                    multiSelect={false}
+                />
+
             </div>
 
         </header>
