@@ -263,17 +263,23 @@ const Header = () => {
                             className="h-10 w-10 rounded-full transition-transform hover:scale-105"
                         />
                     }
-                    options={["View Profile", "Settings", "Logout"]}
+                    options={["View Profile", "Settings"]}
                     selected={[]} // No selection state needed here
                     onChange={([action]) => {
                         if (action === "View Profile") {
-                            // Navigate or open profile modal
-                            console.log("View Profile");
+                            const role = localStorage.getItem("userRole");
+
+                            if (role === "teacher") {
+                                navigate("/teacher-profile");
+                            }
+                             else {
+                                console.warn("Unknown role, staying put");
+                            }
+
                         } else if (action === "Settings") {
-                            console.log("Open Settings");
-                        } else if (action === "Logout") {
-                            // Run logout logic
-                            console.log("🚪 Logout");
+                            console.log("Open Settings (not implemented yet)");
+                            // Optionally navigate or open modal
+
                         }
                     }}
                     renderLabel={(opt) => opt} // Show plain text options
