@@ -5,6 +5,7 @@ import {getAuth, signOut} from 'firebase/auth';
 import Logo from './common/Logo.jsx';
 import {useTranslation} from 'react-i18next';
 import i18n from '@/localization/i18n.js';
+import IconButton from "@/components/common/IconButton.jsx";
 
 const Sidebar = () => {
     const {t} = useTranslation();
@@ -55,13 +56,14 @@ const Sidebar = () => {
 
             <div className="p-4 border-t">
                 {/* Sign out button */}
-                <button
+                <IconButton
                     onClick={handleSignOut}
-                    className="w-full flex items-center justify-center p-3 bg-red-50 text-red-600 rounded hover:bg-red-100"
+                    color="red"
+                    className="w-full flex items-center justify-center p-3 items-center"
                 >
-                    <LogOut className="mr-2" size={20}/>
+                    <LogOut className="mr-2" size={20} />
                     {t('sign_out')}
-                </button>
+                </IconButton>
             </div>
         </div>
     );

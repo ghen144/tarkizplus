@@ -12,6 +12,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { getAuth, signOut } from 'firebase/auth';
 import { useTranslation } from 'react-i18next';
 import Logo from '../common/Logo.jsx';
+import IconButton from "@/components/common/IconButton.jsx";
 
 const AdminSidebar = () => {
     const navigate = useNavigate();
@@ -75,14 +76,15 @@ const AdminSidebar = () => {
 
             {/* Bottom: Logout */}
             <div className="p-4 border-t space-y-4">
-
-                <button
+                <IconButton
                     onClick={handleSignOut}
-                    className="w-full flex items-center justify-center p-3 bg-red-50 text-red-600 rounded hover:bg-red-100 transition"
+                    color="red"
+                    className="w-full flex items-center justify-center p-3 items-center"
                 >
                     <LogOut className="mr-2" size={20} />
                     {t('sign_out')}
-                </button>
+                </IconButton>
+
             </div>
         </aside>
     );

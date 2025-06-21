@@ -18,7 +18,7 @@ const colorThemes = {
     },
 };
 
-const SoftActionButton = ({
+const IconButton = ({
                               label,
                               onClick,
                               color = "blue",
@@ -39,4 +39,4 @@ const SoftActionButton = ({
     );
 };
 
-export default SoftActionButton;
+export default IconButton;
