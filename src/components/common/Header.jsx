@@ -1,6 +1,5 @@
-import React, {useEffect, useState, useRef} from 'react';
-import {Search, ChevronDown, Globe} from 'lucide-react';
-import DropdownMenu from './GlobalSearchEnhanced.jsx';
+import {useEffect, useState, useRef} from 'react';
+import {Search,  Globe} from 'lucide-react';
 import {getAuth, onAuthStateChanged} from 'firebase/auth';
 import {
     collection, getDocs, getDoc, doc, query, where
@@ -26,12 +25,8 @@ const Header = () => {
 
     const resultsRef = useRef(null);
 
-    const [isLangOpen, setIsLangOpen] = useState(false);
-    const toggleLangDropdown = () => setIsLangOpen((prev) => !prev);
-    const closeLangDropdown = () => setIsLangOpen(false);
+
     const {i18n} = useTranslation();
-    const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
-    const closeDropdown = () => setIsDropdownOpen(false);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {

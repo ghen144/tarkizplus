@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from "react";
+import {useState, useEffect} from "react";
 import {useNavigate, useParams, useLocation} from "react-router-dom";
 import {
     doc, getDoc, collection, getDocs, query, where, orderBy, addDoc,
@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 import {useTranslation} from "react-i18next";
 import IconButton from "@/components/common/IconButton.jsx";
-import DropDownMenu from "@/components/common/DropDownMenu.jsx";
 import {CircularProgressbarWithChildren, buildStyles} from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
 import ObjectDropDownMenu from "@/components/common/ObjectDropDownMenu.jsx";
@@ -45,7 +44,7 @@ const StudentProfile = () => {
     const [isAdmin, setIsAdmin] = useState(false);
     const currentStudentId = studentData?.student_id || "";
 
-    // نحسب حضور وغياب الطالب
+    // calculate student attendance
     const studentLessons = lessons.filter((lesson) => {
         if (Array.isArray(lesson.students)) {
             // درس جماعي: لازم يكون الطالب موجود وstatus = "present"
