@@ -54,34 +54,6 @@ const Sidebar = () => {
             </div>
 
             <div className="p-4 border-t">
-                {/* Language Buttons */}
-                <div className="flex justify-center gap-2 mb-3">
-                    <button
-                        onClick={() => i18n.changeLanguage('en')}
-                        className={`border px-3 py-1 rounded text-sm ${
-                            i18n.language === 'en' ? 'bg-blue-100 text-blue-600 font-semibold' : ''
-                        }`}
-                    >
-                        EN
-                    </button>
-                    <button
-                        onClick={() => i18n.changeLanguage('ar')}
-                        className={`border px-3 py-1 rounded text-sm ${
-                            i18n.language === 'ar' ? 'bg-blue-100 text-blue-600 font-semibold' : ''
-                        }`}
-                    >
-                        ع
-                    </button>
-                    <button
-                        onClick={() => i18n.changeLanguage('he')}
-                        className={`border px-3 py-1 rounded text-sm ${
-                            i18n.language === 'he' ? 'bg-blue-100 text-blue-600 font-semibold' : ''
-                        }`}
-                    >
-                        ע
-                    </button>
-                </div>
-
                 {/* Sign out button */}
                 <button
                     onClick={handleSignOut}

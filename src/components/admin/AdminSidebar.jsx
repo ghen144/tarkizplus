@@ -6,7 +6,7 @@ import {
     GraduationCap,
     BookOpen,
     ClipboardList,
-    FileText,
+    FileText, Compass,
 } from 'lucide-react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { getAuth, signOut } from 'firebase/auth';
@@ -39,6 +39,8 @@ const AdminSidebar = () => {
         { icon: BookOpen, label: t('schedules'), path: '/admin/schedule' },
         { icon: ClipboardList, label: t('lesson_log'), path: '/admin/lesson-log' },
         { icon: FileText, label: t('exams'), path: '/admin/exams' },
+        {icon: Compass, label: t('tarkiz_compass'), path: '/compass', active: location.pathname === '/compass'}
+
     ];
 
     return (
