@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from "react";
+import React, {useState, useEffect, useRef, useLayoutEffect} from "react";
 import {Link} from "react-router-dom";
 import {db} from "@/firebase/firebase.jsx";
 import {
@@ -6,14 +6,16 @@ import {
     getDocs,
     query,
     orderBy,
-    where,
 } from "firebase/firestore";
 import {getAuth} from "firebase/auth";
 import {useTranslation} from "react-i18next";
-import DropDownMenu from "@/components/common/DropDownMenu.jsx";
-import IconButton from "@/components/common/IconButton.jsx";
+import {startOfMonth} from "date-fns";
+import {AnimatePresence, motion} from "framer-motion";
+import MonthTimeline from "@/components/common/MonthTimeline.jsx";
+import ObjectDropDownMenu from "@/components/common/ObjectDropDownMenu.jsx";
 
 const SUBJECT_OPTIONS = ["Math", "English", "Hebrew", "Arabic"];
+const TYPE_OPTIONS = ["Group", "Private"];
 
 const LessonLog = () => {
     const {t} = useTranslation();
@@ -22,320 +24,360 @@ const LessonLog = () => {
     const [teachersMap, setTeachersMap] = useState({});
     const [studentsMap, setStudentsMap] = useState({});
     const [loading, setLoading] = useState(true);
-    const [teacherDocId, setTeacherDocId] = useState("");
-    const [lessonsLimit, setLessonsLimit] = useState(10);
-    const [selectedTeacherFilters, setSelectedTeacherFilters] = useState([]);
-    const [selectedSubjectFilters, setSelectedSubjectFilters] = useState([]);
-    const [searchTerm, setSearchTerm] = useState("");
-    const [sortAsc, setSortAsc] = useState(false);
-    const [isAdmin, setIsAdmin] = useState(false);
+    const [visibleMonth, setVisibleMonth] = useState(startOfMonth(new Date()));
+    const [subjectFilter, setSubjectFilter] = useState("");
+    const [typeFilter, setTypeFilter] = useState("");
+    const today = new Date();
+    const [expandedLessonIds, setExpandedLessonIds] = useState(new Set());
+    const [selectedTeacher, setSelectedTeacher] = useState(null);
+    const [selectedSubject, setSelectedSubject] = useState(null);
+
+
 
     useEffect(() => {
-        const fetchStaticData = async () => {
-            const user = auth.currentUser;
+        const unsubscribe = auth.onAuthStateChanged(async (user) => {
             if (!user) return;
 
-            const teacherQuerySnapshot = await getDocs(
-                query(collection(db, "teachers"), where("email", "==", user.email))
-            );
-            const teacherDoc = teacherQuerySnapshot.docs[0];
-            if (teacherDoc) {
-                setTeacherDocId(teacherDoc.id);
-            }
-
-            const adminSnap = await getDocs(
-                query(collection(db, "admin"), where("email", "==", user.email))
-            );
-            if (!adminSnap.empty) {
-                setIsAdmin(true);
-            }
-
-            const teachersSnap = await getDocs(collection(db, "teachers"));
-            const tMap = {};
-            teachersSnap.forEach((doc) => {
-                tMap[doc.id] = doc.data().name;
-            });
-            setTeachersMap(tMap);
-
-            const studentsSnap = await getDocs(collection(db, "students"));
-            const sMap = {};
-            studentsSnap.forEach((doc) => {
-                sMap[doc.id] = doc.data().name;
-            });
-            setStudentsMap(sMap);
-        };
-
-        fetchStaticData();
-    }, [auth]);
-
-    useEffect(() => {
-        const fetchLessons = async () => {
-            setLoading(true);
             try {
-                const q = query(
-                    collection(db, "lessons"),
-                    orderBy("lesson_date", sortAsc ? "asc" : "desc")
-                );
-                const snapshot = await getDocs(q);
-                const allLessons = snapshot.docs.map((doc) => ({id: doc.id, ...doc.data()}));
+                const userRole = localStorage.getItem("userRole");
 
-                const filtered = isAdmin
-                    ? allLessons
-                    : allLessons.filter((lesson) => lesson.teacher_id === teacherDocId);
+                // 1. Load teachers map
+                const teachersSnap = await getDocs(collection(db, "teachers"));
+                const tMap = {};
+                let currentTeacherId = null;
+                teachersSnap.forEach((doc) => {
+                    const data = doc.data();
+                    tMap[doc.id] = data.name;
+                    if (userRole !== "admin" && data.uid === user.uid) {
+                        currentTeacherId = data.teacher_id;
+                    }
+                });
+                setTeachersMap(tMap);
 
-                setLessons(filtered.slice(0, lessonsLimit));
+                // 2. Load students map
+                const studentsSnap = await getDocs(collection(db, "students"));
+                const sMap = {};
+                studentsSnap.forEach((doc) => {
+                    sMap[doc.id] = doc.data().name;
+                });
+                setStudentsMap(sMap);
+
+                // 3. Load lessons
+                const lessonsSnap = await getDocs(query(collection(db, "lessons"), orderBy("lesson_date", "asc")));
+                const allLessons = lessonsSnap.docs.map((doc) => ({id: doc.id, ...doc.data()}));
+
+                let filteredLessons = allLessons;
+                if (userRole !== "admin" && currentTeacherId) {
+                    filteredLessons = allLessons.filter(lesson => lesson.teacher_id === currentTeacherId);
+                }
+
+                setLessons(filteredLessons);
             } catch (err) {
-                console.error("Error fetching lessons:", err);
-                setLessons([]);
+                console.error("Error fetching data:", err);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
-        };
+        });
 
-        fetchLessons();
-    }, [teacherDocId, lessonsLimit, sortAsc, isAdmin]);
+        return () => unsubscribe();
+    }, []);
 
-    const filteredLessons = lessons.filter((lesson) => {
-        const teacherMatch =
-            selectedTeacherFilters.length === 0 ||
-            selectedTeacherFilters.includes(lesson.teacher_id);
 
-        const subjectMatch =
-            selectedSubjectFilters.length === 0 ||
-            selectedSubjectFilters.includes(lesson.subject);
+    const monthRange = () => {
+        const months = [];
+        if (lessons.length === 0) return months;
+        const sortedLessons = [...lessons].sort((a, b) => a.lesson_date.toDate() - b.lesson_date.toDate());
+        const start = startOfMonth(sortedLessons[0].lesson_date.toDate());
+        const end = startOfMonth(today);
+        let current = new Date(start);
+        while (current <= end) {
+            months.push(new Date(current));
+            current.setMonth(current.getMonth() + 1);
+        }
+        return months;
+    };
 
-        const keywordMatch =
-            !searchTerm ||
-            lesson.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (Array.isArray(lesson.students)
-                ? lesson.students.some((s) =>
-                    (studentsMap[s.student_id]?.toLowerCase() || "").includes(searchTerm.toLowerCase())
-                )
-                : false);
+    const handleMonthClick = (date) => {
+        setVisibleMonth(startOfMonth(date));
+    };
 
-        return teacherMatch && subjectMatch && keywordMatch;
+// 1. First filter the visible lessons by month
+    const visibleMonthLessons = lessons.filter((lesson) => {
+        const date = lesson.lesson_date?.toDate?.();
+        return (
+            date &&
+            date.getMonth() === visibleMonth.getMonth() &&
+            date.getFullYear() === visibleMonth.getFullYear()
+        );
     });
 
-    return (
-        <div className="p-6">
-            <h2 className="text-2xl font-bold text-blue-900 text-center mb-6">{t("recentLessons")}</h2>
+// 2. Derive teacher options based on filtered lessons
+    const visibleTeacherOptions = Array.from(
+        new Set(visibleMonthLessons.map((lesson) => lesson.teacher_id))
+    ).map((id) => ({
+        label: teachersMap[id] || id,
+        value: id,
+    }));
 
+// 3. Derive subject options based on filtered lessons
+    const visibleSubjectOptions = Array.from(
+        new Set(visibleMonthLessons.map((lesson) => lesson.subject))
+    ).map((subject) => ({
+        label: subject,
+        value: subject,
+    }));
+
+// 4. Function to check expanded state of a lesson
+    const isExpanded = (id) => expandedLessonIds.has(id);
+
+// 5. Function to toggle expanded state of a lesson
+    const toggleCard = (id) => {
+        setExpandedLessonIds((prev) => {
+            const updated = new Set(prev);
+            if (updated.has(id)) {
+                updated.delete(id);
+            } else {
+                updated.add(id);
+            }
+            return updated;
+        });
+    };
+
+// 6. Apply filters to grouped lessons
+    const filteredGroupedLessons = visibleMonthLessons
+        .filter((lesson) => {
+            return (
+                (!selectedTeacher || lesson.teacher_id === selectedTeacher.value) &&
+                (!selectedSubject || lesson.subject === selectedSubject.value)
+            );
+        })
+        .reduce((acc, lesson) => {
+            const date = lesson.lesson_date.toDate();
+            const monday = new Date(date);
+            monday.setDate(date.getDate() - date.getDay() + 1);
+            const label = `${monday.toLocaleDateString("en-GB", {
+                month: "long",
+                day: "numeric",
+            })} – ${new Date(monday.getTime() + 6 * 86400000).getDate()}`;
+            acc[label] = acc[label] || [];
+            acc[label].push(lesson);
+            return acc;
+        }, {});
+
+    return (
+        <div className="p-6 max-w-6xl mx-auto space-y-6">
             {loading ? (
-                <p className="text-center text-gray-500">{t("loading")}</p>
-            ) : filteredLessons.length === 0 ? (
-                <p className="text-center text-gray-500">{t("noResults") || "No lessons found."}</p>
+                <div className="text-center text-gray-500 py-10">Loading lessons...</div>
             ) : (
-                <div
-                    className="relative max-w-6xl mx-auto space-y-8 before:absolute before:top-0 before:bottom-0 before:left-1/2 before:w-1 before:-ml-0.5 before:bg-blue-200">
-                    {filteredLessons.map((lesson, index) => {
-                        const isLeft = index % 2 === 0;
-                        const presentCount = Array.isArray(lesson.students)
-                            ? lesson.students.filter((s) => s.status === "present").length
-                            : 0;
-                        const absentCount = Array.isArray(lesson.students)
-                            ? lesson.students.filter((s) => s.status === "absent").length
-                            : 0;
+                <>
+                    <h2 className="text-2xl font-semibold">{t("lesson_log")}</h2>
+
+                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
+
+                        {/* Left: Month timeline */}
+                        <div className="mt-2 md:mt-0">
+                            <MonthTimeline
+                                monthRange={monthRange}
+                                visibleMonth={visibleMonth}
+                                handleMonthClick={handleMonthClick}
+                            />
+                        </div>
+                        {/* Right: Filters */}
+                        <div className="flex flex-wrap items-center gap-4">
+                            <ObjectDropDownMenu
+                                label="Teacher"
+                                options={visibleTeacherOptions}
+                                selected={selectedTeacher || {}}
+                                onSelect={setSelectedTeacher}
+                                placeholder="Filter by teacher"
+                                width="min-w-[12rem]"
+                            />
+
+                            <ObjectDropDownMenu
+                                label="Subject"
+                                options={visibleSubjectOptions}
+                                selected={selectedSubject || {}}
+                                onSelect={setSelectedSubject}
+                                placeholder="Filter by subject"
+                                width="min-w-[12rem]"
+                            />
+
+                            {(selectedTeacher || selectedSubject) && (
+                                <button
+                                    onClick={() => {
+                                        setSelectedTeacher(null);
+                                        setSelectedSubject(null);
+                                    }}
+                                    className="text-sm text-blue-600 hover:underline"
+                                >
+                                    Clear filters
+                                </button>
+                            )}
+                        </div>
+
+
+                    </div>
+
+                {Object.entries(filteredGroupedLessons).length === 0 && (
+                    <div className="text-center text-gray-400 mt-8">
+                        {t("noLessonsThisMonth") || "No lessons found for this month."}
+                    </div>
+                )}
+
+                    {Object.entries(filteredGroupedLessons).map(([weekLabel, weekLessons]) => {
+                        const attendanceRates = weekLessons.map((l) => {
+                            const present = l.students?.filter((s) => s.status === t("present")).length || 0;
+                            const absent = l.students?.filter((s) => s.status === t("absent")).length || 0;
+                            const total = present + absent;
+                            return total > 0 ? (present / total) * 100 : 100;
+                        });
+                        const avgAttendance =
+                            attendanceRates.length > 0
+                                ? Math.round(attendanceRates.reduce((a, b) => a + b, 0) / attendanceRates.length)
+                                : 0;
 
                         return (
-                            <div className={`border-l-4 pl-4 rounded-lg shadow-sm p-4 text-sm hover:shadow-md transition bg-white
-  ${lesson.class_type === "Group"
-                                ? "border-indigo-300"
-                                : lesson.class_type === "Private"
-                                    ? "border-yellow-300"
-                                    : "border-gray-200"
-                            }
-`}>
-                                <div className="text-xs text-gray-400 mb-1 uppercase tracking-wide">
-                                    {lesson.lesson_date?.toDate?.().toLocaleDateString("en-GB")}
+                            <div key={weekLabel} className="space-y-2">
+                                <div className="flex justify-between items-center bg-gray-100 px-4 py-2 rounded-md">
+                                    <h3 className="text-sm font-semibold text-gray-700">
+                                        {weekLabel} — Avg Attendance: {avgAttendance}%
+                                    </h3>
                                 </div>
 
-                                <div className="flex justify-between items-center mb-1">
-    <span className="font-semibold text-blue-900">
-      {t(lesson.subject?.toLowerCase())} · {t(lesson.class_type || "individual")}
-    </span>
-                                    {/* Attendance badge */}
-                                    {(() => {
-                                        const total = presentCount + absentCount;
-                                        const rate = total > 0 ? Math.round((presentCount / total) * 100) : 0;
-                                        const badgeColor =
-                                            rate >= 75 ? "bg-green-100 text-green-800"
-                                                : rate >= 50 ? "bg-yellow-100 text-yellow-800"
-                                                    : "bg-red-100 text-red-700";
+                                {weekLessons.map((lesson) => {
+                                    const present = lesson.students?.filter((s) => s.status === "present") || [];
+                                    const absent = lesson.students?.filter((s) => s.status === "absent") || [];
+                                    const total = present.length + absent.length;
+                                    const rate = total > 0 ? Math.round((present.length / total) * 100) : 0;
 
-                                        return (
-                                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full
-  ${rate >= 75
-                                                ? "bg-green-100 text-green-800"
-                                                : rate >= 50
-                                                    ? "bg-yellow-100 text-yellow-800"
-                                                    : "bg-red-100 text-red-700"
-                                            }`}
-                                            >
-  {t("attendance")}: {rate}%
-</span>
+                                    const barColor =
+                                        rate >= 75 ? "bg-green-500" : rate >= 50 ? "bg-yellow-500" : "bg-red-500";
+                                    const rateColor =
+                                        rate >= 75
+                                            ? "bg-green-100 text-green-800"
+                                            : rate >= 50
+                                                ? "bg-yellow-100 text-yellow-800"
+                                                : "bg-red-100 text-red-700";
 
-                                        );
-                                    })()}
-                                </div>
+                                    const isExpanded = expandedLessonIds.has(lesson.id);
 
-                                <p className="text-gray-600 leading-snug">
-                                    {t("teacher")}: {teachersMap[lesson.teacher_id] || t("unknownTeacher")} <br/>
-                                    {t("present")}: <span
-                                    className="text-green-700 font-semibold">{presentCount}</span> ·{" "}
-                                    {t("absent")}: <span className="text-red-600 font-semibold">{absentCount}</span>
-                                </p>
+                                    return (
+                                        <motion.div
+                                            layout
+                                            key={lesson.id}
+                                            onClick={() => toggleCard(lesson.id)}
+                                            transition={{duration: 0.6, ease: "easeInOut"}}
+                                            className="cursor-pointer border border-gray-200 rounded-lg bg-white shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
+                                        >
+                                            {/* Header */}
+                                            <div className="px-4 py-3 flex justify-between items-center">
+                                                <div className="text-sm text-gray-700 font-medium">
+                                                    {lesson.lesson_date.toDate().toLocaleDateString("en-GB")} •{t(lesson.subject)}• {t(lesson.class_type)}
 
-                                <div className="flex gap-3 mt-3 text-sm">
-                                    <Link to={`/lesson-log/${lesson.id}/details`}
-                                          className="text-blue-600 underline hover:text-blue-800 transition">
-                                        {t("showMore")}
-                                    </Link>
-                                    <Link to={`/lesson-log/${lesson.id}/edit`}
-                                          className="text-yellow-500 hover:text-yellow-600 text-base">
-                                        📝
-                                    </Link>
-                                </div>
+                                                </div>
+                                                <div
+                                                    className={`text-xs px-2 py-0.5 rounded-full font-medium ${rateColor}`}>
+                                                    {rate}%
+                                                </div>
+                                            </div>
+
+                                            <div
+                                                className="px-4 text-xs text-gray-500 flex justify-between items-center">
+                                                <span>{teachersMap[lesson.teacher_id] || t("unknownTeacher")}</span>
+                                                <span>
+                        {lesson.start_time && lesson.end_time
+                            ? `${lesson.start_time} - ${lesson.end_time}`
+                            : t("timeNotSet")}
+                      </span>
+                                            </div>
+
+                                            <div className="px-4 pt-2 pb-3">
+                                                <div className="w-full h-2 bg-gray-200 rounded">
+                                                    <div className={`h-full ${barColor}`}
+                                                         style={{width: `${rate}%`}}></div>
+                                                </div>
+                                            </div>
+
+                                            <AnimatePresence initial={false}>
+                                                {isExpanded && (
+                                                    <motion.div
+                                                        key="expanded"
+                                                        initial={{opacity: 0, height: 0}}
+                                                        animate={{opacity: 1, height: "auto"}}
+                                                        exit={{opacity: 0, height: 0}}
+                                                        transition={{duration: 0.4, ease: "easeInOut"}}
+                                                        className="px-4 pb-4 text-sm text-gray-700 space-y-3"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        {(lesson.duration_minutes || lesson.start_time || lesson.end_time) && (
+                                                            <p className="text-xs text-gray-600">
+                                                                <strong>{t("duration")}:</strong>{" "}
+                                                                {lesson.duration_minutes
+                                                                    ? `${lesson.duration_minutes} minutes`
+                                                                    : `${lesson.start_time || "?"} - ${lesson.end_time || "?"}`}
+                                                            </p>
+                                                        )}
+
+                                                        {lesson.notes && (
+                                                            <p className="text-xs text-gray-600">
+                                                                <strong>Lesson Notes:</strong> {lesson.notes}
+                                                            </p>
+                                                        )}
+
+                                                        {present.length > 0 && (
+                                                            <div>
+                                                                <p className="text-xs font-semibold text-green-700 mb-1">{t("present")}</p>
+                                                                <div className="space-y-1">
+                                                                    {present.map((s) => (
+                                                                        <div
+                                                                            key={s.student_id}
+                                                                            className="bg-green-50 px-2 py-1 rounded text-xs text-green-900"
+                                                                        >
+                                                                            <strong>{studentsMap[s.student_id] || s.student_id}</strong>
+                                                                            {s.progress_evaluation && (
+                                                                                <span
+                                                                                    className="ml-1">— {t("progress_evaluation")}: {s.progress_evaluation}</span>
+                                                                            )}
+                                                                            {s.student_notes && (
+                                                                                <div
+                                                                                    className="ml-1">Notes: {s.student_notes}</div>
+                                                                            )}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {absent.length > 0 && (
+                                                            <div>
+                                                                <p className="text-xs font-semibold text-red-700 mb-1">{t("absent")}</p>
+                                                                <div className="space-y-1">
+                                                                    {absent.map((s) => (
+                                                                        <div
+                                                                            key={s.student_id}
+                                                                            className="bg-red-50 px-2 py-1 rounded text-xs text-red-900"
+                                                                        >
+                                                                            <strong>{studentsMap[s.student_id] || s.student_id}</strong>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+                                        </motion.div>
+                                    )
+                                        ;
+                                })}
                             </div>
-
                         );
                     })}
-                </div>
+                </>
             )}
         </div>
     );
 
-
-    /* return (
-         <div className="p-6 space-y-6">
-             <h2 className="text-2xl font-bold text-blue-900 mb-4">{t("recentLessons")}</h2>
-
-             <div className="flex flex-wrap items-center gap-4 mb-6 bg-white p-4 rounded-lg shadow-sm">
-                 <Link
-                     to="/lesson-log/add"
-                     className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 font-semibold shadow-sm"
-                 >
-                     ➕ {t("add")}
-                 </Link>
-
-                 <input
-                     type="text"
-                     placeholder={t("search")}
-                     value={searchTerm}
-                     onChange={(e) => setSearchTerm(e.target.value)}
-                     className="border p-2 rounded-lg text-sm w-40 shadow-sm"
-                 />
-
-                 <select
-                     value={lessonsLimit}
-                     onChange={(e) => setLessonsLimit(Number(e.target.value))}
-                     className="border p-2 rounded-lg text-sm shadow-sm"
-                 >
-                     {[10, 20, 30, 50].map((n) => (
-                         <option key={n} value={n}>
-                             {t("show")} {n}
-                         </option>
-                     ))}
-                 </select>
-
-                 <select
-                     value={sortAsc ? "asc" : "desc"}
-                     onChange={(e) => setSortAsc(e.target.value === "asc")}
-                     className="border p-2 rounded-lg text-sm shadow-sm"
-                 >
-                     <option value="desc">{t("newest")}</option>
-                     <option value="asc">{t("oldest")}</option>
-                 </select>
-
-                 {isAdmin && (
-                     <select
-                         onChange={(e) => {
-                             const selected = e.target.value;
-                             if (selected && !selectedTeacherFilters.includes(selected)) {
-                                 setSelectedTeacherFilters([...selectedTeacherFilters, selected]);
-                             }
-                         }}
-                         className="border p-2 rounded-lg text-sm shadow-sm"
-                     >
-                         <option value="">{t("select")} {t("teacher")}</option>
-                         {Object.entries(teachersMap).map(([id, name]) => (
-                             <option key={id} value={id}>{name}</option>
-                         ))}
-                     </select>
-                 )}
-
-                 <select
-                     onChange={(e) => {
-                         const selected = e.target.value;
-                         if (selected && !selectedSubjectFilters.includes(selected)) {
-                             setSelectedSubjectFilters([...selectedSubjectFilters, selected]);
-                         }
-                     }}
-                     className="border p-2 rounded-lg text-sm shadow-sm"
-                 >
-                     <option value="">{t("select")} {t("subject")}</option>
-                     {SUBJECT_OPTIONS.map((subj) => (
-                         <option key={subj} value={subj}>{t(subj.toLowerCase())}</option>
-                     ))}
-                 </select>
-             </div>
-
-             <div className="bg-white p-4 rounded shadow">
-                 {loading ? (
-                     <p>{t("loading")}</p>
-                 ) : (
-                     <table className="w-full text-sm">
-                         <thead className="bg-gray-100 text-left">
-                         <tr>
-                             <th className="p-2">{t("date")}</th>
-                             <th className="p-2">{t("subject")}</th>
-                             <th className="p-2">{t("class_type")}</th>
-                             <th className="p-2">{t("teacher")}</th>
-                             <th className="p-2">{t("attendance")}</th>
-                             <th className="p-2 text-center">{t("actions")}</th>
-                         </tr>
-                         </thead>
-                         <tbody>
-                         {filteredLessons.map((lesson) => {
-                             const presentCount = typeof lesson.present_count === "number"
-                                 ? lesson.present_count
-                                 : Array.isArray(lesson.students)
-                                     ? lesson.students.filter((s) => s.status === "present").length
-                                     : 0;
-
-                             const absentCount = typeof lesson.absent_count === "number"
-                                 ? lesson.absent_count
-                                 : Array.isArray(lesson.students)
-                                     ? lesson.students.filter((s) => s.status === "absent").length
-                                     : 0;
-
-                             return (
-                                 <tr key={lesson.id} className="border-t">
-                                     <td className="p-2">{lesson.lesson_date?.toDate?.().toLocaleDateString("en-GB")}</td>
-                                     <td className="p-2">{t(lesson.subject?.toLowerCase())}</td>
-                                     <td className="p-2">{t(lesson.class_type || "individual")}</td>
-                                     <td className="p-2">{teachersMap[lesson.teacher_id] || t("unknownTeacher")}</td>
-                                     <td className="p-2">
-                                         <p className="text-green-700">{t("present")}: <strong>{presentCount}</strong>
-                                         </p>
-                                         <p className="text-red-600">{t("absent")}: <strong>{absentCount}</strong></p>
-                                     </td>
-                                     <td className="p-2 text-center space-x-2">
-                                         <Link to={`/lesson-log/${lesson.id}/details`}
-                                               className="text-blue-500 underline">
-                                             {t("showMore")}
-                                         </Link>
-                                         <Link to={`/lesson-log/${lesson.id}/edit`} className="text-yellow-500">
-                                             📝
-                                         </Link>
-                                     </td>
-                                 </tr>
-                             );
-                         })}
-                         </tbody>
-                     </table>
-                 )}
-             </div>
-         </div>
-     );*/
 };
 
 export default LessonLog;

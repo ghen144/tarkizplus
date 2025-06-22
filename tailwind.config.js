@@ -10,6 +10,9 @@ export default {
                 'fade-in-up': 'fadeInUp 0.6s ease-out',
                 'slide-in-left': 'slideInLeft 0.3s ease-out',
                 'slide-in-right': 'slideInRight 0.3s ease-out',
+                'breathe': 'breathe 3s ease-in-out infinite',
+
+
             },
             keyframes: {
                 fadeInUp: {
@@ -24,7 +27,12 @@ export default {
                     '0%': {transform: 'translateX(20px)', opacity: 0},
                     '100%': {transform: 'translateX(0)', opacity: 1},
                 },
+                breathe: {
+                    '0%, 100%': { transform: 'scale(1)' },
+                    '50%': { transform: 'scale(1.04)' },
+                },
             },
+
         }
 
     },
