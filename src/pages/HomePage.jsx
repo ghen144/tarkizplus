@@ -418,10 +418,10 @@ const HomePage = () => {
                       <strong>{t("Room")}:</strong>{" "}
                           <span>{selectedSlot.room || <span className="text-gray-400 italic">{t("N/A")}</span>}</span>
                     </span>
-                        <span>
-                      <strong>{t("Teacher")}:</strong>{" "}
-                          <span>{selectedSlot.teacher || <span className="text-gray-400 italic">{t("N/A")}</span>}</span>
-                    </span>
+                    {/*    <span>*/}
+                    {/*  <strong>{t("Teacher")}:</strong>{" "}*/}
+                    {/*      <span>{selectedSlot.teacher || <span className="text-gray-400 italic">{t("N/A")}</span>}</span>*/}
+                    {/*</span>*/}
                         <span>
                       <strong>{t("Student count")}:</strong>{" "}
                           <span>{selectedLessonStudents.length}</span>
