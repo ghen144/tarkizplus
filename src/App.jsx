@@ -6,7 +6,7 @@ import StudentsPage from './pages/students/StudentsPage.jsx';
 import StudentProfile from './pages/students/StudentProfile.jsx';
 import LessonLog from './pages/lessons/LessonLog.jsx';
 import AddLesson from './pages/lessons/AddLesson.jsx';
-import EditLesson from './pages/lessons/EditLesson.jsx';
+import EditLesson from './pages/lessons/EditLessonOverlay.jsx';
 import TeacherProfile from './pages/TeacherProfile.jsx';
 import AppSettings from './pages/AppSettings.jsx';
 import LessonDetails from './pages/lessons/LessonDetails.jsx';
