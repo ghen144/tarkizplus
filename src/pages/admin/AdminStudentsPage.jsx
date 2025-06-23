@@ -51,6 +51,7 @@ function AdminStudentsPage() {
     };
 
     const handleStudentClick = (studentId) => {
+        console.log(localStorage.getItem('userRole'))
         navigate(`/student-profile/${studentId}`);
     };
 

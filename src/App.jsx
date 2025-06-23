@@ -66,7 +66,10 @@ function App() {
                     {/* Other */}
                     <Route path="/teacher-profile" element={<ProtectedRoute element={<TeacherProfile />} allowedRoles={['teacher']} />} />
                     <Route path="/settings" element={<ProtectedRoute element={<AppSettings />} allowedRoles={['admin', 'teacher']} />} />
-                    <Route path="/student-profile/:studentId" element={<ProtectedRoute element={<StudentProfile />} allowedRoles={['teacher']} />} />
+                    <Route
+                        path="/student-profile/:studentId"
+                        element={<ProtectedRoute element={<StudentProfile />} allowedRoles={['admin', 'teacher']} />}
+                    />
                     <Route path="/compass" element={<ProtectedRoute element={<TarkizCompass />} allowedRoles={['admin', 'teacher']} />} />
                 </Route>
             </Routes>
