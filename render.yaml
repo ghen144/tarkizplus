@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: tarkiz-compass
+    env: python
+    pythonVersion: 3.10.13
+    rootDir: src/backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn tarkiz_compass_api:app --host 0.0.0.0 --port $PORT
+    plan: free
