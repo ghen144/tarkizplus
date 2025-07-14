@@ -32,20 +32,31 @@ const Sidebar = () => {
     ];
 
     return (
-        <div className="w-64 bg-white border-r h-screen fixed left-0 top-0 flex flex-col justify-between">
+        <div className="w-64 h-screen fixed left-0 top-0 flex flex-col justify-between
+  bg-white bg-[url('/assets/pattern-circles.svg')] bg-no-repeat bg-top bg-contain
+  border-r border-blue-100 shadow-md z-50">
+
+
             <div>
-                <div className="p-6 border-b flex items-center">
-                    <Logo/>
+                <div className="p-6 border-b flex items-center justify-center">
+                    <Logo className="h-12"/>
                 </div>
+
 
                 <nav className="p-4">
                     {menuItems.map((item) => (
                         <Link
                             key={item.path}
                             to={item.path}
-                            className={`flex items-center p-3 mb-2 rounded ${
-                                item.active ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
-                            }`}
+                            className={`flex items-center gap-3 px-4 py-2 mb-2 rounded-full text-sm font-medium transition-all duration-200 
+  ${
+                                item.active
+                                    ? 'bg-[#d6ebff] text-blue-800 shadow-inner ring-1 ring-inset ring-blue-200'
+                                    : 'text-gray-700 hover:bg-[#eaf4ff] hover:text-blue-700 transition-transform hover:scale-[1.03]\n'
+                            }
+`}
+
+
                         >
                             <item.icon className="mr-3" size={20}/>
                             {item.label}
@@ -61,7 +72,7 @@ const Sidebar = () => {
                     color="red"
                     className="w-full flex items-center justify-center p-3 items-center"
                 >
-                    <LogOut className="mr-2" size={20} />
+                    <LogOut className="mr-2" size={20}/>
                     {t('sign_out')}
                 </IconButton>
             </div>
