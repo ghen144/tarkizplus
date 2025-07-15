@@ -1,0 +1,11 @@
+student_id,grade,subject,preferred_learning_style,recent_performance,engagement_level,attendance_rate,past_lessons_reviewed,lesson_duration,previous_lesson_difficulty,teacher_experience,reading_accommodation,oral_response_allowed,extra_time,spelling_mistakes_ignored,calculator_or_formula_sheet,lesson_recommendation
+S001,5th Grade,Arabic,Movement,81.0,High,0.56,No,120,Moderate,12,Yes,No,Yes,No,No,Needs visual aids - Responds better to images & diagrams
+S002,5th Grade,English,Movement,32.3,High,0.92,Yes,90,Hard,3,Yes,No,Yes,No,Yes,Good understanding - Needs more practice
+S003,9th Grade,English,Movement,71.0,High,0.62,Yes,120,Hard,4,Yes,No,Yes,No,Yes,"Prefers hands-on learning - Use practical exercises, Good understanding - Needs more practice, Excellent - Give challenging questions"
+S004,1th Grade,English,Auditory,84.9,High,0.99,Yes,120,Easy,2,No,No,Yes,No,No,"Difficulty with homework - Needs more structured support, Mastered previous topic - Ready to move ahead"
+S005,2th Grade,Arabic,Movement,36.7,Low,0.57,No,90,Easy,5,No,No,Yes,No,No,Mastered previous topic - Ready to move ahead
+S006,3th Grade,Hebrew,Auditory,82.2,High,0.99,No,120,Easy,12,Yes,Yes,No,No,Yes,"Fast learner - Allow self-paced learning, Needs extra support - Consider one-on-one sessions"
+S007,4th Grade,Math,Visual,39.5,Medium,0.5,Yes,120,Hard,3,No,No,No,Yes,No,Slow pace learner - Needs more time per topic
+S008,7th Grade,Math,Auditory,44.6,High,0.63,Yes,120,Moderate,12,Yes,Yes,No,Yes,No,Slow pace learner - Needs more time per topic
+S009,5th Grade,Arabic,Reading/Writing,30.8,High,0.82,Yes,90,Hard,5,Yes,No,Yes,Yes,Yes,"Inconsistent - Sometimes performs well, sometimes struggles, Good understanding - Needs more practice, Needs visual aids - Responds better to images & diagrams"
+S010,8th Grade,Arabic,Auditory,68.4,Medium,0.92,No,120,Moderate,3,No,No,Yes,No,Yes,"Low engagement - Consider changing the teaching method, Difficulty with homework - Needs more structured support"

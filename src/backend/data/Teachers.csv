@@ -1,0 +1,9 @@
+teacher_id,name,email,subject_specialties,assigned_students,teaching_hours_weekly,experience_years,active_status,joining tarkiz date
+T001,Salma Idris,salma.idris@school.com,"Math, Arabic","S043, S045, S012, S019, S020, S046, S048, S002, S049",10,5,Yes,25/02/2024
+T002,Rania Fadel,rania.fadel@school.com,"Math, Hebrew, English","S050, S036, S017, S018, S043, S027, S006, S021",13,2,Yes,21/07/2022
+T003,Mariam Baz,mariam.baz@school.com,"Math, English, Hebrew","S039, S037, S022, S042, S010, S011, S012, S016",16,6,Yes,16/04/2023
+T004,Layla Mansour,layla.mansour@school.com,"Hebrew, English","S015, S003, S005, S041, S045, S046, S048, S029",13,5,No,08/12/2024
+T005,Nadia Zahran,nadia.zahran@school.com,"Math, Arabic, English","S009, S041, S044, S030, S031, S032, S038, S003, S039",14,3,Yes,18/06/2021
+T006,Hana Salman,hana.salman@school.com,"Math, English, Hebrew","S034, S049, S009, S025, S026, S028, S030, S035, S027",13,3,No,21/10/2024
+T007,Samira Al-Farsi,samira.al-farsi@school.com,"English, Math, Hebrew, Arabic","S047, S023, S040, S004, S007, S008, S024, S032, S033",16,4,Yes,25/08/2023
+T008,Zainab Hammoud,zainab.hammoud@school.com,"Arabic, Hebrew, English, Math","S014, S006, S001, S013, S002, S038, S010",25,12,Yes,03/05/2023
