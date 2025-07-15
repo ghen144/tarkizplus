@@ -5,8 +5,7 @@ FROM python:3.10-slim
 WORKDIR /app
 
 # Copy backend source code and data
-COPY ./src/backend/ /app/
-COPY ./src/backend/data/ /app/data/
+COPY src/backend/ .
 
 # Install build tools and dependencies
 RUN apt-get update && apt-get install -y build-essential && \
