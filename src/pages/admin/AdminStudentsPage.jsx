@@ -52,7 +52,7 @@ function AdminStudentsPage() {
 
     const handleStudentClick = (studentId) => {
         console.log(localStorage.getItem('userRole'))
-        navigate(`/student-profile/${studentId}`);
+        navigate(`/students/${studentId}`);
     };
 
     const toggleSelection = (value, selectedList, setSelectedList) => {
