@@ -11,7 +11,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",                      # for local dev
-        "https://tarkizhelpbot.onrender.com",            # your deployed frontend
+        "https://tarkizplus.onrender.com",            # your deployed frontend
     ],
     allow_credentials=True,
     allow_methods=["*"],
