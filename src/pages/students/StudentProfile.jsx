@@ -178,7 +178,8 @@ const StudentProfile = () => {
         fetchStudentDataAndLessons();
     }, [studentId]);
     const handleReturn = () => {
-        navigate(isAdmin ? "/admin/students" : "/students");
+        const role = localStorage.getItem('userRole');      //  synchronous
+        navigate(role === 'admin' ? '/admin/students' : '/students');
     };
 
     if (loading) {
