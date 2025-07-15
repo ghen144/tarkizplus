@@ -1,19 +1,21 @@
+# Use Python 3.10 slim base image
 FROM python:3.10-slim
 
 # Set working directory
 WORKDIR /app
 
-# Copy backend code
-COPY src/backend/ .
+# Copy backend source code and data
+COPY ./src/backend/ /app/
+COPY ./src/backend/data/ /app/data/
 
-# Copy data folder
-COPY src/backend/data/ data/
-
-# Install system-level build tools (needed by numpy, pandas, etc.)
+# Install build tools and dependencies
 RUN apt-get update && apt-get install -y build-essential && \
     pip install --upgrade pip && \
     pip install setuptools wheel && \
     pip install --no-cache-dir -r requirements.txt
 
-# Run the FastAPI app
-CMD ["uvicorn", "tarkiz_compass_api:app", "--host", "0.0.0.0", "--port", "10000"]
+# Expose the port (optional for documentation)
+EXPOSE ${PORT}
+
+# Use env variable to run the correct API module
+CMD ["sh", "-c", "uvicorn ${TARGET_API_MODULE}:app --host 0.0.0.0 --port ${PORT}"]
