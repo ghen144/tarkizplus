@@ -1,9 +1,12 @@
-teacher_id,name,email,subject_specialties,assigned_students,teaching_hours_weekly,experience_years,active_status,joining tarkiz date
-T001,Salma Idris,salma.idris@school.com,"Math, Arabic","S043, S045, S012, S019, S020, S046, S048, S002, S049",10,5,Yes,25/02/2024
-T002,Rania Fadel,rania.fadel@school.com,"Math, Hebrew, English","S050, S036, S017, S018, S043, S027, S006, S021",13,2,Yes,21/07/2022
-T003,Mariam Baz,mariam.baz@school.com,"Math, English, Hebrew","S039, S037, S022, S042, S010, S011, S012, S016",16,6,Yes,16/04/2023
-T004,Layla Mansour,layla.mansour@school.com,"Hebrew, English","S015, S003, S005, S041, S045, S046, S048, S029",13,5,No,08/12/2024
-T005,Nadia Zahran,nadia.zahran@school.com,"Math, Arabic, English","S009, S041, S044, S030, S031, S032, S038, S003, S039",14,3,Yes,18/06/2021
-T006,Hana Salman,hana.salman@school.com,"Math, English, Hebrew","S034, S049, S009, S025, S026, S028, S030, S035, S027",13,3,No,21/10/2024
-T007,Samira Al-Farsi,samira.al-farsi@school.com,"English, Math, Hebrew, Arabic","S047, S023, S040, S004, S007, S008, S024, S032, S033",16,4,Yes,25/08/2023
-T008,Zainab Hammoud,zainab.hammoud@school.com,"Arabic, Hebrew, English, Math","S014, S006, S001, S013, S002, S038, S010",25,12,Yes,03/05/2023
+c,active_status,assigned_students,created_at,email,experience_years,joining_tarkiz_date,name,subject_specialties,teacher_id,teaching_hours_week,uid
+T001,FALSE,"[""S009"",""S020"",""S031"",""S032"",""S012"",""S026"",""S007"",""S050"",""S045"",""S044"",""S001"",""S014"",""S022"",""S002""]",,salma.idris@school.com,4,2024-02-24T22:00:00.000Z,Salma Idris,"[""Arabic"",""Math"",""Hebrew"",""English""]",T001,6,odwpBjO7G2ZRFKpJOGEbRj6s4003
+T002,TRUE,"[""S023"",""S031"",""S012"",""S030"",""S026"",""S007"",""S033"",""S042"",""S049"",""S010"",""S015"",""S022"",""S041"",""S052""]",,rania.fadel@school.com,2,2022-07-20T21:00:00.000Z,Rania Fadel,"[""Arabic"",""Hebrew"",""English"",""Math""]",T002,0,QSUnIwy3iuPBnSHK7viso2A9Xk53
+T003,TRUE,"[""S020"",""S031"",""S018"",""S010"",""S029"",""S048"",""S035"",""S004""]",,mariam.baz@school.com,6,2023-04-15T21:00:00.000Z,Mariam Baz,"[""Arabic"",""Hebrew"",""English""]",T003,0,
+T004,FALSE,"[""S011"",""S034"",""S045"",""S038"",""S022"",""S004"",""S005""]",,layla.mansour@school.com,5,2024-12-07T22:00:00.000Z,Layla Mansour,"[""Arabic"",""Math"",""English"",""Hebrew""]",T004,0,
+T005,TRUE,"[""S012"",""S050"",""S027"",""S049"",""S048"",""S025"",""S043"",""S002"",""S006"",""S024"",""S052"",""S032"",""S017"",""S040"",""S046"",""S042"",""S001"",""S035"",""S037"",""S004""]",,nadia.zahran@school.com,3,2021-06-17T21:00:00.000Z,Nadia Zahran,"[""Arabic"",""Math"",""Hebrew""]",T005,0,
+T006,FALSE,"[""S011"",""S047"",""S039"",""S032"",""S030"",""S016"",""S013"",""S007"",""S019"",""S042"",""S038"",""S015"",""S025"",""S043""]",,hana.salman@school.com,3,2024-10-20T21:00:00.000Z,Hana Salman,"[""Arabic"",""Math"",""Hebrew"",""English""]",T006,0,
+T007,TRUE,"[""S032"",""S016"",""S026"",""S024"",""S021"",""S028"",""S017"",""S029"",""S022"",""S043""]",,samira.al-farsi@school.com,4,2023-08-24T21:00:00.000Z,Samira Al-Farsi,"[""Arabic"",""Math"",""English"",""Hebrew""]",T007,0,
+T008,TRUE,"[""S020"",""S027"",""S046"",""S024"",""S029"",""S022"",""S002"",""S041"",""S005""]",,zainab.hammoud@school.com,12,2023-05-02T21:00:00.000Z,Zainab Hammoud,"[""Arabic"",""Hebrew"",""English""]",T008,0,
+T009,TRUE,"[""S006"",""S047"",""S039"",""S050"",""S033"",""S045"",""S049"",""S015"",""S022""]",2025-04-07T08:31:25.502Z,nawal@school.com,4,2025-04-07T00:00:00.000Z,Nawal Ahmad,"[""Arabic"",""Math"",""Hebrew"",""English""]",T009,4,
+T011,TRUE,"[""S036"",""S010"",""S024"",""S042"",""S028"",""S043"",""S037""]",2025-04-07T08:42:24.233Z,noor12@school.com,5,2025-04-07T00:00:00.000Z,Noor Salman,"[""Arabic"",""English""]",T011,3,
+T012,FALSE,"[""S040"",""S030"",""S038"",""S048"",""S043"",""S052""]",2025-04-07T08:47:07.792Z,seham@school.com,1,2025-04-07T00:00:00.000Z,Seham Mh,"[""Arabic"",""Hebrew"",""English""]",T012,3,
