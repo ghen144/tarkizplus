@@ -18,7 +18,7 @@ const TarkizCompass = () => {
         setIsTyping(true);
 
         try {
-            const response = await fetch("http://localhost:8001/query", {
+            const response = await fetch("https://tarkizcompassdocker.onrender.com/query", {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({text: input, role: userRole})
