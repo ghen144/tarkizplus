@@ -46,14 +46,16 @@ function App() {
                     }
                 >
                     {/* -------- Shared pages (admin + teacher) -------- */}
+                    /* LIST page ─ stays as-is */
                     <Route path="/students" element={<StudentsPage />} />
-                    <Route path="/students/:studentId" element={<StudentProfile />} />
+
+                    /* SINGLE-student page ─ keep ONE guarded route */
                     <Route
-                        path="/student-profile/:studentId"
+                        path="/students/:studentId"
                         element={
                             <ProtectedRoute
                                 element={<StudentProfile />}
-                                allowedRoles={['admin', 'teacher']}
+                                allowedRoles={['admin', 'teacher']}   // both roles can open it
                             />
                         }
                     />
