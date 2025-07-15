@@ -16,7 +16,7 @@ const ChatWidget = () => {
         setIsTyping(true);
 
         try {
-            const response = await fetch("https://tarkizhelpbot.onrender.com/query", {
+            const response = await fetch("https://tarkizhelpbot.onrender.com/ask", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ question: input })
