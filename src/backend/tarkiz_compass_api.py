@@ -6,7 +6,10 @@ from starlette.middleware.cors import CORSMiddleware
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"http://localhost:\d+",
+    allow_origins=[
+        "http://localhost:5173",              # keep this for local dev
+        "https://tarkizplus.onrender.com",    # ← your deployed frontend
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
