@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
+/* ---------- Components / pages ---------- */
 import Layout from './components/Layout.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import HomePage from './pages/HomePage.jsx';
@@ -35,19 +36,27 @@ function App() {
                 {/* ---------- Public (login) ---------- */}
                 <Route path="/" element={<LoginPage />} />
 
-                {/* ---------- Everything below requires *either* admin OR teacher ---------- */}
+                {/* ---------- Everything under Layout needs admin OR teacher ---------- */}
                 <Route
                     element={
                         <ProtectedRoute
-                            element={<Layout />}           //  guards the whole branch
+                            element={<Layout />}
                             allowedRoles={['admin', 'teacher']}
                         />
                     }
                 >
-                    {/* Shared pages */}
-                    <Route path="/homepage" element={<HomePage />} />
+                    {/* -------- Shared pages (admin + teacher) -------- */}
                     <Route path="/students" element={<StudentsPage />} />
                     <Route path="/students/:studentId" element={<StudentProfile />} />
+                    <Route
+                        path="/student-profile/:studentId"
+                        element={
+                            <ProtectedRoute
+                                element={<StudentProfile />}
+                                allowedRoles={['admin', 'teacher']}
+                            />
+                        }
+                    />
 
                     <Route path="/lesson-log" element={<LessonLog />} />
                     <Route path="/lesson-log/add" element={<AddLesson />} />
@@ -57,7 +66,16 @@ function App() {
                     <Route path="/settings" element={<AppSettings />} />
                     <Route path="/compass" element={<TarkizCompass />} />
 
-                    {/* Teacher-only */}
+                    {/* -------- Teacher-only -------- */}
+                    <Route
+                        path="/homepage"
+                        element={
+                            <ProtectedRoute
+                                element={<HomePage />}
+                                allowedRoles={['teacher']}
+                            />
+                        }
+                    />
                     <Route
                         path="/teacher-profile"
                         element={
@@ -68,7 +86,7 @@ function App() {
                         }
                     />
 
-                    {/* Admin-only */}
+                    {/* -------- Admin-only -------- */}
                     <Route
                         path="/admin/home"
                         element={
@@ -170,7 +188,7 @@ function App() {
                     />
                 </Route>
 
-                {/* Optional: a friendly 403 page */}
+                {/* ---------- Optional friendly 403 ---------- */}
                 <Route path="/unauthorized" element={<h1>403 • Not authorised</h1>} />
             </Routes>
         </Router>
