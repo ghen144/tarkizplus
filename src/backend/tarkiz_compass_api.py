@@ -8,7 +8,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",              # keep this for local dev
-        "https://tarkizplus.onrender.com",    # ← your deployed frontend
+        "https://tarkizplus.onrender.com/compass",    # ← your deployed frontend
     ],
     allow_credentials=True,
     allow_methods=["*"],
