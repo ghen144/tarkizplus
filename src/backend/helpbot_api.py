@@ -9,10 +9,15 @@ app = FastAPI()
 # Optional: CORS for browser support
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:5173",                      # for local dev
+        "https://tarkizHelpBot.onrender.com",            # your deployed frontend
+    ],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # === Pydantic model ===
 class Query(BaseModel):
