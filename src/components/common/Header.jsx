@@ -163,8 +163,9 @@ const Header = () => {
 
     return (
         <header className="h-16 px-6 flex items-center justify-between
-  bg-gradient-to-r from-[#eaf4ff] via-white to-[#f0f9ff]
-  border-b border-blue-100 shadow-sm z-40 " >
+  bg-white                         /* solid white */
+  border-b border-blue-100 shadow-sm z-40"
+        >
 
             {/*Search */}
             <div className="relative w-full max-w-sm" ref={resultsRef}>
@@ -175,7 +176,7 @@ const Header = () => {
                     value={searchQuery}
                     onChange={handleSearch}
                     onFocus={() => setShowResults(true)}
-                    className="pl-10 pr-4 py-2 rounded-md bg-white/70 backdrop-blur-sm border border-blue-200 shadow-inner text-sm placeholder-gray-400 focus:ring-2 focus:ring-blue-200 focus:outline-none transition"                />
+                    className="pl-10 pr-4 py-2 rounded-md bg-white/70 backdrop-blur-sm border border-blue-200 shadow-inner text-sm placeholder-gray-400 focus:ring-2 focus:ring-blue-200 focus:outline-none transition"/>
                 {showResults && (
                     <div
                         className="absolute top-full left-0 right-0 bg-white border mt-1 rounded shadow z-10 max-h-96 overflow-y-auto">
