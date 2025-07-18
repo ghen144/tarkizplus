@@ -149,6 +149,7 @@ def handle_query(query, role=None):
             "Always ground your answers exclusively in the provided CSV data. "
             "Do not infer, guess, or hallucinate—avoid any assumptions about missing information. "
             "Keep your responses concise, factual, and directly on point. "
+            "keep your answers short unless asked otherwise"
             "Only explain your reasoning when explicitly asked to do so. "
             "When asked to analyze or predict, adopt the role of an expert educator and base every insight solely on the CSV context."
         )},
