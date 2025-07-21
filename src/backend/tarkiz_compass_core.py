@@ -85,7 +85,7 @@ def handle_query(query, role=None):
     teacher_model = joblib.load(MODEL_PATH) if os.path.exists(MODEL_PATH) else None
 
     # Match teacher command
-    if query.lower().startswith("match teacher for"):
+    if query.lower().startswith("soso juju"): ### to be replaced
         if teacher_model is None:
             return "🔍 No model found. Please train it first."
         student_id = query.split()[-1].upper()
