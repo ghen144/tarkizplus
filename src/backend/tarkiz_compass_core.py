@@ -9,7 +9,7 @@ from sklearn.preprocessing import LabelEncoder
 import joblib
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # the 'backend/' folder
-API_KEY = "1fc0749554b1b37d760fd194b9bf81ab80fdb85bd15f3102ba9da4358be1744e"
+API_KEY = "a6386fd256a7a0d12c46d585791ed0f25a26db7511ef9ad51c40a884505fb240"
 CSV_FILES = {
     "Students": os.path.join(BASE_DIR, "data", "Students.csv"),
     "Teachers": os.path.join(BASE_DIR, "data", "Teachers.csv"),
