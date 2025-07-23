@@ -63,11 +63,15 @@ const AdminHomePage = () => {
                     getDocs(collection(db, "exams"))
                 ]);
 
+                // Teachers: Only those with active_status === true
+                const teachersData = tSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const activeTeachers = teachersData.filter(t => t.active_status === true);
+
+                setTeachers(teachersData); // You can use all teachers if you need the full list elsewhere
                 setStudents(sSnap.docs.map(doc => doc.data()));
-                setTeachers(tSnap.docs.map(doc => doc.data()));
 
                 setCounts({
-                    teachers: tSnap.size,
+                    teachers: activeTeachers.length, // Only active teachers
                     students: sSnap.size,
                     lessons: lSnap.size,
                     exams: eSnap.size
