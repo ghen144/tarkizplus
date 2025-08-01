@@ -30,24 +30,41 @@ function AddLesson() {
 
       setLoading(true);
       try {
-        const qTeachers = query(collection(db, "teachers"), where("email", "==", user.email));
-        const teacherSnap = await getDocs(qTeachers);
-        if (teacherSnap.empty) return setLoading(false);
-
-        const teacherDoc = teacherSnap.docs[0];
-        setTeacherId(teacherDoc.id);
-
-        const teacherData = teacherDoc.data();
-        const assignedStudentIds = teacherData.assigned_students || [];
-
+        const userRole = localStorage.getItem("userRole");
         const allStudentsSnap = await getDocs(collection(db, "students"));
-        const studentList = allStudentsSnap.docs
-          .filter((doc) => assignedStudentIds.includes(doc.id))
-          .map((doc) => ({ id: doc.id, name: doc.data().name || t('unnamed_student') }));
 
-        setAssignedStudents(studentList);
+        if (userRole === "admin") {
+          // Admin gets all students
+          const allStudents = allStudentsSnap.docs.map((doc) => ({
+            id: doc.id,
+            name: doc.data().name || t("unnamed_student"),
+          }));
+          setAssignedStudents(allStudents);
+        } else {
+          // Teachers get only assigned students
+          const qTeachers = query(
+              collection(db, "teachers"),
+              where("email", "==", user.email)
+          );
+          const teacherSnap = await getDocs(qTeachers);
+          if (teacherSnap.empty) return setLoading(false);
+
+          const teacherDoc = teacherSnap.docs[0];
+          setTeacherId(teacherDoc.id);
+          const teacherData = teacherDoc.data();
+          const assignedStudentIds = teacherData.assigned_students || [];
+
+          const studentList = allStudentsSnap.docs
+              .filter((doc) => assignedStudentIds.includes(doc.id))
+              .map((doc) => ({
+                id: doc.id,
+                name: doc.data().name || t("unnamed_student"),
+              }));
+
+          setAssignedStudents(studentList);
+        }
       } catch (error) {
-        console.error("Error fetching teacher/students:", error);
+        console.error("Error fetching students:", error);
       } finally {
         setLoading(false);
       }
@@ -55,6 +72,7 @@ function AddLesson() {
 
     fetchAssignedStudents();
   }, [user]);
+
 
   const handleAddRow = () => {
     setLessonRows((prev) => [...prev, { student_id: "", subject: "", duration: "", notes: "", progress: "" }]);

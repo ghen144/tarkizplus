@@ -173,6 +173,7 @@ const LessonLog = () => {
                 <>
                     <h2 className="text-2xl font-semibold">{t("lesson_log")}</h2>
 
+
                     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
 
                         {/* Left: Month timeline */}
@@ -214,6 +215,14 @@ const LessonLog = () => {
                                     Clear filters
                                 </button>
                             )}
+                            <div className="flex justify-end">
+                                <Link
+                                    to="/lesson-log/add"
+                                    className="mb-4 inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+                                >
+                                    + Add Lesson
+                                </Link>
+                            </div>
                         </div>
 
 

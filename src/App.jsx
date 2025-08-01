@@ -48,6 +48,7 @@ function App() {
                     {/* -------- Shared pages (admin + teacher) -------- */}
                     /* LIST page ─ stays as-is */
                     <Route path="/students" element={<StudentsPage />} />
+                    <Route path="/lesson-log/add" element={<AddLesson />} />
 
                     /* SINGLE-student page ─ keep ONE guarded route */
                     <Route
@@ -61,7 +62,6 @@ function App() {
                     />
 
                     <Route path="/lesson-log" element={<LessonLog />} />
-                    <Route path="/lesson-log/add" element={<AddLesson />} />
                     <Route path="/lesson-log/:lessonId/edit" element={<EditLesson />} />
                     <Route path="/lesson-log/:lessonId/details" element={<LessonDetails />} />
 
