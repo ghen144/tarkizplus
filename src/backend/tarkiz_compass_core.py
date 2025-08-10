@@ -1,5 +1,6 @@
 import os
 import pickle
+import time
 import numpy as np
 import pandas as pd
 import chardet
@@ -25,11 +26,12 @@ SIM_THRESHOLD = 0.2
 
 client = Together(api_key=API_KEY)
 
-chat_histories = {
-    "admin": [],
-    "teacher": [],
-    "unknown": []
-}
+# Stores conversation history per session
+chat_histories = {}
+# Tracks last activity time per session for cleanup
+session_activity = {}
+SESSION_HISTORY_LIMIT = 20
+SESSION_TTL = 3600  # seconds
 def detect_encoding(file_path):
     with open(file_path, 'rb') as f:
         result = chardet.detect(f.read(10000))
@@ -60,11 +62,11 @@ def extract_ids(query):
 
 
 
-def handle_query(query, role=None):
-    if role not in chat_histories:
-        role = "unknown"
-
-    chat_history = chat_histories[role]
+def handle_query(query, session_id="default"):
+    """Process a user query tied to a specific session."""
+    # Retrieve or create the chat history for this session
+    chat_history = chat_histories.setdefault(session_id, [])
+    session_activity[session_id] = time.time()
 
     # Ensure indexes are built
     for name in CSV_FILES:
@@ -169,7 +171,14 @@ def handle_query(query, role=None):
         {"role": "user", "content": query},
         {"role": "assistant", "content": answer}
     ])
-    chat_histories[role] = chat_history[-20:]
+    chat_histories[session_id] = chat_history[-SESSION_HISTORY_LIMIT:]
+
+    # Clean up inactive sessions
+    now = time.time()
+    for sid, last in list(session_activity.items()):
+        if now - last > SESSION_TTL:
+            chat_histories.pop(sid, None)
+            session_activity.pop(sid, None)
 
     return answer
 
@@ -185,6 +194,6 @@ if __name__ == "__main__":
         if user_input.lower() in ("exit", "quit"):
             print("👋 Goodbye!")
             break
-        response = handle_query(user_input)
+        response = handle_query(user_input, "cli")
         print("Bot:", response)
 

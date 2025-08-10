@@ -17,6 +17,7 @@ app.add_middleware(
 )
 class Query(BaseModel):
     text: str
+    session_id: str
 
 @app.post("/query")
 def process_query(query: Query):
@@ -25,7 +26,7 @@ def process_query(query: Query):
     # return {"answer": answer}
     try:
 
-        answer = handle_query(query.text)
+        answer = handle_query(query.text, query.session_id)
         return {"answer": answer}
     except Exception as e:
         print("BACKEND ERROR:", str(e))
