@@ -171,8 +171,15 @@ const LessonLog = () => {
                 <div className="text-center text-gray-500 py-10">Loading lessons...</div>
             ) : (
                 <>
-                    <h2 className="text-2xl font-semibold">{t("lesson_log")}</h2>
-
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-2xl font-semibold">{t("lesson_log")}</h2>
+                        <Link
+                            to="/lesson-log/add"
+                            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+                        >
+                            + Add Lesson
+                        </Link>
+                    </div>
 
                     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
 
@@ -215,14 +222,7 @@ const LessonLog = () => {
                                     Clear filters
                                 </button>
                             )}
-                            <div className="flex justify-end">
-                                <Link
-                                    to="/lesson-log/add"
-                                    className="mb-4 inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
-                                >
-                                    + Add Lesson
-                                </Link>
-                            </div>
+
                         </div>
 
 
@@ -234,173 +234,173 @@ const LessonLog = () => {
                         </div>
                     )}
 
-                {Object.entries(filteredGroupedLessons).map(([weekLabel, weekLessons]) => {
-                    const attendanceRates = weekLessons.map((l) => {
-                        const present = l.students?.filter((s) => s.status === t("present")).length || 0;
-                        const absent = l.students?.filter((s) => s.status === t("absent")).length || 0;
-                        const total = present + absent;
-                        return total > 0 ? (present / total) * 100 : 100;
-                    });
-                    const avgAttendance =
-                        attendanceRates.length > 0
-                            ? Math.round(attendanceRates.reduce((a, b) => a + b, 0) / attendanceRates.length)
-                            : 0;
+                    {Object.entries(filteredGroupedLessons).map(([weekLabel, weekLessons]) => {
+                        const attendanceRates = weekLessons.map((l) => {
+                            const present = l.students?.filter((s) => s.status === "present").length || 0;
+                            const absent = l.students?.filter((s) => s.status === "absent").length || 0;
+                            const total = present + absent;
+                            return total > 0 ? (present / total) * 100 : 0;
+                        });
+                        const avgAttendance =
+                            attendanceRates.length > 0
+                                ? Math.round(attendanceRates.reduce((a, b) => a + b, 0) / attendanceRates.length)
+                                : 0;
 
-                    return (
-                        <div key={weekLabel} className="space-y-2">
-                            <div className="flex justify-between items-center bg-gray-100 px-4 py-2 rounded-md">
-                                <h3 className="text-sm font-semibold text-gray-700">
-                                    {weekLabel} — Avg Attendance: {avgAttendance}%
-                                </h3>
-                            </div>
+                        return (
+                            <div key={weekLabel} className="space-y-2">
+                                <div className="flex justify-between items-center bg-gray-100 px-4 py-2 rounded-md">
+                                    <h3 className="text-sm font-semibold text-gray-700">
+                                        {weekLabel} — Avg Attendance: {avgAttendance}%
+                                    </h3>
+                                </div>
 
-                            {weekLessons.map((lesson) => {
-                                const present = lesson.students?.filter((s) => s.status === "present") || [];
-                                const absent = lesson.students?.filter((s) => s.status === "absent") || [];
-                                const total = present.length + absent.length;
-                                const rate = total > 0 ? Math.round((present.length / total) * 100) : 0;
+                                {weekLessons.map((lesson) => {
+                                    const present = lesson.students?.filter((s) => s.status === "present") || [];
+                                    const absent = lesson.students?.filter((s) => s.status === "absent") || [];
+                                    const total = present.length + absent.length;
+                                    const rate = total > 0 ? Math.round((present.length / total) * 100) : 0;
 
-                                const barColor =
-                                    rate >= 75 ? "bg-green-500" : rate >= 50 ? "bg-yellow-500" : "bg-red-500";
-                                const rateColor =
-                                    rate >= 75
-                                        ? "bg-green-100 text-green-800"
-                                        : rate >= 50
-                                            ? "bg-yellow-100 text-yellow-800"
-                                            : "bg-red-100 text-red-700";
+                                    const barColor =
+                                        rate >= 75 ? "bg-green-500" : rate >= 50 ? "bg-yellow-500" : "bg-red-500";
+                                    const rateColor =
+                                        rate >= 75
+                                            ? "bg-green-100 text-green-800"
+                                            : rate >= 50
+                                                ? "bg-yellow-100 text-yellow-800"
+                                                : "bg-red-100 text-red-700";
 
-                                const isExpanded = expandedLessonIds.has(lesson.id);
+                                    const isExpanded = expandedLessonIds.has(lesson.id);
 
-                                return (
-                                    <motion.div
-                                        layout
-                                        key={lesson.id}
-                                        onClick={() => toggleCard(lesson.id)}
-                                        transition={{duration: 0.6, ease: "easeInOut"}}
-                                        className="cursor-pointer border border-gray-200 rounded-lg bg-white shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
-                                    >
-                                        {/* Header */}
-                                        <div className="px-4 py-3 flex justify-between items-center">
-                                            <div className="text-sm text-gray-700 font-medium">
-                                                {lesson.lesson_date.toDate().toLocaleDateString("en-GB")} •{t(lesson.subject)}• {t(lesson.class_type)}
+                                    return (
+                                        <motion.div
+                                            layout
+                                            key={lesson.id}
+                                            onClick={() => toggleCard(lesson.id)}
+                                            transition={{duration: 0.6, ease: "easeInOut"}}
+                                            className="cursor-pointer border border-gray-200 rounded-lg bg-white shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
+                                        >
+                                            {/* Header */}
+                                            <div className="px-4 py-3 flex justify-between items-center">
+                                                <div className="text-sm text-gray-700 font-medium">
+                                                    {lesson.lesson_date.toDate().toLocaleDateString("en-GB")} •{t(lesson.subject)}• {t(lesson.class_type)}
 
+                                                </div>
+                                                <div
+                                                    className={`text-xs px-2 py-0.5 rounded-full font-medium ${rateColor}`}>
+                                                    {rate}%
+                                                </div>
                                             </div>
+
                                             <div
-                                                className={`text-xs px-2 py-0.5 rounded-full font-medium ${rateColor}`}>
-                                                {rate}%
-                                            </div>
-                                        </div>
-
-                                        <div
-                                            className="px-4 text-xs text-gray-500 flex justify-between items-center">
-                                            <span>{teachersMap[lesson.teacher_id] || t("unknownTeacher")}</span>
-                                            <span>
+                                                className="px-4 text-xs text-gray-500 flex justify-between items-center">
+                                                <span>{teachersMap[lesson.teacher_id] || t("unknownTeacher")}</span>
+                                                <span>
                         {lesson.start_time && lesson.end_time
                             ? `${lesson.start_time} - ${lesson.end_time}`
                             : t("timeNotSet")}
                       </span>
-                                        </div>
-
-                                        <div className="px-4 pt-2 pb-3">
-                                            <div className="w-full h-2 bg-gray-200 rounded">
-                                                <div className={`h-full ${barColor}`}
-                                                     style={{width: `${rate}%`}}></div>
                                             </div>
-                                        </div>
 
-                                        <AnimatePresence initial={false}>
-                                            {isExpanded && (
-                                                <motion.div
-                                                    key="expanded"
-                                                    initial={{opacity: 0, height: 0}}
-                                                    animate={{opacity: 1, height: "auto"}}
-                                                    exit={{opacity: 0, height: 0}}
-                                                    transition={{duration: 0.4, ease: "easeInOut"}}
-                                                    className="px-4 pb-4 text-sm text-gray-700 space-y-3"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                >
-                                                    {(lesson.duration_minutes || lesson.start_time || lesson.end_time) && (
-                                                        <p className="text-xs text-gray-600">
-                                                            <strong>{t("duration")}:</strong>{" "}
-                                                            {lesson.duration_minutes
-                                                                ? `${lesson.duration_minutes} minutes`
-                                                                : `${lesson.start_time || "?"} - ${lesson.end_time || "?"}`}
-                                                        </p>
-                                                    )}
+                                            <div className="px-4 pt-2 pb-3">
+                                                <div className="w-full h-2 bg-gray-200 rounded">
+                                                    <div className={`h-full ${barColor}`}
+                                                         style={{width: `${rate}%`}}></div>
+                                                </div>
+                                            </div>
 
-                                                    {lesson.notes && (
-                                                        <p className="text-xs text-gray-600">
-                                                            <strong>Lesson Notes:</strong> {lesson.notes}
-                                                        </p>
-                                                    )}
-
-                                                    {present.length > 0 && (
-                                                        <div>
-                                                            <p className="text-xs font-semibold text-green-700 mb-1">{t("present")}</p>
-                                                            <div className="space-y-1">
-                                                                {present.map((s) => (
-                                                                    <div
-                                                                        key={s.student_id}
-                                                                        className="bg-green-50 px-2 py-1 rounded text-xs text-green-900"
-                                                                    >
-                                                                        <strong>{studentsMap[s.student_id] || s.student_id}</strong>
-                                                                        {s.progress_evaluation && (
-                                                                            <span
-                                                                                className="ml-1">— {t("progress_evaluation")}: {s.progress_evaluation}</span>
-                                                                        )}
-                                                                        {s.student_notes && (
-                                                                            <div
-                                                                                className="ml-1">Notes: {s.student_notes}</div>
-                                                                        )}
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    )}
-
-                                                    {absent.length > 0 && (
-                                                        <div>
-                                                            <p className="text-xs font-semibold text-red-700 mb-1">{t("absent")}</p>
-                                                            <div className="space-y-1">
-                                                                {absent.map((s) => (
-                                                                    <div
-                                                                        key={s.student_id}
-                                                                        className="bg-red-50 px-2 py-1 rounded text-xs text-red-900"
-                                                                    >
-                                                                        <strong>{studentsMap[s.student_id] || s.student_id}</strong>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setEditingLessonId(lesson.id);
-                                                        }}
-                                                        className="text-xs text-blue-600 hover:underline"
+                                            <AnimatePresence initial={false}>
+                                                {isExpanded && (
+                                                    <motion.div
+                                                        key="expanded"
+                                                        initial={{opacity: 0, height: 0}}
+                                                        animate={{opacity: 1, height: "auto"}}
+                                                        exit={{opacity: 0, height: 0}}
+                                                        transition={{duration: 0.4, ease: "easeInOut"}}
+                                                        className="px-4 pb-4 text-sm text-gray-700 space-y-3"
+                                                        onClick={(e) => e.stopPropagation()}
                                                     >
-                                                        {t("editLesson")}
-                                                    </button>
+                                                        {(lesson.duration_minutes || lesson.start_time || lesson.end_time) && (
+                                                            <p className="text-xs text-gray-600">
+                                                                <strong>{t("duration")}:</strong>{" "}
+                                                                {lesson.duration_minutes
+                                                                    ? `${lesson.duration_minutes} minutes`
+                                                                    : `${lesson.start_time || "?"} - ${lesson.end_time || "?"}`}
+                                                            </p>
+                                                        )}
 
-                                                </motion.div>
-                                            )}
-                                        </AnimatePresence>
-                                    </motion.div>
+                                                        {lesson.notes && (
+                                                            <p className="text-xs text-gray-600">
+                                                                <strong>Lesson Notes:</strong> {lesson.notes}
+                                                            </p>
+                                                        )}
 
-                                );
-                            })}
-                        </div>
-                    );
-                })}
+                                                        {present.length > 0 && (
+                                                            <div>
+                                                                <p className="text-xs font-semibold text-green-700 mb-1">{t("present")}</p>
+                                                                <div className="space-y-1">
+                                                                    {present.map((s) => (
+                                                                        <div
+                                                                            key={s.student_id}
+                                                                            className="bg-green-50 px-2 py-1 rounded text-xs text-green-900"
+                                                                        >
+                                                                            <strong>{studentsMap[s.student_id] || s.student_id}</strong>
+                                                                            {s.progress_evaluation && (
+                                                                                <span
+                                                                                    className="ml-1">— {t("progress_evaluation")}: {s.progress_evaluation}</span>
+                                                                            )}
+                                                                            {s.student_notes && (
+                                                                                <div
+                                                                                    className="ml-1">Notes: {s.student_notes}</div>
+                                                                            )}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {absent.length > 0 && (
+                                                            <div>
+                                                                <p className="text-xs font-semibold text-red-700 mb-1">{t("absent")}</p>
+                                                                <div className="space-y-1">
+                                                                    {absent.map((s) => (
+                                                                        <div
+                                                                            key={s.student_id}
+                                                                            className="bg-red-50 px-2 py-1 rounded text-xs text-red-900"
+                                                                        >
+                                                                            <strong>{studentsMap[s.student_id] || s.student_id}</strong>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setEditingLessonId(lesson.id);
+                                                            }}
+                                                            className="text-xs text-blue-600 hover:underline"
+                                                        >
+                                                            {t("editLesson")}
+                                                        </button>
+
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+                                        </motion.div>
+
+                                    );
+                                })}
+                            </div>
+                        );
+                    })}
                 </>
             )}
             <AnimatePresence>
                 {editingLessonId && (
                     <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
+                        initial={{opacity: 0}}
+                        animate={{opacity: 1}}
+                        exit={{opacity: 0}}
                         className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center"
                         onClick={() => setEditingLessonId(null)}
                     >
