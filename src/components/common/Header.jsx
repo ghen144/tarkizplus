@@ -1,17 +1,14 @@
 import {useEffect, useState, useRef} from 'react';
-import {Search,  Globe} from 'lucide-react';
+import {Search, Globe} from 'lucide-react';
 import {getAuth, onAuthStateChanged} from 'firebase/auth';
-import {
-    collection, getDocs, getDoc, doc, query, where
-} from 'firebase/firestore';
+import {collection, getDocs, getDoc, doc, query, where} from 'firebase/firestore';
 import {db} from '@/firebase/firebase.jsx';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router-dom';
 import DropDownMenu from "@/components/common/DropDownMenu.jsx";
 
 const Header = () => {
-    const {t} = useTranslation();
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const {t, i18n} = useTranslation();
     const [userName, setUserName] = useState('User');
     const [searchQuery, setSearchQuery] = useState('');
     const auth = getAuth();
@@ -24,9 +21,6 @@ const Header = () => {
     const [currentTeacherId, setCurrentTeacherId] = useState('');
 
     const resultsRef = useRef(null);
-
-
-    const {i18n} = useTranslation();
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -49,7 +43,7 @@ const Header = () => {
             }
         });
         return () => unsubscribe();
-    }, [userRole, t]);
+    }, [userRole, t, auth]);
 
     useEffect(() => {
         const closeOnOutsideClick = (e) => {
@@ -114,11 +108,11 @@ const Header = () => {
 
         if (userRole !== 'admin') {
             students = students.filter(s => assignedStudentIds.includes(s.student_id));
-            lessons = lessons.filter
-            (l =>
-                l.teacher_id === currentTeacherId &&
-                Array.isArray(l.students) &&
-                l.students.some(s => assignedStudentIds.includes(s.student_id))
+            lessons = lessons.filter(
+                (l) =>
+                    l.teacher_id === currentTeacherId &&
+                    Array.isArray(l.students) &&
+                    l.students.some(s => assignedStudentIds.includes(s.student_id))
             );
 
             exams = exams.filter(e => assignedStudentIds.includes(e.student_id));
@@ -162,24 +156,20 @@ const Header = () => {
     };
 
     return (
-        <header className="h-16 px-6 flex items-center justify-between
-  bg-white                         /* solid white */
-  border-b border-blue-100 shadow-sm z-40"
-        >
-
-            {/*Search */}
+        <header className="h-16 px-6 flex items-center justify-between bg-white border-b border-blue-100 shadow-sm z-40">
+            {/* Search */}
             <div className="relative w-full max-w-sm" ref={resultsRef}>
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400"/>
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
                     type="text"
                     placeholder={t("Search Everywhere")}
                     value={searchQuery}
                     onChange={handleSearch}
                     onFocus={() => setShowResults(true)}
-                    className="pl-10 pr-4 py-2 rounded-md bg-white/70 backdrop-blur-sm border border-blue-200 shadow-inner text-sm placeholder-gray-400 focus:ring-2 focus:ring-blue-200 focus:outline-none transition"/>
+                    className="pl-10 pr-4 py-2 rounded-md bg-white/70 backdrop-blur-sm border border-blue-200 shadow-inner text-sm placeholder-gray-400 focus:ring-2 focus:ring-blue-200 focus:outline-none transition"
+                />
                 {showResults && (
-                    <div
-                        className="absolute top-full left-0 right-0 bg-white border mt-1 rounded shadow z-10 max-h-96 overflow-y-auto">
+                    <div className="absolute top-full left-0 right-0 bg-white border mt-1 rounded shadow z-10 max-h-96 overflow-y-auto">
                         {results.students.length > 0 && (
                             <div>
                                 <p className="text-sm text-gray-500 px-4 py-1 border-b">{t("students")}</p>
@@ -194,20 +184,22 @@ const Header = () => {
                                 ))}
                             </div>
                         )}
+
                         {userRole === 'admin' && results.teachers.length > 0 && (
                             <div>
                                 <p className="text-sm text-gray-500 px-4 py-1 border-b">{t("teachers")}</p>
-                                {results.teachers.map((t) => (
+                                {results.teachers.map((tch) => (
                                     <div
-                                        key={t.id}
+                                        key={tch.id}
                                         className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm"
-                                        onMouseDown={() => handleResultClick('teacher', t.id)}
+                                        onMouseDown={() => handleResultClick('teacher', tch.id)}
                                     >
-                                        🧑‍🏫 {t.name}
+                                        🧑‍🏫 {tch.name}
                                     </div>
                                 ))}
                             </div>
                         )}
+
                         {results.lessons.length > 0 && (
                             <div>
                                 <p className="text-sm text-gray-500 px-4 py-1 border-b">{t("lessons")}</p>
@@ -217,12 +209,13 @@ const Header = () => {
                                         className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm"
                                         onMouseDown={() => handleResultClick('lesson', l.id)}
                                     >
-                                        📘 {l.date} - {t(l.subject)}<br/>
+                                        📘 {l.date} - {t(l.subject)}<br />
                                         👥 {l.studentsCount} | 🧑‍🏫 {l.teacherName}
                                     </div>
                                 ))}
                             </div>
                         )}
+
                         {results.exams.length > 0 && (
                             <div>
                                 <p className="text-sm text-gray-500 px-4 py-1 border-b">{t("exams")}</p>
@@ -237,6 +230,7 @@ const Header = () => {
                                 ))}
                             </div>
                         )}
+
                         {Object.values(results).every(arr => arr.length === 0) && (
                             <p className="text-gray-500 text-sm px-4 py-2">{t("no_results")}</p>
                         )}
@@ -244,10 +238,10 @@ const Header = () => {
                 )}
             </div>
 
-            <div className="flex items-center gap-4 ml-auto relative">
-                {/* Language Globe */}
+            <div className="flex items-center gap-4 ml-auto">
+                {/* Language Globe (keeps dropdown) */}
                 <DropDownMenu
-                    label={<Globe className="h-5 w-5"/>}
+                    label={<Globe className="h-5 w-5" />}
                     options={["en", "ar", "he"]}
                     selected={[i18n.language]}
                     onChange={([lng]) => i18n.changeLanguage(lng)}
@@ -255,40 +249,14 @@ const Header = () => {
                     multiSelect={false}
                 />
 
-
-                {/* Avatar */}
-                <DropDownMenu
-                    label={
-                        <img
-                            src={`https://ui-avatars.com/api/?name=${userName || 'User'}&background=random`}
-                            alt="User"
-                            className="h-10 w-10 rounded-full transition-transform hover:scale-105"
-                        />
-                    }
-                    options={["View Profile", "Settings"]}
-                    selected={[]} // No selection state needed here
-                    onChange={([action]) => {
-                        if (action === "View Profile") {
-                            const role = localStorage.getItem("userRole");
-
-                            if (role === "teacher") {
-                                navigate("/teacher-profile");
-                            } else {
-                                console.warn("Unknown role, staying put");
-                            }
-
-                        } else if (action === "Settings") {
-                            console.log("Open Settings (not implemented yet)");
-                            // Optionally navigate or open modal
-
-                        }
-                    }}
-                    renderLabel={(opt) => opt} // Show plain text options
-                    multiSelect={false}
+                {/* Avatar — plain image, no dropdown */}
+                <img
+                    src={`https://ui-avatars.com/api/?name=${userName || 'User'}&background=random`}
+                    alt="User"
+                    className="h-10 w-10 rounded-full transition-transform hover:scale-105 cursor-default select-none"
+                    draggable={false}
                 />
-
             </div>
-
         </header>
     );
 };
