@@ -189,7 +189,7 @@ const AdminHomePage = () => {
                                                    label={t('add_student')} to="/admin/students/add"
                                                    color="bg-emerald-50"/>
                                 <QuickActionButton icon={<PlusCircle className="h-6 w-6 text-yellow-600"/>}
-                                                   label={t('schedule_lesson')} to="/admin/schedule/new"
+                                                   label={t('schedule_lesson')} to="/admin/schedule?add=true"
                                                    color="bg-yellow-50"/>
                                 <QuickActionButton icon={<PlusCircle className="h-6 w-6 text-purple-500"/>}
                                                    label={t('log_exam')} onClick={() => setShowExamModal(true)}
@@ -221,8 +221,6 @@ const AdminHomePage = () => {
                     onFormChange={setExamForm}
                     t={t}
                 />
-
-
             </main>
         </div>
     );
