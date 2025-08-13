@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { collection, doc, setDoc, serverTimestamp } from "firebase/firestore";
+import React, { useState, useEffect } from "react";
+import { collection, doc, setDoc, serverTimestamp, getDocs, updateDoc, arrayUnion } from "firebase/firestore";
 import { db } from "@/firebase/firebase.jsx";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -34,6 +34,21 @@ const AddStudentPage = () => {
         learning_difficulties: false,
         spelling_mistakes_ignored: false,
     });
+
+    const [teachers, setTeachers] = useState([]);
+    const [teacherId, setTeacherId] = useState("");
+
+    useEffect(() => {
+        const fetchTeachers = async () => {
+            const snap = await getDocs(collection(db, "teachers"));
+            const list = snap.docs.map((d) => ({
+                id: d.id,
+                name: d.data().name || d.id,
+            }));
+            setTeachers(list);
+        };
+        fetchTeachers();
+    }, []);
 
     const handleSubjectToggle = (sub) => (e) => {
         setSubjects((prev) =>
@@ -80,6 +95,12 @@ const AddStudentPage = () => {
                 engagement_level: "Unknown",
                 recent_performance: "Not Assessed",
             });
+            if (teacherId) {
+                const teacherRef = doc(db, "teachers", teacherId);
+                await updateDoc(teacherRef, {
+                    assigned_students: arrayUnion(docRef.id),
+                });
+            }
             alert(t("student_added"));
             navigate("/admin/students");
         } catch (err) {
@@ -141,7 +162,9 @@ const AddStudentPage = () => {
                             <select
                                 className="w-full border rounded-lg p-2"
                                 value={preferredLearningStyle}
-                                onChange={(e) => setPreferredLearningStyle(e.target.value)}
+                                onChange={(e) =>
+                                    setPreferredLearningStyle(e.target.value)
+                                }
                                 required
                             >
                                 <option value="">{t("select")}</option>
@@ -183,6 +206,24 @@ const AddStudentPage = () => {
                                 onChange={(e) => setPhone(e.target.value)}
                                 required
                             />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium mb-1">
+                                {t("teacher")}
+                            </label>
+                            <select
+                                className="w-full border rounded-lg p-2"
+                                value={teacherId}
+                                onChange={(e) => setTeacherId(e.target.value)}
+                            >
+                                <option value="">{t("select")}</option>
+                                {teachers.map((tch) => (
+                                    <option key={tch.id} value={tch.id}>
+                                        {tch.name}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
 
                         <div className="md:col-span-2">

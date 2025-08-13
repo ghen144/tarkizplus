@@ -1,226 +1,320 @@
 import React, { useEffect, useState } from "react";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { useNavigate, useParams } from "react-router-dom";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  updateDoc,
+  arrayUnion,
+  arrayRemove,
+} from "firebase/firestore";
 import { db } from "@/firebase/firebase.jsx";
+import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import IconButton from "@/components/common/IconButton.jsx";
+import { Save, ArrowLeft } from "lucide-react";
 
-function EditStudentPage() {
+const EditStudentPage = () => {
   const { studentId } = useParams();
   const navigate = useNavigate();
   const { t } = useTranslation();
 
-  const [formData, setFormData] = useState({
-    name: "",
-    grade: "",
-    private_or_group_lessons: "",
-    preferred_learning_style: "",
-    attendance_count_weekly: "",
-    parent_phone_number: "",
-    subjects: [],
-    accommodations: {
-      reading: false,
-      oral_response: false,
-      extra_time: false,
-      spelling_ignored: false,
-      calculator: false,
-    },
-    learning_difficulties: ""
+  const learningStyles = [
+    "Auditory",
+    "Musical Game",
+    "Movement",
+    "Visual",
+    "Reading/Writing",
+  ];
+  const lessonTypes = ["Private", "Group"];
+  const subjectOptions = ["Math", "Hebrew", "Arabic", "English"];
+
+  const [name, setName] = useState("");
+  const [grade, setGrade] = useState("");
+  const [preferredLearningStyle, setPreferredLearningStyle] = useState("");
+  const [lessonType, setLessonType] = useState("");
+  const [phone, setPhone] = useState("");
+  const [subjects, setSubjects] = useState([]);
+  const [accommodations, setAccommodations] = useState({
+    calculator_or_formula_sheet: false,
+    extra_time: false,
+    reading_accommodation: false,
+    oral_response_allowed: false,
+    learning_difficulties: false,
+    spelling_mistakes_ignored: false,
   });
 
-  const availableSubjects = ["Hebrew", "English", "Math", "Arabic"];
+  const [teachers, setTeachers] = useState([]);
+  const [teacherId, setTeacherId] = useState("");
+  const [originalTeacherId, setOriginalTeacherId] = useState("");
 
   useEffect(() => {
-    const fetchStudent = async () => {
-      const studentRef = doc(db, "students", studentId);
-      const docSnap = await getDoc(studentRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        setFormData({
-          name: data.name || "",
-          grade: data.grade || "",
-          private_or_group_lessons: data.private_or_group_lessons || "",
-          preferred_learning_style: data.preferred_learning_style || "",
-          attendance_count_weekly: data.attendance_count_weekly || "",
-          parent_phone_number: data.parent_phone_number || "",
-          subjects: data.subjects || [],
-          accommodations: data.accommodations || {
-            reading: false,
-            oral_response: false,
-            extra_time: false,
-            spelling_ignored: false,
-            calculator: false,
-          },
-          learning_difficulties: data.learning_difficulties || ""
+    const init = async () => {
+      const ref = doc(db, "students", studentId);
+      const snap = await getDoc(ref);
+      if (snap.exists()) {
+        const data = snap.data();
+        setName(data.name || "");
+        setGrade(data.grade || "");
+        setPreferredLearningStyle(data.PreferredLearningStyle || "");
+        setLessonType(data.private_or_group_lessons || "");
+        setPhone(data.parent_phone_number || "");
+        setSubjects(data.subjects || []);
+        setAccommodations({
+          calculator_or_formula_sheet: data.calculator_or_formula_sheet || false,
+          extra_time: data.extra_time || false,
+          reading_accommodation: data.reading_accommodation || false,
+          oral_response_allowed: data.oral_response_allowed || false,
+          learning_difficulties: data.learning_difficulties || false,
+          spelling_mistakes_ignored: data.spelling_mistakes_ignored || false,
         });
       }
+
+      const teachersSnap = await getDocs(collection(db, "teachers"));
+      const teacherList = teachersSnap.docs.map((tdoc) => ({
+        id: tdoc.id,
+        name: tdoc.data().name || tdoc.id,
+        assigned: tdoc.data().assigned_students || [],
+      }));
+      setTeachers(teacherList);
+      const current = teacherList.find((tch) => tch.assigned.includes(studentId));
+      if (current) {
+        setTeacherId(current.id);
+        setOriginalTeacherId(current.id);
+      }
     };
-    fetchStudent();
+    init();
   }, [studentId]);
 
-  const handleChange = (e) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleSubjectToggle = (sub) => (e) => {
+    setSubjects((prev) =>
+        e.target.checked ? [...prev, sub] : prev.filter((s) => s !== sub)
+    );
   };
 
-  const handleCheckboxChange = (subject) => {
-    setFormData(prev => ({
-      ...prev,
-      subjects: prev.subjects.includes(subject)
-        ? prev.subjects.filter(s => s !== subject)
-        : [...prev.subjects, subject]
-    }));
+  const handleCheckboxChange = (field) => (e) => {
+    setAccommodations((prev) => ({ ...prev, [field]: e.target.checked }));
   };
 
-  const handleAccommodationsChange = (key) => {
-    setFormData(prev => ({
-      ...prev,
-      accommodations: {
-        ...prev.accommodations,
-        [key]: !prev.accommodations[key]
+  const isFormValid = () =>
+      name && grade && preferredLearningStyle && lessonType && phone && subjects.length > 0;
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!isFormValid()) {
+      alert("Please fill all required fields.");
+      return;
+    }
+    const phoneRegex = /^05\d(-?\d){7}$/;
+    if (!phoneRegex.test(phone)) {
+      alert("Invalid phone number");
+      return;
+    }
+    try {
+      const ref = doc(db, "students", studentId);
+      await updateDoc(ref, {
+        name,
+        grade,
+        PreferredLearningStyle: preferredLearningStyle,
+        private_or_group_lessons: lessonType,
+        parent_phone_number: phone,
+        subjects,
+        ...accommodations,
+      });
+
+      if (teacherId !== originalTeacherId) {
+        if (originalTeacherId) {
+          await updateDoc(doc(db, "teachers", originalTeacherId), {
+            assigned_students: arrayRemove(studentId),
+          });
+        }
+        if (teacherId) {
+          await updateDoc(doc(db, "teachers", teacherId), {
+            assigned_students: arrayUnion(studentId),
+          });
+        }
       }
-    }));
+
+      alert(t("studentUpdated"));
+      navigate("/admin/students");
+    } catch (err) {
+      console.error("Error updating student:", err);
+      alert(t("updateFailed"));
+    }
   };
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
-      <h2 className="text-2xl font-semibold mb-4">{t("editStudent")}</h2>
-      <form onSubmit={async (e) => {
-        e.preventDefault();
-        try {
-          await updateDoc(doc(db, "students", studentId), formData);
-          alert(t("studentUpdated"));
-          navigate("/admin/students");
-        } catch (err) {
-          console.error(err);
-          alert(t("updateFailed"));
-        }
-      }} className="space-y-4">
+      <div className="min-h-screen bg-gray-100 py-8 px-4">
+        <div className="max-w-5xl mx-auto space-y-6">
+          <IconButton color="gray" onClick={() => navigate("/admin/students")}>
+            <ArrowLeft className="w-4 h-4" /> {t("back")}
+          </IconButton>
 
-       
+          <h1 className="text-3xl font-bold">{t("edit_student")}</h1>
 
-        <div>
-          <label className="block font-semibold mb-1">{t("fullName")}</label>
-          <input
-            type="text"
-            value={formData.name}
-            readOnly
-            className="w-full border px-4 py-2 rounded bg-gray-100 text-gray-700"
-          />
-        </div>
-
-        <div>
-          <label className="block font-semibold mb-1">{t("grade")}</label>
-          <select
-            name="grade"
-            value={formData.grade}
-            onChange={handleChange}
-            className="w-full border px-4 py-2 rounded"
-            required
+          <form
+              onSubmit={handleSubmit}
+              className="bg-white p-6 rounded-xl shadow space-y-8"
           >
-            <option value="">{t("selectGrade")}</option>
-            {Array.from({ length: 12 }, (_, i) => (
-              <option key={i + 1} value={`${i + 1}th Grade`}>
-                {t(`grades.${i + 1}`)}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="block font-semibold mb-1">{t("lessonType")}</label>
-          <select
-            name="private_or_group_lessons"
-            value={formData.private_or_group_lessons}
-            onChange={handleChange}
-            className="w-full border px-4 py-2 rounded"
-          >
-            <option value="">{t("select")}</option>
-            <option value="Private">{t("private")}</option>
-            <option value="Group">{t("group")}</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="block font-semibold mb-1">{t("preferredLearningStyle")}</label>
-          <input
-            type="text"
-            name="preferred_learning_style"
-            value={formData.preferred_learning_style}
-            onChange={handleChange}
-            className="w-full border px-4 py-2 rounded"
-          />
-        </div>
-
-        <div>
-          <label className="block font-semibold mb-1">{t("weeklyAttendance")}</label>
-          <input
-            type="number"
-            name="attendance_count_weekly"
-            value={formData.attendance_count_weekly}
-            onChange={handleChange}
-            className="w-full border px-4 py-2 rounded"
-            placeholder="مثلاً: 2 أو 3"
-          />
-        </div>
-
-        <div>
-          <label className="block font-semibold mb-1">{t("parentPhone")}</label>
-          <input
-            type="text"
-            name="parent_phone_number"
-            value={formData.parent_phone_number}
-            onChange={handleChange}
-            className="w-full border px-4 py-2 rounded"
-          />
-        </div>
-
-        <div>
-          <label className="block font-semibold mb-1">{t("subjects")}</label>
-          <div className="flex gap-4 flex-wrap">
-            {availableSubjects.map(subject => (
-              <label key={subject} className="flex items-center gap-2">
+            <section className="grid md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  {t("full_name")}
+                </label>
                 <input
-                  type="checkbox"
-                  checked={formData.subjects.includes(subject)}
-                  onChange={() => handleCheckboxChange(subject)}
+                    type="text"
+                    className="w-full border rounded-lg p-2"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
                 />
-                {t(`subjects.${subject.toLowerCase()}`)}
-              </label>
-            ))}
-          </div>
-        </div>
+              </div>
 
-        <div>
-          <label className="block font-semibold mb-1">{t("accommodations")}</label>
-          <div className="flex flex-col gap-2">
-            <label><input type="checkbox" checked={formData.accommodations.reading} onChange={() => handleAccommodationsChange("reading")} /> {t("accReading")}</label>
-            <label><input type="checkbox" checked={formData.accommodations.oral_response} onChange={() => handleAccommodationsChange("oral_response")} /> {t("accOral")}</label>
-            <label><input type="checkbox" checked={formData.accommodations.extra_time} onChange={() => handleAccommodationsChange("extra_time")} /> {t("accExtraTime")}</label>
-            <label><input type="checkbox" checked={formData.accommodations.spelling_ignored} onChange={() => handleAccommodationsChange("spelling_ignored")} /> {t("accSpelling")}</label>
-            <label><input type="checkbox" checked={formData.accommodations.calculator} onChange={() => handleAccommodationsChange("calculator")} /> {t("accCalculator")}</label>
-          </div>
-        </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  {t("grade")}
+                </label>
+                <select
+                    className="w-full border rounded-lg p-2"
+                    value={grade}
+                    onChange={(e) => setGrade(e.target.value)}
+                    required
+                >
+                  <option value="">{t("select_grade")}</option>
+                  {Array.from({ length: 12 }, (_, i) => (
+                      <option key={i + 1} value={String(i + 1)}>
+                        {t(`grades.${i + 1}`)}
+                      </option>
+                  ))}
+                </select>
+              </div>
 
-        <div>
-          <label className="block font-semibold mb-1">{t("learningDifficulties")}</label>
-          <textarea
-            name="learning_difficulties"
-            value={formData.learning_difficulties}
-            onChange={handleChange}
-            className="w-full border px-4 py-2 rounded"
-          />
-        </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  {t("learning_style")}
+                </label>
+                <select
+                    className="w-full border rounded-lg p-2"
+                    value={preferredLearningStyle}
+                    onChange={(e) => setPreferredLearningStyle(e.target.value)}
+                    required
+                >
+                  <option value="">{t("select")}</option>
+                  {learningStyles.map((style) => (
+                      <option key={style} value={style}>
+                        {style}
+                      </option>
+                  ))}
+                </select>
+              </div>
 
-        <div className="flex gap-4">
-          <button type="submit" className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-2 rounded">
-            {t("save")}
-          </button>
-          <button type="button" onClick={() => navigate("/admin/students")} className="bg-gray-300 hover:bg-gray-400 px-6 py-2 rounded">
-            {t("cancel")}
-          </button>
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  {t("lessonType")}
+                </label>
+                <select
+                    className="w-full border rounded-lg p-2"
+                    value={lessonType}
+                    onChange={(e) => setLessonType(e.target.value)}
+                    required
+                >
+                  <option value="">{t("select")}</option>
+                  {lessonTypes.map((type) => (
+                      <option key={type} value={type}>
+                        {t(type.toLowerCase())}
+                      </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  {t("parent_phone")}
+                </label>
+                <input
+                    type="tel"
+                    className="w-full border rounded-lg p-2"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  {t("teacher")}
+                </label>
+                <select
+                    className="w-full border rounded-lg p-2"
+                    value={teacherId}
+                    onChange={(e) => setTeacherId(e.target.value)}
+                >
+                  <option value="">{t("select")}</option>
+                  {teachers.map((tch) => (
+                      <option key={tch.id} value={tch.id}>
+                        {tch.name}
+                      </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium mb-1">
+                  {t("subjects")}
+                </label>
+                <div className="grid md:grid-cols-2 gap-2 mt-2">
+                  {subjectOptions.map((sub) => (
+                      <label key={sub} className="flex items-center gap-2">
+                        <input
+                            type="checkbox"
+                            value={sub}
+                            checked={subjects.includes(sub)}
+                            onChange={handleSubjectToggle(sub)}
+                        />
+                        <span>{t(sub.toLowerCase())}</span>
+                      </label>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            <section>
+              <h2 className="text-xl font-semibold">{t("accommodations")}</h2>
+              <div className="grid md:grid-cols-2 gap-2 mt-2">
+                {[
+                  "calculator_or_formula_sheet",
+                  "extra_time",
+                  "reading_accommodation",
+                  "oral_response_allowed",
+                  "learning_difficulties",
+                  "spelling_mistakes_ignored",
+                ].map((field) => (
+                    <label key={field} className="flex items-center gap-2">
+                      <input
+                          type="checkbox"
+                          checked={accommodations[field]}
+                          onChange={handleCheckboxChange(field)}
+                      />
+                      <span>{t(field)}</span>
+                    </label>
+                ))}
+              </div>
+            </section>
+
+            <div className="flex justify-end">
+              <IconButton
+                  type="submit"
+                  color="blue"
+                  disabled={!isFormValid()}
+                  className={!isFormValid() ? "opacity-50 cursor-not-allowed" : ""}
+              >
+                <Save className="w-4 h-4" /> {t("save")}
+              </IconButton>
+            </div>
+          </form>
         </div>
-      </form>
-    </div>
+      </div>
   );
-}
+};
 
 export default EditStudentPage;
