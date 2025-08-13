@@ -1,160 +1,281 @@
-// AddTeacherPage.jsx - مع دعم الترجمة الكامل
-
-import React, { useState } from 'react';
-import { collection, setDoc, doc, serverTimestamp, Timestamp } from 'firebase/firestore';
-import { db } from '@/firebase/firebase.jsx';
-import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+// AddTeacherPage.jsx
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { db } from "@/firebase/firebase.jsx";
+import {
+  collection,
+  doc,
+  setDoc,
+  getDocs,
+  serverTimestamp,
+  Timestamp,
+} from "firebase/firestore";
+import IconButton from "@/components/common/IconButton.jsx";
+import { Save, ArrowLeft } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 function AddTeacherPage() {
   const { t } = useTranslation();
-  const [teacherId, setTeacherId] = useState('');
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [subjectSpecialties, setSubjectSpecialties] = useState([]);
-  const [experienceYears, setExperienceYears] = useState('');
-  const [activeStatus, setActiveStatus] = useState(true);
-  const [teachingHoursWeek, setTeachingHoursWeek] = useState('');
-  const [joiningDate, setJoiningDate] = useState('');
-  const [uid, setUid] = useState('');
-
   const navigate = useNavigate();
+
+  const [teacherId, setTeacherId] = useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [subjectSpecialties, setSubjectSpecialties] = useState([]);
+  const [experienceYears, setExperienceYears] = useState("");
+  const [teachingHoursWeek, setTeachingHoursWeek] = useState("");
+  const [activeStatus, setActiveStatus] = useState(true);
+  const [joiningDate, setJoiningDate] = useState(
+      () => new Date().toISOString().split("T")[0]
+  );
+  const [uid, setUid] = useState("");
+  const [students, setStudents] = useState([]);
+  const [assignedStudents, setAssignedStudents] = useState([]);
 
   const subjects = ["Math", "English", "Arabic", "Hebrew"];
 
-  const handleCheckboxChange = (subject) => {
-    setSubjectSpecialties(prev =>
-      prev.includes(subject)
-        ? prev.filter(s => s !== subject)
-        : [...prev, subject]
+  useEffect(() => {
+    const init = async () => {
+      const teachersSnap = await getDocs(collection(db, "teachers"));
+      let max = 0;
+      teachersSnap.forEach((d) => {
+        const id = d.data().teacher_id || "";
+        const num = parseInt(id.replace(/^T/, ""), 10);
+        if (!isNaN(num) && num > max) max = num;
+      });
+      setTeacherId(`T${(max + 1).toString().padStart(3, "0")}`);
+
+      const studentsSnap = await getDocs(collection(db, "students"));
+      const list = studentsSnap.docs.map((doc) => ({
+        id: doc.id,
+        name: doc.data().name || doc.id,
+      }));
+      setStudents(list);
+    };
+    init();
+  }, []);
+
+  const handleSubjectChange = (subject) => {
+    setSubjectSpecialties((prev) =>
+        prev.includes(subject)
+            ? prev.filter((s) => s !== subject)
+            : [...prev, subject]
     );
   };
 
+  const handleAssignedStudentToggle = (id) => {
+    setAssignedStudents((prev) =>
+        prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
+    );
+  };
+
+  const isValidEmail = (value) => /\S+@\S+\.\S+/.test(value);
+  const isValidNumber = (value) => value !== "" && Number(value) >= 0;
+
+  const canSave =
+      name &&
+      isValidEmail(email) &&
+      subjectSpecialties.length > 0 &&
+      isValidNumber(experienceYears) &&
+      isValidNumber(teachingHoursWeek);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!canSave) return;
+
     try {
-      const newDocRef = doc(db, 'teachers', teacherId);
-      await setDoc(newDocRef, {
+      const docRef = doc(collection(db, "teachers"), teacherId);
+      await setDoc(docRef, {
         teacher_id: teacherId,
         name,
         email,
         subject_specialties: subjectSpecialties,
         experience_years: Number(experienceYears),
-        active_status: activeStatus,
         teaching_hours_week: Number(teachingHoursWeek),
+        active_status: activeStatus,
         joining_tarkiz_date: Timestamp.fromDate(new Date(joiningDate)),
+        assigned_students: assignedStudents,
         uid: uid || "",
-        assigned_students: [],
-        created_at: serverTimestamp()
+        created_at: serverTimestamp(),
       });
-      alert(t('teacher_added'));
-      navigate('/admin/teachers');
-    } catch (error) {
-      console.error("Error adding teacher:", error);
+      navigate("/admin/teachers");
+    } catch (err) {
+      console.error("Error adding teacher:", err);
     }
   };
 
-  const handleCancel = () => {
-    navigate('/admin/teachers');
-  };
-
   return (
-    <div className="p-6 max-w-xl mx-auto">
-      <h2 className="text-2xl font-semibold mb-4">{t('add_new_teacher')}</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input
-          type="text"
-          placeholder={t('teacher_id_placeholder')}
-          className="w-full border px-4 py-2 rounded"
-          value={teacherId}
-          onChange={e => setTeacherId(e.target.value)}
-          required
-        />
-        <input
-          type="text"
-          placeholder={t('full_name')}
-          className="w-full border px-4 py-2 rounded"
-          value={name}
-          onChange={e => setName(e.target.value)}
-          required
-        />
-        <input
-          type="email"
-          placeholder={t('email')}
-          className="w-full border px-4 py-2 rounded"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          required
-        />
-        <div>
-          <label className="block font-semibold mb-1">{t('subjects')}:</label>
-          <div className="flex flex-wrap gap-4">
-            {subjects.map(subject => (
-              <label key={subject} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={subjectSpecialties.includes(subject)}
-                  onChange={() => handleCheckboxChange(subject)}
-                />
-                {t(subject.toLowerCase())}
-              </label>
-            ))}
-          </div>
-        </div>
-        <input
-          type="number"
-          placeholder={t('experience_years')}
-          className="w-full border px-4 py-2 rounded"
-          value={experienceYears}
-          onChange={e => setExperienceYears(e.target.value)}
-          required
-        />
-        <input
-          type="number"
-          placeholder={t('teaching_hours')}
-          className="w-full border px-4 py-2 rounded"
-          value={teachingHoursWeek}
-          onChange={e => setTeachingHoursWeek(e.target.value)}
-          required
-        />
-        <div>
-          <label className="block font-semibold mb-1">{t('joining_date')}:</label>
-          <input
-            type="date"
-            className="w-full border px-4 py-2 rounded"
-            value={joiningDate}
-            onChange={e => setJoiningDate(e.target.value)}
-            required
-          />
-        </div>
-        <input
-          type="text"
-          placeholder={t('uid_optional')}
-          className="w-full border px-4 py-2 rounded"
-          value={uid}
-          onChange={e => setUid(e.target.value)}
-        />
-        <div>
-          <label className="block font-semibold mb-1">{t('status')}:</label>
-          <select
-            className="w-full border px-4 py-2 rounded"
-            value={activeStatus ? 'active' : 'inactive'}
-            onChange={(e) => setActiveStatus(e.target.value === 'active')}
+      <div className="min-h-screen bg-gray-100 py-8 px-4">
+        <div className="max-w-4xl mx-auto space-y-6">
+          <IconButton color="gray" onClick={() => navigate("/admin/teachers")}>
+            <ArrowLeft className="w-4 h-4" /> Back
+          </IconButton>
+
+          <h1 className="text-3xl font-bold">{t("add_new_teacher")}</h1>
+
+          <form
+              onSubmit={handleSubmit}
+              className="bg-white p-6 rounded-xl shadow space-y-8"
           >
-            <option value="active">{t('active')}</option>
-            <option value="inactive">{t('inactive')}</option>
-          </select>
+            <section className="grid md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Teacher ID
+                </label>
+                <input
+                    type="text"
+                    className="w-full border rounded-lg p-2 bg-gray-100"
+                    value={teacherId}
+                    readOnly
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  {t("full_name")}
+                </label>
+                <input
+                    type="text"
+                    className="w-full border rounded-lg p-2"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  {t("email")}
+                </label>
+                <input
+                    type="email"
+                    className="w-full border rounded-lg p-2"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  {t("experience_years")}
+                </label>
+                <input
+                    type="number"
+                    min="0"
+                    className="w-full border rounded-lg p-2"
+                    value={experienceYears}
+                    onChange={(e) => setExperienceYears(e.target.value)}
+                    required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  {t("teaching_hours")}
+                </label>
+                <input
+                    type="number"
+                    min="0"
+                    className="w-full border rounded-lg p-2"
+                    value={teachingHoursWeek}
+                    onChange={(e) => setTeachingHoursWeek(e.target.value)}
+                    required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  {t("status")}
+                </label>
+                <label className="inline-flex items-center gap-2">
+                  <input
+                      type="checkbox"
+                      className="form-checkbox h-5 w-5 text-blue-600"
+                      checked={activeStatus}
+                      onChange={(e) => setActiveStatus(e.target.checked)}
+                  />
+                  {activeStatus ? t("active") : t("inactive")}
+                </label>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  {t("joining_date")}
+                </label>
+                <input
+                    type="date"
+                    className="w-full border rounded-lg p-2"
+                    value={joiningDate}
+                    onChange={(e) => setJoiningDate(e.target.value)}
+                    required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  {t("uid_optional")}
+                </label>
+                <input
+                    type="text"
+                    className="w-full border rounded-lg p-2"
+                    value={uid}
+                    onChange={(e) => setUid(e.target.value)}
+                />
+              </div>
+            </section>
+
+            <section className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  {t("subjects")}
+                </label>
+                <div className="flex flex-wrap gap-4">
+                  {subjects.map((sub) => (
+                      <label key={sub} className="flex items-center gap-2">
+                        <input
+                            type="checkbox"
+                            checked={subjectSpecialties.includes(sub)}
+                            onChange={() => handleSubjectChange(sub)}
+                        />
+                        {t(sub.toLowerCase())}
+                      </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  {t("assigned_students")}
+                </label>
+                <div className="flex flex-col gap-2 h-40 overflow-auto border rounded-lg p-2">
+                  {students.map((stu) => (
+                      <label key={stu.id} className="flex items-center gap-2">
+                        <input
+                            type="checkbox"
+                            checked={assignedStudents.includes(stu.id)}
+                            onChange={() => handleAssignedStudentToggle(stu.id)}
+                        />
+                        {stu.name}
+                      </label>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            <div className="flex justify-end">
+              <IconButton
+                  type="submit"
+                  color="blue"
+                  disabled={!canSave}
+                  className={!canSave ? "opacity-50 cursor-not-allowed" : ""}
+              >
+                <Save className="w-4 h-4" /> {t("save")}
+              </IconButton>
+            </div>
+          </form>
         </div>
-        <div className="flex gap-4">
-          <button type="submit" className="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600">
-            {t('save')}
-          </button>
-          <button type="button" onClick={handleCancel} className="bg-gray-300 px-6 py-2 rounded hover:bg-gray-400">
-            {t('cancel')}
-          </button>
-        </div>
-      </form>
-    </div>
+      </div>
   );
 }
 
