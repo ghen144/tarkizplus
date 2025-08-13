@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
     collection,
     getDocs,
@@ -27,6 +28,9 @@ export default function AdminTeacherSchedule() {
     const [adding, setAdding] = useState(false);
     const [notification, setNotification] = useState("");
 
+    const location = useLocation();
+    const navigate = useNavigate();
+
     useEffect(() => {
         if (!notification) return;
         const timer = setTimeout(() => setNotification(""), 3000);
@@ -41,6 +45,13 @@ export default function AdminTeacherSchedule() {
         getDocs(collection(db, "students"))
             .then(q => setStudentsList(q.docs.map(d => ({ id: d.id, ...d.data() }))));
     }, []);
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        if (params.get("add") === "true") {
+            setAdding(true);
+        }
+    }, [location.search]);
 
     const teacherColors = useMemo(() => {
         const names = [...new Set(schedules.map(s => s.teacher))];
@@ -220,7 +231,14 @@ export default function AdminTeacherSchedule() {
                     teachers={teachersList}
                     students={studentsList}
                     existingSchedules={schedules}
-                    onClose={() => setAdding(false)}
+                    onClose={() => {
+                        setAdding(false);
+                        const params = new URLSearchParams(location.search);
+                        if (params.has("add")) {
+                            params.delete("add");
+                            navigate({ search: params.toString() }, { replace: true });
+                        }
+                    }}
                     onSave={async slot => {
                         const ref = await addDoc(collection(db, "weekly_schedule"), slot);
                         setSchedules(s => [...s, { ...slot, id: ref.id }]);
