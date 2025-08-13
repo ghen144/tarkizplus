@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc } from "firebase/firestore";
 import { db } from "@/firebase/firebase.jsx";
 import { useTranslation } from "react-i18next";
+import { useLocation } from "react-router-dom";
 import IconButton from "@/components/common/IconButton.jsx";
 import { Plus, ArrowUp, ArrowDown, FolderOpen } from "lucide-react";
 
@@ -13,9 +14,9 @@ const SUBJECTS = [
   { value: "Arabic", color: "bg-[#fbfbf1] text-[#8c8a4a]" }
 ];
 
-
 const AdminExamsPage = () => {
   const { t } = useTranslation();
+  const location = useLocation();
   const [exams, setExams] = useState([]);
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
