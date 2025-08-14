@@ -1,6 +1,6 @@
-# Tarkiz+
 
-Tarkiz+ is a role-based teaching management platform built with React and Vite. It provides dashboards for teachers and administrators to manage students, lessons, schedules, and exams. Firebase handles authentication and Firestore storage, while i18next powers a multilingual interface (English, Arabic, and Hebrew). The project also ships with FastAPI microservices for the HelpBot assistant and the Tarkiz Compass feature.
+<img src="/src/assets/logo-transparent.PNG" alt="Logo" width="300"> <br>
+Tarkiz+ is a role-based teaching management platform built with React and Vite. It provides dashboards for teachers and administrators to manage students, lessons, schedules, and exams. Firebase handles authentication and Firestore storage, while i18next powers a multilingual interface (English, Arabic, and Hebrew). The project also ships with FastAPI microservices for the HelpBot assistant and the Tarkiz Compass feature. The platform is live and accessible at https://tarkizplus.onrender.com/.
 
 ## Features
 
@@ -37,7 +37,6 @@ npm install
 ```bash
 npm run dev
 ```
-Visit <http://localhost:5173>.
 
 ### Production Build
 ```bash
@@ -49,10 +48,6 @@ npm run build
 npm run preview
 ```
 
-### Linting
-```bash
-npm run lint
-```
 
 ## Backend Services
 
@@ -93,6 +88,3 @@ tarkizplus/
 └─ vite.config.js
 ```
 
-## License
-
-No license specified.
