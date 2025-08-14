@@ -10,8 +10,7 @@ import LessonLog from './pages/lessons/LessonLog.jsx';
 import AddLesson from './pages/lessons/AddLesson.jsx';
 import EditLesson from './pages/lessons/EditLessonOverlay.jsx';
 import LessonDetails from './pages/lessons/LessonDetails.jsx';
-import TeacherProfile from './pages/TeacherProfile.jsx';
-import AppSettings from './pages/AppSettings.jsx';
+
 
 import AdminHomePage from './pages/admin/AdminHomePage.jsx';
 import AdminStudentsPage from './pages/admin/AdminStudentsPage.jsx';
@@ -21,8 +20,7 @@ import AdminTeachersPage from './pages/admin/AdminTeachersPage.jsx';
 import AddTeacherPage from './pages/admin/AddTeacherPage.jsx';
 import EditTeacherPage from './pages/admin/EditTeacherPage.jsx';
 import AdminTeacherSchedules from './pages/admin/AdminTeacherSchedules.jsx';
-import EditTeacherSchedule from './pages/schedules/EditTeacherSchedule.jsx';
-import NewSchedule from './pages/NewSchedule.jsx';
+
 import AdminExamsPage from './pages/admin/AdminExamsPage.jsx';
 
 import TarkizCompass from './pages/TarkizCompass.jsx';
@@ -64,8 +62,6 @@ function App() {
                     <Route path="/lesson-log" element={<LessonLog />} />
                     <Route path="/lesson-log/:lessonId/edit" element={<EditLesson />} />
                     <Route path="/lesson-log/:lessonId/details" element={<LessonDetails />} />
-
-                    <Route path="/settings" element={<AppSettings />} />
                     <Route path="/compass" element={<TarkizCompass />} />
 
                     {/* -------- Teacher-only -------- */}
@@ -78,15 +74,7 @@ function App() {
                             />
                         }
                     />
-                    <Route
-                        path="/teacher-profile"
-                        element={
-                            <ProtectedRoute
-                                element={<TeacherProfile />}
-                                allowedRoles={['teacher']}
-                            />
-                        }
-                    />
+
 
                     {/* -------- Admin-only -------- */}
                     <Route
@@ -161,24 +149,8 @@ function App() {
                             />
                         }
                     />
-                    <Route
-                        path="/admin/schedule/edit/:id"
-                        element={
-                            <ProtectedRoute
-                                element={<EditTeacherSchedule />}
-                                allowedRoles={['admin']}
-                            />
-                        }
-                    />
-                    <Route
-                        path="/admin/schedule/new"
-                        element={
-                            <ProtectedRoute
-                                element={<NewSchedule />}
-                                allowedRoles={['admin']}
-                            />
-                        }
-                    />
+
+
                     <Route
                         path="/admin/exams"
                         element={
