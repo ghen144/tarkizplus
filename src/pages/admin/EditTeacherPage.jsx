@@ -1,6 +1,6 @@
-import React, {useEffect, useState} from "react";
-import {useNavigate, useParams} from "react-router-dom";
-import {db} from "@/firebase/firebase.jsx";
+import React, { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { db } from "@/firebase/firebase.jsx";
 import {
     collection,
     doc,
@@ -10,13 +10,13 @@ import {
     Timestamp,
 } from "firebase/firestore";
 import IconButton from "@/components/common/IconButton.jsx";
-import {Save, ArrowLeft} from "lucide-react";
-import {useTranslation} from "react-i18next";
+import { Save, ArrowLeft } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 function EditTeacherPage() {
-    const {t} = useTranslation();
+    const { t } = useTranslation();
     const navigate = useNavigate();
-    const {teacherId} = useParams();
+    const { teacherId } = useParams();
 
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
@@ -130,7 +130,7 @@ function EditTeacherPage() {
         <div className="min-h-screen bg-gray-100 py-8 px-4">
             <div className="max-w-4xl mx-auto space-y-6">
                 <IconButton color="gray" onClick={() => navigate("/admin/teachers")}>
-                    <ArrowLeft className="w-4 h-4"/> Back
+                    <ArrowLeft className="w-4 h-4" /> Back
                 </IconButton>
 
                 <h1 className="text-3xl font-bold">{t("edit_teacher")}</h1>
@@ -280,7 +280,7 @@ function EditTeacherPage() {
                             disabled={!canSave}
                             className={!canSave ? "opacity-50 cursor-not-allowed" : ""}
                         >
-                            <Save className="w-4 h-4"/> {t("save")}
+                            <Save className="w-4 h-4" /> {t("save")}
                         </IconButton>
                     </div>
                 </form>

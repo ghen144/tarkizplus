@@ -1,7 +1,7 @@
 // AddTeacherPage.jsx
-import React, {useEffect, useState} from "react";
-import {useNavigate} from "react-router-dom";
-import {db} from "@/firebase/firebase.jsx";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { db } from "@/firebase/firebase.jsx";
 import {
     collection,
     doc,
@@ -11,11 +11,11 @@ import {
     Timestamp,
 } from "firebase/firestore";
 import IconButton from "@/components/common/IconButton.jsx";
-import {Save, ArrowLeft} from "lucide-react";
-import {useTranslation} from "react-i18next";
+import { Save, ArrowLeft } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 function AddTeacherPage() {
-    const {t} = useTranslation();
+    const { t } = useTranslation();
     const navigate = useNavigate();
 
     const [teacherId, setTeacherId] = useState("");
@@ -108,7 +108,7 @@ function AddTeacherPage() {
         <div className="min-h-screen bg-gray-100 py-8 px-4">
             <div className="max-w-4xl mx-auto space-y-6">
                 <IconButton color="gray" onClick={() => navigate("/admin/teachers")}>
-                    <ArrowLeft className="w-4 h-4"/> Back
+                    <ArrowLeft className="w-4 h-4" /> Back
                 </IconButton>
 
                 <h1 className="text-3xl font-bold">{t("add_new_teacher")}</h1>
@@ -118,18 +118,6 @@ function AddTeacherPage() {
                     className="bg-white p-6 rounded-xl shadow space-y-8"
                 >
                     <section className="grid md:grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-sm font-medium mb-1">
-                                Teacher ID
-                            </label>
-                            <input
-                                type="text"
-                                className="w-full border rounded-lg p-2 bg-gray-100"
-                                value={teacherId}
-                                readOnly
-                            />
-                        </div>
-
                         <div>
                             <label className="block text-sm font-medium mb-1">
                                 {t("full_name")}
@@ -270,7 +258,7 @@ function AddTeacherPage() {
                             disabled={!canSave}
                             className={!canSave ? "opacity-50 cursor-not-allowed" : ""}
                         >
-                            <Save className="w-4 h-4"/> {t("save")}
+                            <Save className="w-4 h-4" /> {t("save")}
                         </IconButton>
                     </div>
                 </form>
